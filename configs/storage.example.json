@@ -1,0 +1,17 @@
+{
+  "storage_id": "SCL-VMI",
+  "codename": "SCL-VMI",
+  "storage_root": "/path/to/scl-vmi-storage",
+  "project_storage": "/path/to/scl-vmi-storage/projects/SCL-VMI",
+  "dataset_root": "/path/to/scl-vmi-storage/datasets/FLARE-MedFM/FLARE-AutoMSC",
+  "hf_home": "/path/to/scl-vmi-storage/cache/huggingface",
+  "hf_hub_cache": "/path/to/scl-vmi-storage/cache/huggingface/hub",
+  "hf_xet_cache": "/path/to/scl-vmi-storage/cache/huggingface/xet",
+  "temp_root": "/path/to/scl-vmi-storage/projects/SCL-VMI/tmp",
+  "environments": "/path/to/scl-vmi-storage/projects/SCL-VMI/environments",
+  "preprocessed": "/path/to/scl-vmi-storage/projects/SCL-VMI/preprocessed",
+  "activations": "/path/to/scl-vmi-storage/projects/SCL-VMI/activations",
+  "checkpoints": "/path/to/scl-vmi-storage/projects/SCL-VMI/checkpoints",
+  "runs": "/path/to/scl-vmi-storage/projects/SCL-VMI/runs",
+  "logs": "/path/to/scl-vmi-storage/projects/SCL-VMI/logs"
+}

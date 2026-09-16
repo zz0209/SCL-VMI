@@ -1,0 +1,8 @@
+{
+  "repo_id": "FLARE-MedFM/FLARE-AutoMSC",
+  "revision": "ce5ea76cde8870805c37614d7ea9b08319b3575e",
+  "expected_file_count": 29059,
+  "expected_total_bytes": 81744497845,
+  "max_workers": 4,
+  "scope": "entire repository including validation and metadata, without include/exclude filters"
+}

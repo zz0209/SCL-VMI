@@ -1,0 +1,2 @@
+huggingface_hub==1.31.0
+filelock==3.32.6

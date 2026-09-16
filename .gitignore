@@ -1,0 +1,27 @@
+# Default-deny publication boundary. Add individual reviewed source files here.
+/*
+!/.gitignore
+!/.gitattributes
+!/README.md
+!/requirements-data.txt
+
+!/configs/
+/configs/*
+!/configs/download_flare.json
+!/configs/storage.example.json
+
+!/scripts/
+/scripts/*
+!/scripts/data/
+/scripts/data/*
+!/scripts/data/download_flare.py
+!/scripts/data/initialize_storage.py
+!/scripts/data/probe_hub.py
+!/scripts/data/test_download_integrity.py
+
+# Generated files remain excluded even under reviewed source directories.
+__pycache__/
+*.py[cod]
+.env
+.env.*
+*.local.json
