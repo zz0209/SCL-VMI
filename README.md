@@ -143,6 +143,8 @@ Functional checks on real data:
 
 For full training, omit the sample limits and smoke iteration overrides, using a fresh run ID. I3D defaults to the upstream ten epochs and batch size 32. AutoMSC uses its upstream training schedule and a memory-aware nnU-Net plan; its fingerprint is fitted on training images only. Both save epoch checkpoints and accept `--resume` with the original configuration. Full supervised convergence has not yet been established in this repository.
 
+I3D can also resume preparation before the first checkpoint. AutoMSC development inference accepts `--all-development --resume`; completed case receipts are reused only for the same checkpoint and case selection.
+
 The I3D adapter retains 50 mm / 64³ sampling, HU clipping, augmentation, balanced sampling, Adam, and frozen batch normalization. Runtime changes support the current GPU, serial loading, deterministic development ordering, and resumable checkpoints. I3D uses float32 with TF32 and cuDNN benchmarking disabled for consistent per-case inference. AutoMSC uses upstream architecture, loss, augmentation, trainer, and sliding-window inference with project data staging and resource settings.
 
 ## Concept bottleneck inputs

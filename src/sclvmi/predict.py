@@ -58,13 +58,18 @@ def fm_predict(name, head_directory, image_path):
     return {"model": name, "malignancy_probability": probability, "input_shape": list(image.shape), "embedding_shape": list(vector.shape), "head": str(head_directory), "purpose": "research inference"}
 
 
-def automsc_predict(source_run, output_id, limit):
+def automsc_predict(source_run, output_id, limit, resume=False):
     storage, _, _ = context()
     root = paths(source_run)
     status = read_json(root / "training_status.json")
     model_directory = Path(status["checkpoint"]).parent.parent
     output = Path(storage["runs"]) / output_id
-    output.mkdir(parents=True, exist_ok=False)
+    output.mkdir(parents=True, exist_ok=resume)
+    request = {"source_run": source_run, "checkpoint_sha256": sha256(status["checkpoint"]), "limit": limit}
+    request_path = output / "request.json"
+    if request_path.exists():
+        assert read_json(request_path) == request, "Inference resume requires the same checkpoint and cases"
+    write_json(request_path, request)
     module = source_module("automsc_inference", ROOT / "third_party/automsc/segcls_ensemble_infer.py")
     torch.set_num_threads(4)
     predictor = module.SimplePredictor(tile_step_size=0.5, use_gaussian=True, use_mirroring=True, perform_everything_on_device=True, device=torch.device("cuda", 0), verbose=False, verbose_preprocessing=False, allow_tqdm=True)
@@ -73,6 +78,10 @@ def automsc_predict(source_run, output_id, limit):
     rows = []
     cases = select_cases(load_manifest(), "development", limit)
     for row in cases.itertuples():
+        receipt = output / f"{row.identifier}.json"
+        if receipt.exists():
+            rows.append(read_json(receipt))
+            continue
         image, properties = module.SimpleITKIO().read_images([row.image])
         segmentation, probability = predictor.inference(image, properties, use_softmax=False)
         image_out = sitk.GetImageFromArray(np.asarray(segmentation, dtype=np.uint8))
@@ -83,7 +92,9 @@ def automsc_predict(source_run, output_id, limit):
         score = float(probability.reshape(-1)[0])
         assert torch.all(probability == probability.reshape(-1)[0]), "Unexpected non-scalar binary probability"
         assert 0 <= score <= 1
-        rows.append({"identifier": row.identifier, "PatientID": row.PatientID, "label": row.label, "probability": score})
+        result = {"identifier": row.identifier, "PatientID": row.PatientID, "label": row.label, "probability": score}
+        write_json(receipt, result)
+        rows.append(result)
         print(f"AutoMSC prediction {len(rows)}/{len(cases)}", flush=True)
     pd.DataFrame(rows).to_csv(output / "predictions.csv", index=False)
     write_json(output / "status.json", {"status": "completed", "completed_at": timestamp(), "source_checkpoint": status["checkpoint"], "cases": len(rows), "tile_step_size": 0.5, "mirroring": True, "segmentation_decision": "official use_softmax=False", "test_evaluated": False})
@@ -103,10 +114,12 @@ if __name__ == "__main__":
     auto.add_argument("--source-run", required=True)
     auto.add_argument("--output-id", required=True)
     auto.add_argument("--limit", type=int, default=2)
+    auto.add_argument("--all-development", action="store_true")
+    auto.add_argument("--resume", action="store_true")
     args = parser.parse_args()
     if args.command == "fm":
         print(fm_predict(args.model, args.head, args.image), flush=True)
     elif args.command == "i3d":
         print(i3d_predict(args.checkpoint, args.image), flush=True)
     else:
-        automsc_predict(args.source_run, args.output_id, args.limit)
+        automsc_predict(args.source_run, args.output_id, None if args.all_development else args.limit, args.resume)

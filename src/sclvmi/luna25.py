@@ -50,7 +50,12 @@ def train(run_id, limit=None, epochs=10, batch_size=32, resume=False):
     storage, _, _ = context()
     output = Path(storage["runs"]) / run_id
     output.mkdir(parents=True, exist_ok=resume)
-    if resume:
+    request = {"limit": limit, "epochs": epochs, "batch_size": batch_size, "dataset_revision": context()[1]["dataset_revision"]}
+    request_path = output / "training_request.json"
+    if request_path.exists():
+        assert read_json(request_path) == request, "Resume requires the original data and configuration"
+    write_json(request_path, request)
+    if resume and (output / "config.json").exists():
         previous = read_json(output / "config.json")
         assert previous["limit"] == limit and previous["parameters"]["BATCH_SIZE"] == batch_size
         assert previous["parameters"]["EPOCHS"] == epochs, "Resume requires the original training configuration"
@@ -78,7 +83,7 @@ def train(run_id, limit=None, epochs=10, batch_size=32, resume=False):
     start = 0
     best = -1.0
     history = []
-    if resume:
+    if resume and (output / "resume.pt").exists():
         state = torch.load(output / "resume.pt", map_location="cpu", weights_only=False)
         model.load_state_dict(state["model"], strict=True)
         optimizer.load_state_dict(state["optimizer"])
@@ -87,6 +92,8 @@ def train(run_id, limit=None, epochs=10, batch_size=32, resume=False):
         torch.cuda.set_rng_state_all(state["cuda_rng"])
         np.random.set_state(state["numpy_rng"])
         random.setstate(state["python_rng"])
+    else:
+        assert not (output / "history.json").exists(), "Training history exists without a recovery checkpoint"
     configuration = {key: str(value) if isinstance(value, Path) else value for key, value in vars(config).items()}
     write_json(output / "config.json", {"source_commit": "eff27763470640059423a90c05dd018166ea0815", "parameters": configuration, "limit": limit, "purpose": "real-data smoke" if limit else "training", "weight_sha256": sha256(config.MODEL_RGB_I3D), "precision": "float32; TF32 disabled; cuDNN benchmark disabled", "modifications": ["FLARE patient split", "PyTorch 2.8 CUDA 12.8", "serial data loading", "ordered development loader", "resumable epoch checkpoints", "flatten BCE inputs for singleton batches", "explicit float32 convolution for batch-consistent inference"]})
     for split, table in members.items():
