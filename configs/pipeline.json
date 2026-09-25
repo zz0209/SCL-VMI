@@ -1,0 +1,14 @@
+{
+  "dataset_revision": "ce5ea76cde8870805c37614d7ea9b08319b3575e",
+  "dataset": "Dataset005_LUNA25",
+  "seed": 2025,
+  "test_fold": 0,
+  "development_fold": 1,
+  "head": {"C_grid": [0.001, 0.01, 0.1, 1.0, 10.0, 100.0], "class_weight": null, "max_iter": 3000},
+  "models": {
+    "fmcib": {"shape": [50, 50, 50], "spacing_mm": [1, 1, 1], "orientation": "LPS", "intensity": [-1024, 2048], "clip": false, "source_transform": true},
+    "ctfm": {"shape": [24, 64, 64], "spacing_mm": [3, 1, 1], "orientation": "SPL", "intensity": [-1024, 2048], "clip": true, "spacing_origin": "official CT-FM scripts/feature_extractor.py", "crop_origin": "project nodule-centered 72x64x64 mm crop, selected from training/development physical coverage"},
+    "vista": {"shape": [48, 48, 48], "spacing_mm": [1.5, 1.5, 1.5], "orientation": "RAS", "intensity": [-963.8247715525971, 1053.678477684517], "clip": true, "crop_origin": "project nodule-centered 72 mm crop, selected from training/development physical coverage"},
+    "genesis": {"shape": [64, 64, 32], "spacing_mm": [0.78125, 0.78125, 1.5625], "orientation": "RAS", "intensity": [-1000, 1000], "clip": true, "crop_origin": "50 mm field of view; pretrained tensor shape"}
+  }
+}

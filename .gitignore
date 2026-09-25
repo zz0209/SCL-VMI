@@ -4,11 +4,17 @@
 !/.gitattributes
 !/README.md
 !/requirements-data.txt
+!/pyproject.toml
 
 !/configs/
 /configs/*
 !/configs/download_flare.json
 !/configs/storage.example.json
+!/configs/pipeline.json
+!/configs/model_sources.json
+!/configs/environments/
+/configs/environments/*
+!/configs/environments/pipeline.json
 
 !/scripts/
 /scripts/*
@@ -18,6 +24,40 @@
 !/scripts/data/initialize_storage.py
 !/scripts/data/probe_hub.py
 !/scripts/data/test_download_integrity.py
+!/scripts/pipeline/
+/scripts/pipeline/*
+!/scripts/pipeline/bootstrap_sources.ps1
+!/scripts/pipeline/setup_environment.ps1
+!/scripts/pipeline/finish_environment.ps1
+!/scripts/pipeline/model_assets.py
+!/scripts/pipeline/validate_fms.py
+!/scripts/pipeline/fit_frozen_baselines.py
+!/scripts/pipeline/kernel_witness.py
+!/scripts/pipeline/verify_pipeline_runs.py
+
+!/src/
+/src/*
+!/src/sclvmi/
+/src/sclvmi/*
+!/src/sclvmi/__init__.py
+!/src/sclvmi/__main__.py
+!/src/sclvmi/context.py
+!/src/sclvmi/data.py
+!/src/sclvmi/preprocessing.py
+!/src/sclvmi/models.py
+!/src/sclvmi/features.py
+!/src/sclvmi/head.py
+!/src/sclvmi/luna25.py
+!/src/sclvmi/automsc.py
+!/src/sclvmi/cbm.py
+!/src/sclvmi/predict.py
+!/src/sclvmi/evaluation.py
+
+!/tests/
+/tests/*
+!/tests/test_pipeline_data.py
+
+/local_tools/
 
 # Generated files remain excluded even under reviewed source directories.
 __pycache__/
