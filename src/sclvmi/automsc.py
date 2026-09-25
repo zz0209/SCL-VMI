@@ -36,7 +36,7 @@ def prepare(run_id, limit):
     write_json(request_path, request)
     os.environ["nnUNet_n_proc_DA"] = "2"
     _, _, source = context()
-    from nnunetv2.experiment_planning.plan_and_preprocess_api import extract_fingerprint_dataset, plan_experiment_dataset, preprocess_dataset
+    from nnunetv2.experiment_planning.plan_and_preprocess_api import extract_fingerprint_dataset, plan_experiment_dataset
     name = "Dataset905_LUNA25"
     raw = root / "raw" / name
     raw.mkdir(parents=True, exist_ok=True)
@@ -65,8 +65,51 @@ def prepare(run_id, limit):
     splits = [{"train": train.identifier.tolist(), "val": dev.identifier.tolist()}]
     write_json(destination / "splits_final.json", splits)
     pd.concat([train, dev])[["identifier", "label"]].to_csv(destination / "cls_data.csv", index=False)
-    preprocess_dataset(905, configurations=("3d_fullres",), num_processes=(1,), verbose=False)
+    preprocess_remaining(raw, destination)
     write_json(root / "preparation.json", {"completed_at": timestamp(), "limit": limit, "fingerprint_population": "train only", "training_cases": len(train), "development_cases": len(dev), "held_out_test_used": False, "source_commit": "858c26bc745d094f00c3eb03bdf795fba6588ac9"})
+
+
+def preprocess_remaining(raw, destination):
+    import pickle
+    import blosc2
+    from nnunetv2.utilities.plans_handling.plans_handler import PlansManager
+    from nnunetv2.utilities.utils import get_identifiers_from_splitted_dataset_folder, create_lists_from_splitted_dataset_folder
+
+    plans = PlansManager(str(destination / "nnUNetPlans.json"))
+    configuration = plans.get_configuration("3d_fullres")
+    preprocessor = configuration.preprocessor_class(verbose=False)
+    dataset = read_json(raw / "dataset.json")
+    shutil.copy2(raw / "dataset.json", destination / "dataset.json")
+    identifiers = get_identifiers_from_splitted_dataset_folder(str(raw / "imagesTr"), dataset["file_ending"])
+    images = create_lists_from_splitted_dataset_folder(str(raw / "imagesTr"), dataset["file_ending"], identifiers, num_processes=1)
+    cases = {identifier: {"images": files, "label": str(raw / "labelsTr" / (identifier+dataset["file_ending"]))} for identifier, files in zip(identifiers, images)}
+    output = destination / configuration.data_identifier
+    output.mkdir(exist_ok=True)
+    ground_truth = destination / "gt_segmentations"
+    ground_truth.mkdir(exist_ok=True)
+    reused = 0
+    for identifier, case in tqdm(cases.items(), total=len(cases), desc="AutoMSC resumable preprocessing", mininterval=2):
+        prefix = output / identifier
+        assets = [Path(str(prefix) + suffix) for suffix in (".b2nd", "_seg.b2nd", ".pkl")]
+        if all(path.exists() for path in assets):
+            with assets[2].open("rb") as handle:
+                properties = pickle.load(handle)
+            image = blosc2.open(str(assets[0]), mode="r")
+            mask = blosc2.open(str(assets[1]), mode="r")
+            assert image.shape[1:] == mask.shape[1:] and "spacing" in properties
+            reused += 1
+        else:
+            partial = [path for path in assets if path.exists()]
+            if partial:
+                archive = destination / "interrupted_cases" / identifier / timestamp().replace(":", "")
+                archive.mkdir(parents=True)
+                for path in partial:
+                    path.rename(archive / path.name)
+            preprocessor.run_case_save(str(prefix), case["images"], case["label"], plans, configuration, dataset)
+        target = ground_truth / (identifier + dataset["file_ending"])
+        if not target.exists():
+            shutil.copy2(case["label"], target)
+    print(f"AutoMSC preprocessing: reused {reused}/{len(cases)} complete cases", flush=True)
 
 
 def train(run_id, epochs, steps, resume):

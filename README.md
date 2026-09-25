@@ -129,6 +129,25 @@ Individual commands are also available:
 
 Evaluation reports AUROC, average precision, Brier score, and log loss, with patient-cluster bootstrap intervals for AUROC. All outputs remain in configured external storage. Use a new run ID when changing data or settings.
 
+## Common encoder adaptation
+
+All four encoders support the same three conventional comparisons in `configs/adaptation.json`:
+
+| Arm | Trainable components | Training augmentation |
+|---|---|---|
+| `frozen_mlp` | Standardized embedding → 256 → 1, GELU, dropout 0.1 | None |
+| `last_block` | Final encoder block and linear classifier | None |
+| `last_block_translation` | Final encoder block and linear classifier | Uniform translation up to 2.5 mm per input axis |
+
+Each arm retains the encoder's existing preprocessing and global mean pooling. Inference uses one center crop. Translation interpolates the prepared crop with zero padding. Fine-tuning initializes the classifier from its frozen logistic baseline and uses AdamW, an effective batch of 32, and ten epochs. Models Genesis uses a microbatch of one because its upstream normalization uses current-batch statistics during evaluation; gradient accumulation preserves the effective batch size. Other encoders use microbatches of eight. Frozen MLP image inference retains the cuDNN TF32 setting used to create the original embeddings; fine-tuning disables TF32.
+
+```powershell
+& $python scripts/pipeline/fit_adaptation.py --model fmcib --arm frozen_mlp --candidate 0 --seed 2025 --baseline <frozen-head-run-id> --run-id <unique-adaptation-run-id>
+& $python -m sclvmi.adaptation_predict --run-id <adaptation-run-id> --image <nodule-image.nii.gz>
+```
+
+MLP candidates enumerate three learning rates × two weight decays (indices 0–5). Each fine-tuning arm has two encoder learning rates (indices 0–1). Select candidates by development AUROC with log loss as tie-breaker, then repeat the selected configuration with seeds 2026 and 2027. Epoch checkpoints, optimizer state, random state, predictions, and progress are saved in external run storage; reusing the same run ID resumes its unchanged configuration. Completed checkpoints are reloaded and development predictions are recomputed. Real-data training and independent raw-image inference checks pass for all four encoders; full ablation performance is still being evaluated.
+
 ## Upstream supervised baselines
 
 Functional checks on real data:

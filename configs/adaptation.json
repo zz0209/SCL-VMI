@@ -1,0 +1,10 @@
+{
+  "models": ["fmcib", "ctfm", "vista", "genesis"],
+  "seeds": [2025, 2026, 2027],
+  "mlp": {"hidden_dim": 256, "dropout": 0.1, "learning_rates": [0.0001, 0.0003, 0.001], "weight_decays": [0.0001, 0.01], "batch_size": 64, "epochs": 100, "patience": 15},
+  "finetune": {"encoder_learning_rates": [0.00001, 0.00003], "head_learning_rate_multiplier": 10, "weight_decay": 0.0001, "batch_size": 8, "effective_batch_size": 32, "epochs": 10, "translation_mm": 2.5},
+  "selection": "development AUROC, then lower log loss",
+  "loss": "unweighted BCEWithLogitsLoss",
+  "pooling": "global average",
+  "evaluation": "single center crop; original patient split; test not evaluated"
+}

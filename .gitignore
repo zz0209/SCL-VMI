@@ -11,6 +11,7 @@
 !/configs/download_flare.json
 !/configs/storage.example.json
 !/configs/pipeline.json
+!/configs/adaptation.json
 !/configs/model_sources.json
 !/configs/environments/
 /configs/environments/*
@@ -32,6 +33,7 @@
 !/scripts/pipeline/model_assets.py
 !/scripts/pipeline/validate_fms.py
 !/scripts/pipeline/fit_frozen_baselines.py
+!/scripts/pipeline/fit_adaptation.py
 !/scripts/pipeline/kernel_witness.py
 !/scripts/pipeline/verify_pipeline_runs.py
 
@@ -52,6 +54,8 @@
 !/src/sclvmi/cbm.py
 !/src/sclvmi/predict.py
 !/src/sclvmi/evaluation.py
+!/src/sclvmi/adaptation.py
+!/src/sclvmi/adaptation_predict.py
 
 !/tests/
 /tests/*
