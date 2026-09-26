@@ -1,0 +1,9 @@
+torch==2.8.0
+torchvision==0.23.0
+monai==1.5.1
+numpy==2.2.6
+transformers==4.57.3
+huggingface_hub==0.36.2
+openslide-bin==4.0.1.2
+optuna==4.5.0
+kaiko-eva[vision] @ git+https://github.com/kaiko-ai/eva.git@e43e74a99b75660b0014f790f25a33dd9f11e121

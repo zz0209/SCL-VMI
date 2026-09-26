@@ -12,7 +12,7 @@ The initial task is lung nodule malignancy classification on the LUNA25 subset. 
 |---|---|
 | AutoMSC | Pinned upstream nnU-Net joint segmentation/classification trainer and inference; real-data training, checkpoint reload, and segmentation/classification inference verified. |
 | LUNA25 I3D | Pinned upstream conversion, sampling, model, and training settings; real-data batch-32 training, checkpoint reload, and single-image inference verified. |
-| Frozen encoders | FMCIB, CT-FM, VISTA3D/NV-Segment-CT, and Models Genesis with strict checkpoint loading, spatial features, global pooling, and a standardized logistic head. All four heads fitted on the complete training split; development prediction reload and single-image inference verified. |
+| Frozen encoders | FMCIB, CT-FM, VISTA3D/NV-Segment-CT, Models Genesis, CoralBay, and TAP-CT-B-3D with published checkpoints, spatial features, and linear/MLP/pooling/attention classifiers. |
 | Concept bottleneck | Independent Ridge + additive EBM implementation of the approach described in arXiv:2608.07857v1. Exact reproduction is pending author code, cohort mapping, concept labels, and nodule-size provenance. Real concept training has not been validated. |
 
 The upstream adapters use the FLARE cohort and project patient split. They are method reproductions with documented runtime adaptations; they do not reproduce published numerical results. The AutoMSC published validation archive contains Glioma checkpoints, so its LUNA25 model must be trained. No trained model or medical record is redistributed here.
@@ -129,6 +129,58 @@ Individual commands are also available:
 
 Evaluation reports AUROC, average precision, Brier score, and log loss, with patient-cluster bootstrap intervals for AUROC. All outputs remain in configured external storage. Use a new run ID when changing data or settings.
 
+## Six-encoder frozen-head comparison
+
+The frozen-head experiment adds CoralBay and TAP-CT-B-3D to FMCIB, CT-FM, VISTA3D, and Models Genesis. Install the pinned EVA vision environment and acquire the additional weights:
+
+```powershell
+./scripts/pipeline/prepare_frozen_heads.ps1
+& $python scripts/pipeline/fit_frozen_heads.py --models coralbay tapct --smoke-only
+& $python scripts/pipeline/fit_frozen_heads.py
+```
+
+The experiment compares standardized native embeddings with logistic regression and an MLP, plus spatial mean, max, gated-attention, and spatial linear heads. Spatial linear preserves a 2³ pooled grid; TAP-CT preserves its ordered window vectors. The attention implementation is imported from the pinned EVA package. Encoders remain frozen. Neural heads use two learning rates and repeat the selected configuration with three seeds. Selection uses development AUROC, with log loss as a tie-breaker. Checkpoints and per-case feature caches support interruption recovery.
+
+CoralBay uses a 64³ crop at 1.5 mm, HU clipping to [-1000, 1000], and the release's multiscale embedding; spatial heads consume its last-stage grid. TAP-CT uses a 50 mm LPS nodule crop at 1 mm, its official intensity processor, and 12-slice axial windows at 224². Window CLS vectors form the classification bag. These sampling settings are project configurations; pretrained releases and source revisions are pinned in `configs/model_sources.json`.
+
+A matched CoralBay field-of-view comparison uses `--models coralbay --field-mm 50 --variant coralbay_fov50`, retaining 64³ inputs and the same normalization and heads.
+
+After these runs complete, `scripts/pipeline/fit_balanced_heads.py` compares class-balanced BCE using each encoder's selected neural head and learning rate. The positive weight comes from the training class ratio. Three seeds are evaluated without an additional parameter search.
+
+`scripts/pipeline/fit_tree_head.py --model fmcib` evaluates one fixed shallow histogram-gradient-boosting classifier on cached FMCIB embeddings, including a real-data smoke check and checkpoint reload validation.
+
+```powershell
+& $python scripts/pipeline/validate_upstream_heads.py --task fmcib
+& $python scripts/pipeline/validate_upstream_heads.py --task fmcib-inference
+& $python scripts/pipeline/validate_upstream_heads.py --task eva
+& $python -m sclvmi.frozen_predict --run <head-run-directory> --image <nodule-image.nii.gz>
+& $python -m sclvmi.frozen_predict --run <head-run-directory> --verify
+```
+
+The FMCIB command runs the upstream logistic-regression objective on the project's existing training/development split. The EVA command exercises its native training and checkpoint APIs on real cached CoralBay features. Image verification recomputes predictions from NIfTI inputs and compares them with saved development predictions. CoralBay weights retain their MIT license; TAP-CT weights retain CC BY-NC 4.0 and its model source Apache 2.0.
+
+All six selected pipelines and the official FMCIB linear adaptation passed raw-image inference checks using two benign and two malignant records each. Fitted heads also passed reload checks on their development predictions.
+
+## VISTA3D classification result
+
+The frozen VISTA3D image encoder with projected spatial max pooling reaches **0.8940 mean development AUROC** and **0.5380 mean average precision** across seeds 2025, 2026, and 2027. The locally trained official I3D reference reaches 0.8938 AUROC and 0.5293 average precision on the same development records. Configuration selection uses the development fold; the independent test fold is reserved.
+
+The input is a nodule-centered 72 mm field sampled at 1.5 mm into 48³ voxels. The encoder produces 27 spatial vectors with 768 channels. Training-derived normalization, a shared 768→128 projection, channelwise spatial maximum, and a 128→64→1 classifier give 106,753 trainable parameters. The encoder weights remain frozen.
+
+| Seed | AUROC | Average precision |
+|---|---:|---:|
+| 2025 | 0.8934 | 0.5210 |
+| 2026 | 0.8951 | 0.5357 |
+| 2027 | 0.8935 | 0.5572 |
+
+The same-input, same-parameter-count mean-pooling control reaches AUROC 0.8343 with seed 2025. The max-minus-mean AUROC difference is 0.0590, with a paired patient-bootstrap 95% interval of [0.0329, 0.0892] on the development fold. The experiment retains per-record predictions and all seed checkpoints in configured run storage.
+
+```powershell
+$run = Join-Path $storage.runs '20260926_frozen_heads/vista_max_c1_s2025'
+& $python -m sclvmi.frozen_predict --run $run --image <nodule-image.nii.gz>
+& $python -m sclvmi.frozen_predict --run $run --verify
+```
+
 ## Common encoder adaptation
 
 All four encoders support the same three conventional comparisons in `configs/adaptation.json`:
@@ -146,7 +198,7 @@ Each arm retains the encoder's existing preprocessing and global mean pooling. I
 & $python -m sclvmi.adaptation_predict --run-id <adaptation-run-id> --image <nodule-image.nii.gz>
 ```
 
-MLP candidates enumerate three learning rates × two weight decays (indices 0–5). Each fine-tuning arm has two encoder learning rates (indices 0–1). Select candidates by development AUROC with log loss as tie-breaker, then repeat the selected configuration with seeds 2026 and 2027. Epoch checkpoints, optimizer state, random state, predictions, and progress are saved in external run storage; reusing the same run ID resumes its unchanged configuration. Completed checkpoints are reloaded and development predictions are recomputed. Real-data training and independent raw-image inference checks pass for all four encoders; full ablation performance is still being evaluated.
+MLP candidates enumerate three learning rates × two weight decays (indices 0–5). Each fine-tuning arm has two encoder learning rates (indices 0–1). Select candidates by development AUROC with log loss as tie-breaker, then repeat the selected configuration with seeds 2026 and 2027. Epoch checkpoints, optimizer state, random state, predictions, and progress are saved in external run storage; reusing the same run ID resumes its unchanged configuration. Completed checkpoints are reloaded and development predictions are recomputed. Real-data training and independent raw-image inference checks pass for all four encoders. This adaptation grid is paused; the current comparison uses frozen encoders and the head experiments described above.
 
 ## Upstream supervised baselines
 
@@ -160,7 +212,7 @@ Functional checks on real data:
 & $python -m sclvmi.predict i3d --checkpoint <i3d-run-directory>/best.pt --image <nodule-image.nii.gz>
 ```
 
-For full training, omit the sample limits and smoke iteration overrides, using a fresh run ID. I3D defaults to the upstream ten epochs and batch size 32. AutoMSC uses its upstream training schedule and a memory-aware nnU-Net plan; its fingerprint is fitted on training images only. Both save epoch checkpoints and accept `--resume` with the original configuration. Full supervised convergence has not yet been established in this repository.
+For full training, omit the sample limits and smoke iteration overrides, using a fresh run ID. I3D defaults to the upstream ten epochs and batch size 32; this schedule has completed locally. AutoMSC uses its upstream training schedule and a memory-aware nnU-Net plan; its fingerprint is fitted on training images only. Both save epoch checkpoints and accept `--resume` with the original configuration. The AutoMSC long training run remains paused.
 
 I3D can also resume preparation before the first checkpoint. AutoMSC development inference accepts `--all-development --resume`; completed case receipts are reused only for the same checkpoint and case selection.
 

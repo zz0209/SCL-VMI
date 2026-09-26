@@ -19,6 +19,8 @@ from huggingface_hub import HfApi, snapshot_download
 
 
 REPOSITORIES = {
+    "coralbay": "kaiko-ai/coralbay",
+    "tapct": "fomofo/tap-ct-b-3d",
     "ctfm": "project-lighter/ct_fm_feature_extractor",
     "genesis": "MrGiovanni/ModelsGenesis",
     "vista": "nvidia/NV-Segment-CT",
@@ -64,6 +66,8 @@ def main():
                 print(json.dumps({name: manifest}, indent=2), flush=True)
                 continue
             patterns = {
+                "coralbay": ["*.json", "*.py", "*.safetensors", "README.md", "LICENSE*", "requirements.txt"],
+                "tapct": ["*.json", "*.py", "*.safetensors", "README.md", "LICENSE*"],
                 "ctfm": ["*.json", "*.safetensors", "*.bin", "README.md", "LICENSE*"],
                 "genesis": ["Genesis_Chest_CT.pt", "README.md", "LICENSE*"],
                 "vista": ["vista3d_pretrained_model/model.pt", "vista3d_pretrained_model/config.json", "README.md", "LICENSE*"],

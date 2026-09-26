@@ -2,7 +2,7 @@
   "python": "3.12",
   "torch_index": "https://download.pytorch.org/whl/cu128",
   "torch_packages": ["torch==2.8.0", "torchvision==0.23.0"],
-  "packages": ["monai==1.5.1", "numpy==2.2.6", "scipy==1.16.2", "pandas==2.3.2", "scikit-learn==1.7.2", "nibabel==5.3.2", "SimpleITK==2.5.2", "huggingface_hub>=1.0,<2", "safetensors>=0.6", "tqdm", "PyYAML", "pytest", "psutil", "einops", "matplotlib", "interpret-core", "joblib", "gdown"],
+  "packages": ["monai==1.5.1", "numpy==2.2.6", "scipy==1.16.2", "pandas==2.3.2", "scikit-learn==1.7.2", "nibabel==5.3.2", "SimpleITK==2.5.2", "huggingface_hub==0.36.2", "safetensors>=0.6", "tqdm", "PyYAML", "pytest", "psutil", "einops", "matplotlib", "interpret-core", "joblib", "gdown", "transformers==4.57.3", "openslide-bin==4.0.1.2", "optuna==4.5.0", "kaiko-eva[vision] @ git+https://github.com/kaiko-ai/eva.git@e43e74a99b75660b0014f790f25a33dd9f11e121"],
   "additional_packages": ["torchmetrics==1.8.2", "loguru==0.7.3", "itk==5.4.4.post1"],
   "editable_sources": ["third_party/automsc", "."],
   "smoke": {"command": "python scripts/pipeline/kernel_witness.py", "expect": "WITNESS"}

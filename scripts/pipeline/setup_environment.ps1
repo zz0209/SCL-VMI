@@ -6,6 +6,9 @@ $spec = Get-Content -Raw (Join-Path $workspace 'configs/environments/pipeline.js
 $env:PIP_CACHE_DIR = Join-Path $storage.project_storage 'cache/pip'
 $env:TEMP = $storage.temp_root
 $env:TMP = $storage.temp_root
+$env:GIT_CONFIG_COUNT = '1'
+$env:GIT_CONFIG_KEY_0 = 'core.longpaths'
+$env:GIT_CONFIG_VALUE_0 = 'true'
 $environment = Join-Path $storage.environments 'pipeline'
 New-Item -ItemType Directory -Force -Path $env:PIP_CACHE_DIR,$env:TEMP | Out-Null
 if (-not (Test-Path (Join-Path $environment 'Scripts/python.exe'))) {

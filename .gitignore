@@ -16,6 +16,7 @@
 !/configs/environments/
 /configs/environments/*
 !/configs/environments/pipeline.json
+!/configs/environments/frozen_heads_requirements.txt
 
 !/scripts/
 /scripts/*
@@ -36,6 +37,11 @@
 !/scripts/pipeline/fit_adaptation.py
 !/scripts/pipeline/kernel_witness.py
 !/scripts/pipeline/verify_pipeline_runs.py
+!/scripts/pipeline/prepare_frozen_heads.ps1
+!/scripts/pipeline/fit_frozen_heads.py
+!/scripts/pipeline/fit_balanced_heads.py
+!/scripts/pipeline/fit_tree_head.py
+!/scripts/pipeline/validate_upstream_heads.py
 
 !/src/
 /src/*
@@ -56,10 +62,15 @@
 !/src/sclvmi/evaluation.py
 !/src/sclvmi/adaptation.py
 !/src/sclvmi/adaptation_predict.py
+!/src/sclvmi/frozen_features.py
+!/src/sclvmi/frozen_heads.py
+!/src/sclvmi/frozen_predict.py
+!/src/sclvmi/spatial_linear.py
 
 !/tests/
 /tests/*
 !/tests/test_pipeline_data.py
+!/tests/test_frozen_inputs.py
 
 /local_tools/
 
