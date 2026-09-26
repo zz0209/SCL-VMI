@@ -8,9 +8,9 @@ from monai.transforms import BorderPad, LoadImage, Orientation, ScaleIntensityRa
 from .context import ROOT, context
 
 
-def preprocess(path, model_name):
+def preprocess(path, model_name, settings=None):
     _, config, _ = context()
-    settings = config["models"][model_name]
+    settings = config["models"][model_name] if settings is None else settings
     source = nib.load(str(path))
     center_ras = nib.affines.apply_affine(source.affine, np.asarray(source.shape) // 2)
     if model_name == "fmcib":

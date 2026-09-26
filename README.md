@@ -218,6 +218,38 @@ I3D can also resume preparation before the first checkpoint. AutoMSC development
 
 The I3D adapter retains 50 mm / 64³ sampling, HU clipping, augmentation, balanced sampling, Adam, and frozen batch normalization. Runtime changes support the current GPU, serial loading, deterministic development ordering, and resumable checkpoints. I3D uses float32 with TF32 and cuDNN benchmarking disabled for consistent per-case inference. AutoMSC uses upstream architecture, loss, augmentation, trainer, and sliding-window inference with project data staging and resource settings.
 
+## Material preparation and feature interface
+
+`configs/material_preparation.json` specifies a bounded comparison of centered local crops, adjacent encoder stages, mean/max descriptors and a projected max head. Encoders remain frozen. Run `python scripts/pipeline/prepare_materials.py --smoke` for real-data checks, then omit `--smoke` for training/development extraction and fitting. Per-record caches and epoch checkpoints support resume. Results use a separate suite and preserve previous experiments.
+
+The `MaterialPipeline` interface accepts a saved run and its kind (`reference`, `descriptor`, or `local_max`):
+
+```python
+from sclvmi.material_predict import MaterialPipeline
+
+pipeline = MaterialPipeline(run_directory, kind)
+features = pipeline.extract(image_path)
+probability = pipeline.predict_features(features)
+identifier, training_features = next(pipeline.training_features())
+```
+
+Feature bundles retain separate reference/local views. Spatial tokens, adjacent stages and pooled embeddings are identified explicitly; TAP-CT uses window CLS and window patch summaries. Saved normalization is fitted only on training records. `predict_features` expects raw encoder units; invert any separately applied feature normalization before passing reconstructed features to this interface. `python -m sclvmi.material_predict --run <run-directory> --kind <kind> --verify` compares raw-image and cached-feature probabilities with the recorded development predictions.
+
+The material comparison selects the following single-view recipes. Neural results average seeds 2025–2027; deterministic linear heads use one fit. The saved neural predictor uses seed 2025. Learning rates are selected with seed 2025, and configurations are compared using their repeat means. These are development-selection results on 1,285 records from 422 patients; the test fold remains reserved.
+
+| Encoder | Selected physical field | Classifier input and head | Previous AUROC | Selected AUROC | Selected AP |
+|---|---|---|---:|---:|---:|
+| FMCIB | 50 mm | 2³ spatial pooling + regularized linear | 0.8787 | 0.8787 | 0.4667 |
+| CT-FM | 50 mm | Last-stage spatial tokens + projected max | 0.8309 | 0.8506 | 0.4784 |
+| VISTA3D | 72 mm | Last-stage spatial tokens + projected max | 0.8940 | 0.8940 | 0.5380 |
+| Models Genesis | 32 mm | Last-stage spatial tokens + projected max | 0.8698 | 0.8829 | 0.4494 |
+| CoralBay | 32 mm | Adjacent-stage mean/max descriptors + regularized linear | 0.8117 | 0.8606 | 0.4675 |
+| TAP-CT | 32 mm | Window CLS and patch summaries + regularized linear | 0.8423 | 0.8768 | 0.5046 |
+
+The local official I3D reference reaches AUROC 0.8938 and AP 0.5293 on the same records. A second view gives CoralBay AUROC 0.8630, but lower AP and worse probability errors; the selected single-view recipe uses one encoder pass. CT-FM retains 24×64×64 inputs, Genesis and CoralBay retain their existing tensor sizes, and TAP-CT retains the official processor with 12-slice windows starting at 0, 12 and 20 within the 32 mm crop. These remain classifiers for provider-centered nodule crops.
+
+All six selected material pipelines passed raw-image and cached-feature prediction checks on two benign and two malignant records per model. The largest absolute probability difference from the saved prediction was 1.10×10⁻⁷. Training-only feature moments and explicit spatial/window layouts accompany the local material manifests. No SAE training is included in this preparation experiment.
+
 ## Concept bottleneck inputs
 
 `python -m sclvmi.cbm --help` lists the independent implementation's required inputs. It requires verified LIDC reader concepts, their feature files, and a patient-grouped LUNA manifest containing a documented `size_mm` measurement. The FLARE masks do not supply those eight reader concepts. Results from this implementation must be identified as an independent reconstruction until the paper's exact assets and unspecified choices can be verified.

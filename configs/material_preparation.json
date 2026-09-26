@@ -1,0 +1,17 @@
+{
+  "suite": "20260926_material_preparation",
+  "seed": 2025,
+  "models": {
+    "fmcib": {"shape": [32, 32, 32], "field_mm": 32},
+    "ctfm": {"shape": [24, 64, 64], "field_mm": 50},
+    "vista": {"shape": [48, 48, 48], "field_mm": 50},
+    "genesis": {"shape": [64, 64, 32], "field_mm": 32},
+    "coralbay": {"shape": [64, 64, 64], "field_mm": 32},
+    "tapct": {"shape": [32, 32, 32], "field_mm": 32}
+  },
+  "linear_arms": ["reference_meanmax", "local_meanmax", "local_multistage", "two_view"],
+  "linear_C": [0.000001, 0.00001, 0.0001, 0.001, 0.01, 0.1, 1, 10],
+  "selection": "development AUROC; log loss tie break; seed 2025 for neural selection",
+  "test_policy": "reserved",
+  "encoder_policy": "frozen"
+}

@@ -70,7 +70,7 @@ def load_fm(name):
 def encode(model, name, path, config=None):
     cfg = settings(name) if config is None else config
     if name in MODELS[:4]:
-        tensor = preprocess(path, name).unsqueeze(0).cuda()
+        tensor = preprocess(path, name, cfg).unsqueeze(0).cuda()
         with torch.inference_mode():
             fmap = spatial_features(model, name, tensor)
             tokens = fmap.flatten(2).transpose(1, 2)[0]

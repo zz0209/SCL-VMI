@@ -13,6 +13,7 @@
 !/configs/pipeline.json
 !/configs/adaptation.json
 !/configs/model_sources.json
+!/configs/material_preparation.json
 !/configs/environments/
 /configs/environments/*
 !/configs/environments/pipeline.json
@@ -42,6 +43,7 @@
 !/scripts/pipeline/fit_balanced_heads.py
 !/scripts/pipeline/fit_tree_head.py
 !/scripts/pipeline/validate_upstream_heads.py
+!/scripts/pipeline/prepare_materials.py
 
 !/src/
 /src/*
@@ -66,6 +68,8 @@
 !/src/sclvmi/frozen_heads.py
 !/src/sclvmi/frozen_predict.py
 !/src/sclvmi/spatial_linear.py
+!/src/sclvmi/material_features.py
+!/src/sclvmi/material_predict.py
 
 !/tests/
 /tests/*
