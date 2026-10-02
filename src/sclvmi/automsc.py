@@ -1,6 +1,8 @@
 import argparse
 import os
 import shutil
+from concurrent.futures import ProcessPoolExecutor
+from multiprocessing import get_context
 from pathlib import Path
 
 import numpy as np
@@ -24,7 +26,7 @@ def paths(run_id):
     return root
 
 
-def prepare(run_id, limit):
+def prepare(run_id, limit, workers=2):
     root = paths(run_id)
     request = {"limit": limit, "dataset_revision": context()[1]["dataset_revision"]}
     request_path = root / "preparation_request.json"
@@ -65,11 +67,17 @@ def prepare(run_id, limit):
     splits = [{"train": train.identifier.tolist(), "val": dev.identifier.tolist()}]
     write_json(destination / "splits_final.json", splits)
     pd.concat([train, dev])[["identifier", "label"]].to_csv(destination / "cls_data.csv", index=False)
-    preprocess_remaining(raw, destination)
+    preprocess_remaining(raw, destination, workers)
     write_json(root / "preparation.json", {"completed_at": timestamp(), "limit": limit, "fingerprint_population": "train only", "training_cases": len(train), "development_cases": len(dev), "held_out_test_used": False, "source_commit": "858c26bc745d094f00c3eb03bdf795fba6588ac9"})
 
 
-def preprocess_remaining(raw, destination):
+def preprocess_case(arguments):
+    torch.set_num_threads(2)
+    preprocessor, prefix, case, plans, configuration, dataset = arguments
+    preprocessor.run_case_save(prefix, case["images"], case["label"], plans, configuration, dataset)
+
+
+def preprocess_remaining(raw, destination, workers=2):
     import pickle
     import blosc2
     from nnunetv2.utilities.plans_handling.plans_handler import PlansManager
@@ -88,6 +96,7 @@ def preprocess_remaining(raw, destination):
     ground_truth = destination / "gt_segmentations"
     ground_truth.mkdir(exist_ok=True)
     reused = 0
+    pending = []
     for identifier, case in tqdm(cases.items(), total=len(cases), desc="AutoMSC resumable preprocessing", mininterval=2):
         prefix = output / identifier
         assets = [Path(str(prefix) + suffix) for suffix in (".b2nd", "_seg.b2nd", ".pkl")]
@@ -105,17 +114,21 @@ def preprocess_remaining(raw, destination):
                 archive.mkdir(parents=True)
                 for path in partial:
                     path.rename(archive / path.name)
-            preprocessor.run_case_save(str(prefix), case["images"], case["label"], plans, configuration, dataset)
+            pending.append((preprocessor, str(prefix), case, plans, configuration, dataset))
         target = ground_truth / (identifier + dataset["file_ending"])
         if not target.exists():
             shutil.copy2(case["label"], target)
     print(f"AutoMSC preprocessing: reused {reused}/{len(cases)} complete cases", flush=True)
+    with ProcessPoolExecutor(max_workers=workers, mp_context=get_context("spawn")) as executor:
+        for _ in tqdm(executor.map(preprocess_case, pending), total=len(pending), desc="AutoMSC remaining cases", mininterval=2):
+            pass
 
 
-def train(run_id, epochs, steps, resume):
+def train(run_id, epochs, steps, resume, workers=2):
     root = paths(run_id)
+    os.environ["nnUNet_n_proc_DA"] = str(workers)
     assert not (root / "training_status.json").exists(), "Completed training requires a new run ID"
-    request = {"epochs_override": epochs, "steps_override": steps, "seed": 2025, "checkpoint_interval_epochs": 1}
+    request = {"epochs_override": epochs, "steps_override": steps, "seed": 2025, "checkpoint_interval_epochs": 1, "augmentation_workers": workers}
     request_path = root / "training_request.json"
     if request_path.exists():
         assert resume and read_json(request_path) == request, "Use resume with the original configuration"
@@ -150,8 +163,10 @@ if __name__ == "__main__":
     parser.add_argument("--epochs", type=int)
     parser.add_argument("--steps", type=int)
     parser.add_argument("--resume", action="store_true")
+    parser.add_argument("--workers", type=int, default=2)
     args = parser.parse_args()
+    assert args.workers >= 1, "At least one worker is required"
     if args.action == "prepare":
-        prepare(args.run_id, args.limit)
+        prepare(args.run_id, args.limit, args.workers)
     else:
-        train(args.run_id, args.epochs, args.steps, args.resume)
+        train(args.run_id, args.epochs, args.steps, args.resume, args.workers)
