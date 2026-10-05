@@ -1,0 +1,12 @@
+{
+  "completed_at": "2026-09-26T08:42:30.658074+00:00",
+  "mean_run": "vista_mean_c1_s2025",
+  "max_run": "vista_max_c1_s2025",
+  "head_parameters": 106753,
+  "auroc_delta_seed2025": 0.05904738892748207,
+  "paired_patient_95_ci": [
+    0.032861787405257754,
+    0.08917218225762458
+  ],
+  "test_used": false
+}

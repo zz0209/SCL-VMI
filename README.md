@@ -20,6 +20,8 @@ Each input is centered on the provider's nodule crop. The training partition con
 
 Development data is used for configuration selection. Neural-head results average three runs with consecutive seeds from 2025 through 2027. Linear heads use deterministic fits. Saved neural predictors use seed 2025. All selected pipelines use a single field of view. TAP-CT processes that field through 12-slice windows.
 
+Aggregate result data and direct visualizations are available in [development results](results/20260926_frozen_fm_development/README.md).
+
 ## Engineering entry points
 
 | Component | Source |
