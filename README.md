@@ -39,6 +39,12 @@ The FMCIB default dictionary also has [feature-level research checks](results/20
 
 ## Engineering entry points
 
+The [dataset and SAE heatmap viewers](local_tools/viewers/viewer.md) provide
+English/Chinese interfaces for local FLARE-AutoMSC images, nodule-crop responses
+and whole-CT responses. Viewer source and launch instructions are included;
+datasets, dictionaries and private analysis assets are supplied through local
+storage configuration.
+
 | Component | Source |
 |---|---|
 | Storage initialization | [initialize_storage.py](scripts/data/initialize_storage.py) |
@@ -50,6 +56,7 @@ The FMCIB default dictionary also has [feature-level research checks](results/20
 | Image and feature inference | [material_predict.py](src/sclvmi/material_predict.py) |
 | Spatial SAE training and inference | [sae.py](src/sclvmi/sae.py), [sae_predict.py](src/sclvmi/sae_predict.py) |
 | Official baseline adapters | [luna25.py](src/sclvmi/luna25.py), [automsc.py](src/sclvmi/automsc.py) |
+| Dataset and heatmap viewers | [Viewer setup and local asset requirements](local_tools/viewers/viewer.md) |
 
 The tested environment uses Python 3.12 with PyTorch 2.8.0 and CUDA 12.8 on Windows. Dependencies are specified in [pipeline.json](configs/environments/pipeline.json). Storage initialization creates the local path configuration. Dataset acquisition requires an approved Hugging Face account. Model revisions and license information are recorded in [model_sources.json](configs/model_sources.json).
 

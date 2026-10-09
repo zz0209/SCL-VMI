@@ -1,0 +1,24 @@
+.crop-link{display:flex;align-items:center;padding:0 18px;font-size:13px;text-decoration:none}
+.viewer-shell{position:relative;background:#0b151a}
+.viewer-loading{position:absolute;inset:0;display:flex;gap:16px;align-items:center;justify-content:center;flex-direction:column;color:#dce8e8;font-size:14px;z-index:2}
+.viewer-loading[hidden]{display:none}
+.loading-spinner{width:30px;height:30px;border:3px solid #33494b;border-top-color:#78dfcd;border-radius:50%;animation:loading-turn .85s linear infinite}
+.viewer-shell[data-error] .loading-spinner{display:none}
+@keyframes loading-turn{to{transform:rotate(360deg)}}
+@media(prefers-reduced-motion:reduce){.loading-spinner{animation-duration:2s}}
+#run-progress{padding:8px 26px;font-size:12px;color:var(--muted);background:#e8efea;border-bottom:1px solid var(--line)}
+#run-progress:empty{display:none}
+.whole-viewer .canvas-wrap{height:clamp(300px,calc(100vh - 375px),550px)}
+.whole-viewer.expanded .canvas-wrap{height:70vh}
+.whole-evidence{border-top:1px solid var(--line);padding-top:20px;margin-bottom:28px}
+.whole-evidence dl{grid-template-columns:auto auto auto auto;gap:12px 20px;margin:18px 0;max-width:900px}
+.whole-evidence dd{text-align:left}
+.whole-evidence .secondary{max-width:95ch}
+.case-tile img.whole-thumb{height:144px;object-fit:contain}
+.finding figure{margin:18px 0 0;grid-column:1/-1}
+.finding figure img{width:100%;display:block}
+.finding figcaption{font-size:12px;color:var(--muted);margin-top:9px}
+.finding table{width:100%;border-collapse:collapse;font-size:12px;margin-top:16px}
+.finding th,.finding td{text-align:left;border-bottom:1px solid var(--line);padding:8px 10px;font-variant-numeric:tabular-nums}
+@media(max-width:1120px){.whole-evidence dl{grid-template-columns:1fr auto}}
+@media(max-width:760px){.whole-viewer .canvas-wrap{height:440px}.whole-viewer .viewport:first-child .canvas-wrap{height:340px}.viewer-loading{justify-content:flex-start;padding-top:140px}.crop-link{padding:0 12px}.whole-evidence dl{font-size:12px}.finding{display:block}#run-progress{padding:8px 16px}}

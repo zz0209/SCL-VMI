@@ -1,0 +1,9 @@
+fastapi==0.141.1
+uvicorn==0.53.0
+nibabel==5.4.2
+numpy==2.5.3
+pillow==12.3.0
+scikit-image==0.26.0
+scipy==1.18.1
+plotly==7.1.0
+httpx==0.28.1

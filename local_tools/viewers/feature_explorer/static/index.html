@@ -1,0 +1,94 @@
+<!doctype html>
+<html lang="zh-CN">
+<head>
+  <meta charset="utf-8">
+  <meta name="viewport" content="width=device-width,initial-scale=1">
+  <title>SCL-VMI · Feature 探索</title>
+  <link rel="stylesheet" href="/static/style.css">
+  <link rel="stylesheet" href="/shared/language.css">
+  <script src="/shared/language.js" defer></script>
+  <script src="/static/crop-i18n.js" defer></script>
+  <script src="/static/app.js" defer></script>
+</head>
+<body>
+  <header class="app-header">
+    <a class="brand" href="/">SCL–VMI <span>Feature 探索</span></a>
+    <nav aria-label="主要内容"><button id="explore-tab" class="nav-button active">热图浏览</button><button id="findings-tab" class="nav-button">研究观察</button><a class="nav-button nav-link" href="/whole">整张 CT</a></nav>
+    <span class="dataset-stamp">FMCIB · layer1 · seed 2025</span>
+    <button id="help-toggle" class="quiet">使用说明</button>
+    <button id="language-toggle" class="quiet" aria-label="Switch to English"><svg viewBox="0 0 24 24" width="19" height="19" fill="none" stroke="currentColor" stroke-width="1.6" aria-hidden="true"><circle cx="12" cy="12" r="9"/><ellipse cx="12" cy="12" rx="4" ry="9"/><path d="M3 12h18M5 6.5h14M5 17.5h14"/></svg><span>English</span></button>
+  </header>
+  <div id="error" role="alert" hidden></div>
+  <div class="app-layout" id="explore-panel">
+    <aside class="sidebar" aria-label="Feature 目录">
+      <h2>Feature 目录 <span id="feature-count"></span></h2>
+      <label for="search">查找 feature</label>
+      <input id="search" type="search" placeholder="编号、响应名称或类别" autocomplete="off">
+      <label for="category">浏览范围</label>
+      <select id="category"><option value="reviewed">已查看的 13 个 feature</option><option value="all">全部 2,048 个 feature</option><option value="界面响应">界面响应</option><option value="明亮区域">明亮区域</option><option value="暗色区域">暗色区域</option><option value="纹理探索">纹理探索</option><option value="位置控制">位置控制</option></select>
+      <label for="sort">排列方式</label>
+      <select id="sort"><option value="id">Feature 编号</option><option value="r2">图像变量解释程度</option><option value="entropy">空间集中程度</option><option value="repeatability">跨 seed 重复性</option><option value="position">固定位置响应</option></select>
+      <div id="feature-list" class="feature-list" aria-label="Feature 列表"></div>
+      <button id="more-features" hidden>显示更多</button>
+      <p class="sidebar-note">128 名不同患者的开发样本。编号仅对应当前字典；描述用于探索。</p>
+    </aside>
+    <main>
+      <section id="help" class="guide" hidden>
+        <h2>查看同一位置的三个方向</h2>
+        <p>点击 CT 移动十字位置，三个视图同步更新。滚轮或方向键切换切片。放大后按住 Shift 拖动平移。双击影像恢复视图；按住空格临时查看原始 CT。</p>
+        <p>“定位峰值”根据当前响应来源和观察范围选择位置。“内部区域”显示原始 13³ 网格中第 2–10 层的范围。切换到“原始采样”可以看到 activation 的实际分辨率；平滑显示使用三线性插值。</p>
+        <p>默认颜色上限来自 discovery 病例峰值的第 95 百分位，同一 feature 的病例共用上限。改变颜色和 CT 显示窗只影响显示。位置模板是 64 名 discovery 患者的平均响应。跨 seed 的编号来自此前按患者等权进行的匹配。</p>
+        <p>按峰值排列强调局部强响应；按平均值排列强调响应覆盖范围。图像和分类器干预均来自实际计算，医学含义仍需要独立验证。</p>
+      </section>
+      <section class="feature-heading">
+        <div><h1 id="feature-title">正在读取 feature</h1><p id="feature-description"></p></div>
+        <span id="loading" role="status" aria-live="polite">读取数据…</span>
+      </section>
+      <div class="feature-facts" id="feature-facts"></div>
+      <section class="toolbar" aria-label="热图显示控制">
+        <label>响应来源<select id="map-source"><option value="raw">当前 feature</option><option value="template">平均位置模板</option><option value="residual">减去位置模板</option><option value="seed2026">匹配 feature · seed 2026</option><option value="seed2027">匹配 feature · seed 2027</option><option value="blur_1mm">1 mm 模糊后的 CT 与响应</option><option value="hu_plus100">增加 100 HU 后的 CT 与响应</option><option value="hu_minus100">减少 100 HU 后的 CT 与响应</option></select></label>
+        <label>观察范围<select id="scope"><option value="interior">内部区域</option><option value="full">全部输入</option></select></label>
+        <label>空间显示<select id="sampling"><option value="linear">平滑热图</option><option value="native">原始采样</option></select></label>
+        <label>CT 显示窗<select id="window"><option value="lung">肺窗 −1000 / 400</option><option value="tissue">组织窗 −160 / 240</option><option value="bone">骨窗 −500 / 1500</option></select></label>
+        <label>影像大小<select id="zoom"><option value="1">适合窗口</option><option value="1.5">150%</option><option value="2">200%</option><option value="3">300%</option></select></label>
+        <button id="peak">定位峰值</button><button id="center" class="quiet">回到中心</button>
+      </section>
+      <section class="view-toolbar">
+        <label class="check"><input id="overlay" type="checkbox" checked>热图</label>
+        <label class="check"><input id="crosshair" type="checkbox" checked>十字定位</label>
+        <label>透明度<input id="opacity" type="range" min="0" max="100" value="62"><output id="opacity-value">62%</output></label>
+        <label>显示阈值<input id="threshold" type="range" min="0" max="95" value="10"><output id="threshold-value">10%</output></label>
+        <label>颜色上限<input id="scale" type="number" min="0.001" step="0.1" value="1"></label>
+        <button id="reset-scale" class="text-button">恢复上限</button>
+      </section>
+      <div class="case-status"><strong id="case-label"></strong><span id="map-label"></span><span id="point-value"></span></div>
+      <div id="crop-viewer" aria-busy="true">
+      <div id="crop-loading" role="status"><span class="loading-spinner" aria-hidden="true"></span><span id="crop-loading-message">读取 CT 和空间响应…</span></div>
+      <div class="viewer-grid">
+        <section class="viewport" data-axis="2"><header><h2>横断面 <span>Axial</span></h2><button class="expand quiet" data-axis="2" aria-label="放大横断面">放大</button></header><div class="canvas-wrap"><canvas id="canvas-2" tabindex="0" aria-label="横断面：点击定位，滚轮或方向键切换切片"></canvas></div><footer><input id="slice-2" type="range" min="0" max="49" value="25" aria-label="横断面切片"><output id="position-2"></output></footer></section>
+        <section class="viewport" data-axis="1"><header><h2>冠状面 <span>Coronal</span></h2><button class="expand quiet" data-axis="1" aria-label="放大冠状面">放大</button></header><div class="canvas-wrap"><canvas id="canvas-1" tabindex="0" aria-label="冠状面：点击定位，滚轮或方向键切换切片"></canvas></div><footer><input id="slice-1" type="range" min="0" max="49" value="25" aria-label="冠状面切片"><output id="position-1"></output></footer></section>
+        <section class="viewport" data-axis="0"><header><h2>矢状面 <span>Sagittal</span></h2><button class="expand quiet" data-axis="0" aria-label="放大矢状面">放大</button></header><div class="canvas-wrap"><canvas id="canvas-0" tabindex="0" aria-label="矢状面：点击定位，滚轮或方向键切换切片"></canvas></div><footer><input id="slice-0" type="range" min="0" max="49" value="25" aria-label="矢状面切片"><output id="position-0"></output></footer></section>
+      </div>
+      </div>
+      <div class="legend-row"><span>Activation</span><span id="legend-low">0</span><div id="colorbar"></div><span id="legend-high">1</span><span id="geometry-note"></span></div>
+      <section class="patients-section">
+        <div class="section-heading"><h2>病例中的响应</h2><div class="compact-controls"><label>样本<select id="split"><option value="confirmation">confirmation · 64 人</option><option value="discovery">discovery · 64 人</option><option value="all">全部 · 128 人</option></select></label><label>排序<select id="case-sort"><option value="maximum">内部峰值</option><option value="mean">内部平均值</option><option value="full_maximum">全部峰值</option><option value="full_mean">全部平均值</option><option value="effect">删除 feature 的概率影响</option></select></label><button id="middle-case" class="quiet">查看中等响应</button><button id="low-case" class="quiet">查看低响应</button></div></div>
+        <div id="case-strip" class="case-strip" aria-label="病例响应排序"></div>
+        <div class="case-navigation"><button id="previous-case">上一个病例</button><label>全部病例<select id="case-select"></select></label><button id="next-case">下一个病例</button><span id="rank-note"></span></div>
+      </section>
+      <section class="evidence-section">
+        <div class="section-heading"><h2>这个 feature 的证据</h2><div class="evidence-tabs"><button id="profile-tab" class="active">空间特征</button><button id="intervention-tab">模型干预</button><button id="input-tab">输入变化</button></div></div>
+        <div id="profile-panel" class="profile-grid"><div><h3>简单图像变量能解释多少响应？</h3><div id="regression-chart"></div><p class="secondary">在 discovery 患者拟合，在 confirmation 患者计算 R²。灰度、平滑灰度、梯度与局部变化组成内容变量。R² 接近零表示这些变量解释能力有限，负值表示预测不及该确认样本的均值。</p></div><div><h3>空间响应</h3><dl id="spatial-stats"></dl><p class="secondary">灰度与梯度按 activation 加权；空间熵越小，响应越集中。每名有响应患者贡献相同权重。类别名称属于观察描述。</p></div></div>
+        <div id="intervention-panel" hidden><div id="intervention-status"></div><div class="intervention-grid"><div><h3>当前病例：逐步减弱 feature</h3><svg id="dose-chart" viewBox="0 0 560 235" role="img" aria-label="Feature 干预比例和分类概率曲线"></svg><div id="case-effect"></div></div><div><h3>confirmation 患者的平均变化</h3><div id="control-chart"></div><p class="secondary">空间打乱控制保留 activation 数值与方向；随机方向控制保留各位置的干预强度。图中比较分类概率变化的绝对值。每种控制使用一个固定随机样本。</p></div></div><p class="method-note">干预公式：h′ = h − t × activation × decoder direction。保留原始表示的重建残差，继续运行原分类器。结果说明此模型对表示修改的反应。</p></div>
+        <div id="input-panel" hidden><div class="profile-grid"><div><h3>平均 activation 相对于原始输入</h3><div id="input-chart"></div><p class="secondary">1.00× 表示平均响应保持原值。先计算每名患者的内部平均 activation，再计算 64 人平均值的比值。此数值会受到强响应病例的影响。</p></div><div><h3>变化后的空间图案</h3><dl id="input-stats"></dl><p class="secondary">相关性为同一患者原始与修改后热图的空间 Pearson 相关，按有有效响应的患者等权平均。修改 HU 时保留输入中的零值；1 mm 模糊根据实际体素间距计算。</p></div></div><p class="method-note">在上方“响应来源”选择输入变化，可以直接查看修改后的真实 CT 输入与重新计算的热图。此图像入口覆盖已查看的 13 个 feature；数值实验覆盖全部 2,048 个。</p></div>
+      </section>
+      <footer class="page-footer"><span>仅本地 · 真实 CT 输入与保存的 SAE 响应</span><span>独立测试集保留</span><span id="run-note"></span></footer>
+    </main>
+  </div>
+  <main id="findings-panel" class="findings-page" hidden>
+    <header><h1>值得继续研究的现象</h1><p>从真实热图和简单实验出发。每条观察连接对应 feature，可以直接查看不同患者。</p></header>
+    <div id="findings-list"></div>
+    <section class="source-section"><h2>这次尝试借鉴了什么</h2><div id="source-list"></div></section>
+  </main>
+</body>
+</html>

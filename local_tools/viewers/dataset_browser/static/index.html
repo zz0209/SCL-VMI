@@ -1,0 +1,67 @@
+<!doctype html>
+<html lang="zh-CN">
+<head>
+  <meta charset="utf-8">
+  <meta name="viewport" content="width=device-width,initial-scale=1">
+  <title>SCL-VMI · 数据浏览器</title>
+  <link rel="stylesheet" href="/static/style.css">
+  <script src="/plotly.js" defer></script>
+  <script src="/shared/language.js" defer></script>
+  <script src="/static/i18n.js" defer></script>
+  <link rel="stylesheet" href="/shared/language.css">
+  <script src="/static/app.js" defer></script>
+</head>
+<body>
+  <header class="app-header"><a href="/" class="brand">SCL–VMI <span data-en="Dataset browser">数据浏览器</span></a><button id="help-toggle" class="quiet" data-en="Help">使用说明</button><button id="language-toggle" class="quiet" aria-label="Switch to English"><svg viewBox="0 0 24 24" width="19" height="19" fill="none" stroke="currentColor" stroke-width="1.6" aria-hidden="true"><circle cx="12" cy="12" r="9"/><ellipse cx="12" cy="12" rx="4" ry="9"/><path d="M3 12h18M5 6.5h14M5 17.5h14"/></svg><span>English</span></button></header>
+  <div class="app-layout">
+    <aside class="sidebar" aria-label="数据集与病例列表" data-en-aria="Datasets and cases">
+      <label for="dataset" data-en="Dataset">数据集</label><select id="dataset"></select>
+      <p id="dataset-summary" class="secondary"></p>
+      <details class="dataset-overview"><summary data-en="Dataset statistics">数据集统计</summary><div id="distribution"></div><p class="secondary" data-en="Counts refer to image records. A patient may have multiple records.">统计对象为影像记录；同一患者可能有多份记录。</p></details>
+      <label for="search" data-en="Find a case">查找病例</label><input id="search" type="search" placeholder="case ID 或患者编号" data-en-placeholder="Case ID or patient ID" autocomplete="off">
+      <label for="label-filter" data-en="Class label">分类标签</label><select id="label-filter"></select>
+      <label for="role-filter" data-en="Subset">浏览范围</label><select id="role-filter"></select>
+      <p id="scope-note" class="scope-note"></p>
+      <div class="list-heading"><h2 data-en="Cases">病例</h2><span id="case-count"></span></div>
+      <div id="case-list" class="case-list" aria-label="病例列表" data-en-aria="Case list"></div>
+      <nav class="pagination" aria-label="病例分页" data-en-aria="Case pages"><button id="previous" data-en="Previous">上一页</button><span id="page-info"></span><button id="next" data-en="Next">下一页</button></nav>
+    </aside>
+    <main>
+      <section id="help" class="guide" hidden>
+        <h2 data-en="Viewing a volume">查看三维影像</h2>
+        <p data-en="Select a case. Axial, coronal, and sagittal views show the same volume along three directions.">选择病例后，横断面、冠状面和矢状面展示同一份影像的三个方向。</p>
+        <p data-en="Use the sliders or mouse wheel to browse slices. Click an image to position all three views. Drag the 3D mask to rotate it; use the wheel to zoom.">拖动滑块或滚动鼠标逐层观察；点击影像联动三个切面。拖动三维 mask 旋转，滚轮缩放。</p>
+        <p data-en="Shape is the voxel count along each axis. Spacing is the distance between voxels in millimeters. Coverage is the physical extent. Region volumes are calculated from the supplied masks; their meaning depends on annotation provenance.">尺寸表示各轴的体素数量；间距表示相邻体素距离；覆盖范围表示影像实际空间范围。标注体积根据 mask 计算，医学含义需要结合标注来源判断。</p>
+        <p data-en="CT uses HU. MRI and PET retain file intensities without inferred units. Windowing only changes brightness. Native sampling is retained with axes reordered closest to RAS: right, anterior, superior.">CT 使用 HU；MRI 和 PET 保留文件原始强度，不推断单位。显示窗只改变亮度。保持原始采样，轴方向重排至接近 RAS：右、前、上。</p>
+      </section>
+      <div id="error" class="error" role="alert" hidden></div>
+      <section class="case-heading"><div><h1 id="case-title"></h1><p id="case-subtitle" class="secondary"></p></div><span id="loading" role="status" aria-live="polite"></span></section>
+      <section id="case-body" hidden>
+        <dl class="measurements" id="measurements"></dl>
+        <div class="toolbar">
+          <label><span data-en="Modality">模态</span><select id="channel"></select></label>
+          <label><span data-en="Window">显示窗</span><select id="window-preset"><option value="auto" data-en="Default">默认显示</option><option value="lung" data-en="CT lung">CT 肺窗</option><option value="soft" data-en="CT soft tissue">CT 组织窗</option><option value="bone" data-en="CT bone">CT 骨窗</option><option value="full" data-en="Full range">全部强度范围</option><option value="custom" data-en="Custom">自定义</option></select></label>
+          <label><span data-en="Lower">下限</span><input id="window-low" type="number" step="any" disabled></label><label><span data-en="Upper">上限</span><input id="window-high" type="number" step="any" disabled></label>
+          <label class="check"><input id="overlay" type="checkbox" checked><span data-en="Mask outline">标注轮廓</span></label>
+          <label><span data-en="Region">区域</span><select id="region"></select></label>
+          <label><span data-en="Zoom">影像缩放</span><select id="zoom"><option value="1" data-en="Fit">适合窗口</option><option value="1.5">150%</option><option value="2">200%</option><option value="3">300%</option></select></label>
+          <button id="center" class="quiet" data-en="Locate mask">定位标注</button>
+        </div>
+        <div class="viewer-grid">
+          <section class="viewport" data-axis="2"><header><h2 data-en="Axial">横断面</h2><button id="play" class="play"></button></header><div class="canvas-wrap"><canvas id="canvas-2" tabindex="0" aria-label="横断面：滚轮或方向键切片，点击定位" data-en-aria="Axial view: scroll or arrow keys for slices; click to position"></canvas></div><footer><input id="slice-2" type="range" min="0" max="1" value="0" aria-label="横断面切片" data-en-aria="Axial slice"><output id="position-2"></output></footer></section>
+          <section class="viewport" data-axis="1"><header><h2 data-en="Coronal">冠状面</h2></header><div class="canvas-wrap"><canvas id="canvas-1" tabindex="0" aria-label="冠状面：滚轮或方向键切片，点击定位" data-en-aria="Coronal view: scroll or arrow keys for slices; click to position"></canvas></div><footer><input id="slice-1" type="range" min="0" max="1" value="0" aria-label="冠状面切片" data-en-aria="Coronal slice"><output id="position-1"></output></footer></section>
+          <section class="viewport" data-axis="0"><header><h2 data-en="Sagittal">矢状面</h2></header><div class="canvas-wrap"><canvas id="canvas-0" tabindex="0" aria-label="矢状面：滚轮或方向键切片，点击定位" data-en-aria="Sagittal view: scroll or arrow keys for slices; click to position"></canvas></div><footer><input id="slice-0" type="range" min="0" max="1" value="0" aria-label="矢状面切片" data-en-aria="Sagittal slice"><output id="position-0"></output></footer></section>
+          <section class="viewport mesh-viewport"><header><h2 data-en="3D mask">三维标注</h2><button id="reset-camera" class="play" data-en="Reset view">恢复视角</button></header><div id="mesh" aria-label="可旋转的三维标注" data-en-aria="Rotatable 3D mask"></div><footer id="mesh-note"></footer></section>
+        </div>
+        <p id="geometry-note" class="secondary viewer-note"></p>
+        <section class="details-grid">
+          <div><h2 data-en="Regions and volumes">标注与体积</h2><div id="region-stats"></div><p id="annotation-note" class="secondary"></p></div>
+          <div><h2 data-en="Intensity distribution">影像强度分布</h2><div id="histogram"></div><p id="intensity-note" class="secondary"></p></div>
+        </section>
+        <details class="metadata"><summary data-en="Case information and native geometry">病例信息与原始几何</summary><dl id="metadata"></dl></details>
+      </section>
+      <footer class="page-footer">FLARE-AutoMSC <span id="revision"></span></footer>
+    </main>
+  </div>
+</body>
+</html>

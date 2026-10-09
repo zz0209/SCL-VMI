@@ -10,8 +10,12 @@ from filelock import FileLock
 ROOT = Path(__file__).resolve().parents[2]
 
 
-def read_json(path):
-    return json.loads(Path(path).read_text(encoding="utf-8"))
+def read_json(path, synchronized=False):
+    path = Path(path)
+    if synchronized:
+        with FileLock(str(path) + ".lock", timeout=10):
+            return json.loads(path.read_text(encoding="utf-8"))
+    return json.loads(path.read_text(encoding="utf-8"))
 
 
 def write_json(path, value):

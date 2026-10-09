@@ -1,0 +1,5 @@
+{
+  "listen_host": "127.0.0.1",
+  "lan_address": "127.0.0.1",
+  "allowed_networks": ["127.0.0.0/8", "::1/128"]
+}

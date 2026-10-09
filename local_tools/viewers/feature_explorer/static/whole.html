@@ -1,0 +1,74 @@
+<!doctype html>
+<html lang="zh-CN">
+<head>
+  <meta charset="utf-8">
+  <meta name="viewport" content="width=device-width,initial-scale=1">
+  <title>SCL-VMI · 整张 CT</title>
+  <link rel="stylesheet" href="/static/style.css">
+  <link rel="stylesheet" href="/static/whole.css">
+  <link rel="stylesheet" href="/shared/language.css">
+  <script src="/shared/language.js" defer></script>
+  <script src="/static/crop-i18n.js" defer></script>
+  <script src="/static/whole-i18n.js" defer></script>
+  <script src="/static/whole-renderer.js" defer></script>
+  <script src="/static/whole.js" defer></script>
+</head>
+<body>
+  <header class="app-header">
+    <a class="brand" href="/whole">SCL–VMI <span>整张 CT</span></a>
+    <nav aria-label="研究内容"><button id="explore-tab" class="nav-button active">热图浏览</button><button id="findings-tab" class="nav-button">研究观察</button><a href="/" class="crop-link">结节 crop</a></nav>
+    <span class="dataset-stamp">固定 SAE · 完整扫描视野</span>
+    <button id="help-toggle" class="quiet">使用说明</button>
+    <button id="language-toggle" class="quiet" aria-label="Switch to English"><svg viewBox="0 0 24 24" width="19" height="19" fill="none" stroke="currentColor" stroke-width="1.6" aria-hidden="true"><circle cx="12" cy="12" r="9"/><ellipse cx="12" cy="12" rx="4" ry="9"/><path d="M3 12h18M5 6.5h14M5 17.5h14"/></svg><span>English</span></button>
+  </header>
+  <div id="error" role="alert" hidden></div>
+  <div id="run-progress" role="status" aria-live="polite"></div>
+  <div class="app-layout" id="explore-panel">
+    <aside class="sidebar" aria-label="模型与 Feature 目录">
+      <h2>Feature 目录 <span id="feature-count"></span></h2>
+      <label for="model">模型</label><select id="model"><option value="fmcib">FMCIB · layer1</option><option value="vista">VISTA3D · stage2</option></select>
+      <label for="search">Feature 编号或观察</label><input id="search" type="search" placeholder="例如 1976" autocomplete="off">
+      <label for="category">排列依据（discovery）</label><select id="category"><option value="id">Feature 编号</option><option value="lung_enrichment">肺部富集程度</option><option value="liver_enrichment">肝脏富集程度</option><option value="outside_fraction">图像边缘空气响应</option><option value="high_hu_fraction">高 HU 区域的响应</option></select>
+      <div id="feature-list" class="feature-list" aria-label="Feature 列表"></div><button id="more-features" hidden>显示更多</button>
+      <p class="sidebar-note" id="dictionary-note"></p>
+    </aside>
+    <main>
+      <section class="guide" id="help" hidden>
+        <h2>从整张 CT 查看 feature 的位置</h2>
+        <p>点击影像移动十字位置；滚轮、方向键和切片滑条沿对应方向查看。三张影像保留真实毫米比例。按住空格临时隐藏热图，双击影像恢复大小。</p>
+        <p>“空间激活”保留每个位置的 SAE 数值。FMCIB 每隔 4 mm 采样，VISTA3D 每隔 6 mm 采样。“单点 SAE 值”使用每个区域的中央位置，一个 feature 对应一个数字。平均值和峰值分别汇集该区域 8³ 个空间位置；扫描边缘使用视野内的位置。</p>
+        <p>FMCIB 使用连续卷积，每个空间位置具有完整的 35 mm 感受野，区域数值每隔 32 mm 取样。中央 SAE 值与对应 50 mm 输入 crop 内部位置的计算相同。VISTA3D 使用 72 mm 输入 crop，每隔 48 mm 移动，保留中央 8³ 个位置。研究观察提供实际的上下文检查结果。</p>
+        <p>这里使用 FLARE-AutoMSC 的 PETWB 完整 CT，原始体素约为 4.07 × 4.07 × 5 mm。全部图像属于提供方的训练部分。字典来自此前的 LUNA25 crop 训练；器官响应与异常图案均作为探索证据。</p>
+      </section>
+      <section class="feature-heading"><div><h1 id="feature-title">整张 CT 的 Feature 响应</h1><p id="feature-description"></p></div><span id="loading" role="status" aria-live="polite">读取数据…</span></section>
+      <section class="toolbar" aria-label="完整 CT 显示设置">
+        <label>病例<select id="case-select"></select></label>
+        <label>Feature 数值<select id="mode"><option value="spatial">空间激活 · 原始采样</option><option value="single">每个 crop · 单点 SAE 值</option><option value="mean">每个区域 · 平均值</option><option value="maximum">每个区域 · 峰值</option></select></label>
+        <label>CT 显示窗<select id="window"><option value="tissue">组织窗 −160 / 240 HU</option><option value="lung">肺窗 −1000 / 400 HU</option><option value="bone">骨窗 −500 / 1500 HU</option></select></label>
+        <label>影像大小<select id="zoom"><option value="1">适合窗口</option><option value="1.5">150%</option><option value="2">200%</option><option value="3">300%</option></select></label>
+        <button id="peak">定位峰值</button><button id="center" class="quiet">回到中心</button>
+      </section>
+      <section class="view-toolbar">
+        <label class="check"><input id="overlay" type="checkbox" checked>显示热图</label>
+        <label>透明度<input id="opacity" type="range" min="0" max="100" value="62"><output id="opacity-value">62%</output></label>
+        <label>显示阈值<input id="threshold" type="range" min="0" max="95" value="10"><output id="threshold-value">10%</output></label>
+        <label>颜色上限<input id="scale" type="number" min="0.001" step="0.1" value="1"></label><button id="reset-scale" class="text-button">恢复上限</button>
+      </section>
+      <div class="case-status"><strong id="case-label"></strong><span id="map-label"></span><span id="point-value"></span></div>
+      <div class="viewer-shell" aria-busy="true">
+      <div class="viewer-loading" id="viewer-loading" role="status"><span class="loading-spinner" aria-hidden="true"></span><span id="viewer-loading-text">正在读取影像…</span></div>
+      <div class="viewer-grid whole-viewer" style="visibility:hidden">
+        <section class="viewport" data-axis="2"><header><h2>横断面 <span>Axial</span></h2><button class="expand quiet" data-axis="2">放大</button></header><div class="canvas-wrap"><canvas id="canvas-2" tabindex="0" aria-label="横断面，点击定位，滚轮或方向键查看切片"></canvas></div><footer><input id="slice-2" type="range" min="0" max="1" value="0" aria-label="横断面切片"><output id="position-2"></output></footer></section>
+        <section class="viewport" data-axis="1"><header><h2>冠状面 <span>Coronal</span></h2><button class="expand quiet" data-axis="1">放大</button></header><div class="canvas-wrap"><canvas id="canvas-1" tabindex="0" aria-label="冠状面，点击定位，滚轮或方向键查看切片"></canvas></div><footer><input id="slice-1" type="range" min="0" max="1" value="0" aria-label="冠状面切片"><output id="position-1"></output></footer></section>
+        <section class="viewport" data-axis="0"><header><h2>矢状面 <span>Sagittal</span></h2><button class="expand quiet" data-axis="0">放大</button></header><div class="canvas-wrap"><canvas id="canvas-0" tabindex="0" aria-label="矢状面，点击定位，滚轮或方向键查看切片"></canvas></div><footer><input id="slice-0" type="range" min="0" max="1" value="0" aria-label="矢状面切片"><output id="position-0"></output></footer></section>
+      </div>
+      </div>
+      <div class="legend-row"><span>Activation</span><span>0</span><div id="colorbar"></div><span id="legend-high">1</span><span id="geometry-note"></span></div>
+      <section class="whole-evidence"><h2>当前扫描中的响应</h2><dl id="map-stats"></dl><p id="feature-evidence" class="secondary"></p></section>
+      <section class="patients-section"><div class="section-heading"><h2>完整 CT 病例</h2><span class="secondary">每组第一例用于观察，第二例用于确认</span></div><div id="case-strip" class="case-strip"></div></section>
+      <footer class="page-footer"><span>仅本地 · 保存的真实 CT 与 SAE 数值</span><span>原始 CT 约 4.07 × 4.07 × 5 mm</span><span>20261009_whole_ct_exploration</span></footer>
+    </main>
+  </div>
+  <main id="findings-panel" class="findings-page" hidden><header><h1>整张 CT 中的规律与异常图案</h1><p>检查响应出现在哪里、能否跨病例重复，以及窗口位置如何改变同一身体位置的响应。</p></header><div id="findings-list"></div></main>
+</body>
+</html>

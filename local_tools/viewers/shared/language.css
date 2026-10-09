@@ -1,0 +1,6 @@
+#language-toggle { display: inline-flex; align-items: center; justify-content: center; gap: .4rem; flex-shrink: 0; min-height: 34px; white-space: nowrap; }
+#language-toggle svg { flex-shrink: 0; width: 18px; height: 18px; fill: none; stroke: currentColor; stroke-width: 1.6; }
+@media (max-width: 620px) {
+  .app-header { flex-wrap: wrap; }
+  #language-toggle { margin-inline-start: auto; }
+}
