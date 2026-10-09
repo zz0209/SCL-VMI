@@ -1,0 +1,39 @@
+{
+  "status": "completed",
+  "created_at": "2026-10-09T02:57:41.569030+00:00",
+  "default_run": "candidate_fmcib_layer1_d4_k64_s2025",
+  "dictionary_sha256": "8f6776799f773ae066b64dd5a0a240a02a46b6a41aab257cc6b91ca1f9114798",
+  "dictionary_features": 2048,
+  "development_patients": {
+    "discovery": 211,
+    "confirmation": 211
+  },
+  "image_patients_per_half": 64,
+  "numeric_screen_features": 13,
+  "content_starter_features": [
+    23,
+    541,
+    1288,
+    1291,
+    1345,
+    1556,
+    1696,
+    2011,
+    2029
+  ],
+  "original_image_review_features": 32,
+  "qualified_image_review_features": 13,
+  "clinical_annotation": false,
+  "test_used": false,
+  "scope": "Conditional development-set qualification for feature research: nine broad image-content starting points in one fixed dictionary. No dictionary-wide semantic purity, unique-concept count, clinical identity or feature-specific causal effect is established.",
+  "selection": "Cross-seed and patient-balanced numerical screening in both halves; descriptive images from patient-disjoint halves. Development data previously selected dictionary configurations. Criteria are project screens, not universal SAE quality standards.",
+  "independent_checks": {
+    "status": "passed",
+    "completed_at": "2026-10-09T02:54:59.573577+00:00",
+    "scipy_real_patient_feature_correlations": 832,
+    "maximum_absolute_error": 1.4582826980413799e-06,
+    "all_saved_means_and_patient_counts_recomputed": true,
+    "source_sha256": "014945bba4895c5db5488320ee2cf83d508d0ce85c6ea591073bbeb5a91e7e25"
+  },
+  "source_sha256": "d80ee5f713362717e0d5dc240f92b2734de4205fe06f0a9a117a5e7b14a25a4b"
+}

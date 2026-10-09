@@ -35,6 +35,8 @@ Raw-CT inference checks passed for all six exports, including activation maps, p
 
 The [SAE results and design choices](results/20261008_spatial_sae/README.md) include [all selected metrics](results/20261008_spatial_sae/selected.csv), [candidate comparisons](results/20261008_spatial_sae/candidate_comparison.csv), [training curves](results/20261008_spatial_sae/training_quality.png), [capacity/activity comparisons](results/20261008_spatial_sae/candidate_quality.png), and [PCA/seed diagnostics](results/20261008_spatial_sae/diagnostics.json). `SpatialSAEPipeline` returns activation arrays and native-grid RAS coordinates. The private dictionary index is stored under the configured runs directory at `20261008_spatial_sae/dictionary_index.json`.
 
+The FMCIB default dictionary also has [feature-level research checks](results/20261008_sae_feature_validation/README.md): 128 patient-distinct CT inputs, three SAE seeds, translation and position controls, and patient-balanced correspondence. Thirteen features pass the numerical screens; nine provide repeated broad image-content descriptions as research starting points. The [feature catalog](results/20261008_sae_feature_validation/reviewed_features.csv) retains each description and its qualifications. These are conditional development-set observations from one AI image reviewer; clinical identity and feature-specific causal effects remain untested. The private `20261008_feature_validation/fmcib/research_materials.json` contains fixed weights and CT evidence paths.
+
 ## Engineering entry points
 
 | Component | Source |
