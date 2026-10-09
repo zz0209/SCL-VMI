@@ -6,7 +6,8 @@ $sources = @(
     @('ctfm', 'https://github.com/project-lighter/CT-FM', 'f58c89a75ff0270ba6e339027e40bf04a221735d'),
     @('vista', 'https://github.com/Project-MONAI/VISTA', 'd4a8fe0dbf5cb4b76c531fccca8e29c1e6f6ee45'),
     @('genesis', 'https://github.com/MrGiovanni/ModelsGenesis', '4c6c3bdee39e27c20622f1e9a2a8186833e97ceb'),
-    @('fmcib', 'https://github.com/AIM-Harvard/foundation-cancer-image-biomarker', '1f1c0c8725c110c9c70cb466467a55e3160760c9')
+    @('fmcib', 'https://github.com/AIM-Harvard/foundation-cancer-image-biomarker', '1f1c0c8725c110c9c70cb466467a55e3160760c9'),
+    @('batchtopk', 'https://github.com/bartbussmann/BatchTopK', 'b9aab1c6156381ae7ae2997e3490e7b99e195dde')
 )
 New-Item -ItemType Directory -Force -Path (Join-Path $workspace 'third_party') | Out-Null
 foreach ($source in $sources) {

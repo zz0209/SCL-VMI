@@ -1,0 +1,13 @@
+{
+  "suite": "20261008_spatial_sae",
+  "models": ["vista", "fmcib"],
+  "upstream": {"repository": "https://github.com/bartbussmann/BatchTopK", "commit": "b9aab1c6156381ae7ae2997e3490e7b99e195dde", "module": "third_party/batchtopk/sae.py", "class": "BatchTopKSAE"},
+  "sampling": {"train_tokens_per_patient": 512, "development_tokens_per_patient": 256, "seed": 20261008},
+  "normalization": "training-patient-balanced channel mean and one global RMS scale",
+  "site_candidates": {"vista": ["stage2", "stage3"], "fmcib": ["layer1", "layer2"]},
+  "pilot": {"steps": 2500, "expansion_factor": 4, "k": 32, "seed": 2025},
+  "training": {"steps": 12000, "batch_size": 2048, "learning_rate": 0.0003, "betas": [0.9, 0.99], "warmup_steps": 200, "decay_start_fraction": 0.8, "expansion_factors": [4, 8], "k_values": [16, 32, 64], "seeds": [2025, 2026, 2027], "checkpoint_every": 1000, "validate_every": 500, "aux_penalty": 0.03125, "top_k_aux": 512, "inactive_batches": 100, "gradient_clip": 10.0, "precision": "float32", "tf32": false},
+  "inference": {"activation": "fixed_global_threshold", "calibration_train_tokens": 65536, "batch_independence_atol": 0.0001},
+  "acceptance": {"max_development_fvu": 0.15, "min_mean_token_cosine": 0.95, "max_inactive_fraction": 0.02, "l0_relative_tolerance": 0.2, "max_probability_mae": 0.025, "max_auroc_decrease": 0.01, "max_ap_decrease": 0.02, "min_grid_axis": 6},
+  "test_policy": "independent test partition is not accessed for fitting, selection, examples or evaluation"
+}

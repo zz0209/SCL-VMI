@@ -22,6 +22,19 @@ Development data is used for configuration selection. Neural-head results averag
 
 Direct development assets: [selected metrics](results/20260926_frozen_fm_development/selected.csv), [candidate metrics](results/20260926_frozen_fm_development/ablation.csv), [pipeline comparison](results/20260926_frozen_fm_development/comparison.png), [ROC/PR/calibration](results/20260926_frozen_fm_development/diagnostics.png), and [VISTA3D pooling comparison](results/20260926_frozen_fm_development/pooling_comparison.png). The [result index](results/20260926_frozen_fm_development/README.md) records the evaluation scope.
 
+## Spatial SAE dictionaries
+
+BatchTopK dictionaries preserve native spatial grids for CT crop heatmaps. Each configuration passed reconstruction, sparsity and complete-development classifier checks for seeds 2025, 2026 and 2027. The table shows the default seed-2025 exports, evaluated with the same saved classifier across SAE seeds.
+
+| Encoder / site | Native grid | Dictionary size | Target mean activity | FVU | Mean cosine | Probability MAE |
+|---|---:|---:|---:|---:|---:|---:|
+| VISTA3D / stage2 | 12³ | 768 | 80 | 0.04295 | 0.95580 | 0.00293 |
+| FMCIB / layer1 | 13³ | 2,048 | 64 | 0.11884 | 0.96179 | 0.00888 |
+
+Raw-CT inference checks passed for all six exports, including activation maps, physical coordinates, saved predictions and CPU/GPU reconstruction. Whole-dictionary reconstruction is consistent across seeds. Individual feature correspondence is limited: full-vector matching gives median activation correlations of 0.22–0.23 for VISTA3D and 0.33–0.34 for FMCIB. Feature IDs remain dictionary-local; anatomical interpretation requires image evidence.
+
+The [SAE results and design choices](results/20261008_spatial_sae/README.md) include [all selected metrics](results/20261008_spatial_sae/selected.csv), [candidate comparisons](results/20261008_spatial_sae/candidate_comparison.csv), [training curves](results/20261008_spatial_sae/training_quality.png), [capacity/activity comparisons](results/20261008_spatial_sae/candidate_quality.png), and [PCA/seed diagnostics](results/20261008_spatial_sae/diagnostics.json). `SpatialSAEPipeline` returns activation arrays and native-grid RAS coordinates. The private dictionary index is stored under the configured runs directory at `20261008_spatial_sae/dictionary_index.json`.
+
 ## Engineering entry points
 
 | Component | Source |
@@ -33,6 +46,7 @@ Direct development assets: [selected metrics](results/20260926_frozen_fm_develop
 | Frozen-head comparison | [fit_frozen_heads.py](scripts/pipeline/fit_frozen_heads.py) |
 | Local-field comparison | [prepare_materials.py](scripts/pipeline/prepare_materials.py) |
 | Image and feature inference | [material_predict.py](src/sclvmi/material_predict.py) |
+| Spatial SAE training and inference | [sae.py](src/sclvmi/sae.py), [sae_predict.py](src/sclvmi/sae_predict.py) |
 | Official baseline adapters | [luna25.py](src/sclvmi/luna25.py), [automsc.py](src/sclvmi/automsc.py) |
 
 The tested environment uses Python 3.12 with PyTorch 2.8.0 and CUDA 12.8 on Windows. Dependencies are specified in [pipeline.json](configs/environments/pipeline.json). Storage initialization creates the local path configuration. Dataset acquisition requires an approved Hugging Face account. Model revisions and license information are recorded in [model_sources.json](configs/model_sources.json).

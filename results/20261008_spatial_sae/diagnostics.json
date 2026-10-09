@@ -1,0 +1,348 @@
+{
+  "vista_diagnostics_activity80": {
+    "pca_reference": {
+      "method": "training-fitted rank-k PCA reference",
+      "rank": 80,
+      "development_fvu": 0.20250080530728215,
+      "development_mean_cosine": 0.884069723178637,
+      "train_tokens": 647168,
+      "development_tokens": 108032,
+      "comparison_scope": "same training vectors and number of scalar coefficients; dictionary storage and representation families differ",
+      "completed_at": "2026-10-09T01:45:07.479339+00:00"
+    },
+    "seed_comparison": {
+      "method": "maximum-total activation-correlation assignment; feature identifiers remain dictionary-local",
+      "tokens": 8440,
+      "tokens_per_patient": 20,
+      "patients": 422,
+      "runs": [
+        "activity80_vista_stage2_d4_k80_s2025",
+        "activity80_vista_stage2_d4_k80_s2026",
+        "activity80_vista_stage2_d4_k80_s2027"
+      ],
+      "comparisons": [
+        {
+          "pair": "s2025_s2026",
+          "matched_correlation_quantiles": [
+            0.0,
+            0.0,
+            0.23864269256591797,
+            0.6302865803241737,
+            0.9999988675117493
+          ],
+          "fraction_correlation_ge_0_8": 0.036458333333333336,
+          "fraction_correlation_ge_0_5": 0.15364583333333334,
+          "matched_decoder_cosine_median": 0.21319866180419922,
+          "reciprocal_nearest_fraction": 0.36328125
+        },
+        {
+          "pair": "s2025_s2027",
+          "matched_correlation_quantiles": [
+            0.0,
+            0.0,
+            0.24102722853422165,
+            0.6257224798202518,
+            0.9999995827674866
+          ],
+          "fraction_correlation_ge_0_8": 0.044270833333333336,
+          "fraction_correlation_ge_0_5": 0.140625,
+          "matched_decoder_cosine_median": 0.2069895714521408,
+          "reciprocal_nearest_fraction": 0.3671875
+        },
+        {
+          "pair": "s2026_s2027",
+          "matched_correlation_quantiles": [
+            0.0,
+            0.0,
+            0.24816744774580002,
+            0.6633013784885406,
+            0.9999995231628418
+          ],
+          "fraction_correlation_ge_0_8": 0.046875,
+          "fraction_correlation_ge_0_5": 0.16927083333333334,
+          "matched_decoder_cosine_median": 0.22776682674884796,
+          "reciprocal_nearest_fraction": 0.3841145833333333
+        }
+      ],
+      "completed_at": "2026-10-09T01:45:08.117531+00:00",
+      "test_used": false
+    }
+  },
+  "fmcib_diagnostics_candidate": {
+    "pca_reference": {
+      "method": "training-fitted rank-k PCA reference",
+      "rank": 64,
+      "development_fvu": 0.2802005523329337,
+      "development_mean_cosine": 0.9183270683141328,
+      "train_tokens": 647168,
+      "development_tokens": 108032,
+      "comparison_scope": "same training vectors and number of scalar coefficients; dictionary storage and representation families differ",
+      "completed_at": "2026-10-09T01:28:27.994417+00:00"
+    },
+    "seed_comparison": {
+      "method": "maximum-total activation-correlation assignment; feature identifiers remain dictionary-local",
+      "tokens": 8440,
+      "tokens_per_patient": 20,
+      "patients": 422,
+      "runs": [
+        "candidate_fmcib_layer1_d4_k64_s2025",
+        "candidate_fmcib_layer1_d4_k64_s2026",
+        "candidate_fmcib_layer1_d4_k64_s2027"
+      ],
+      "comparisons": [
+        {
+          "pair": "s2025_s2026",
+          "matched_correlation_quantiles": [
+            0.0,
+            0.12863573879003526,
+            0.3730846494436264,
+            0.72120800614357,
+            0.9999991655349731
+          ],
+          "fraction_correlation_ge_0_8": 0.05712890625,
+          "fraction_correlation_ge_0_5": 0.3134765625,
+          "matched_decoder_cosine_median": 0.14908060431480408,
+          "reciprocal_nearest_fraction": 0.2421875
+        },
+        {
+          "pair": "s2025_s2027",
+          "matched_correlation_quantiles": [
+            0.0,
+            0.13018689006567002,
+            0.3659094572067261,
+            0.7244865834712982,
+            0.9999914169311523
+          ],
+          "fraction_correlation_ge_0_8": 0.0634765625,
+          "fraction_correlation_ge_0_5": 0.31396484375,
+          "matched_decoder_cosine_median": 0.15094685554504395,
+          "reciprocal_nearest_fraction": 0.24365234375
+        },
+        {
+          "pair": "s2026_s2027",
+          "matched_correlation_quantiles": [
+            0.0,
+            0.1354145184159279,
+            0.36847423017024994,
+            0.7323932290077209,
+            0.9999939799308777
+          ],
+          "fraction_correlation_ge_0_8": 0.06298828125,
+          "fraction_correlation_ge_0_5": 0.31787109375,
+          "matched_decoder_cosine_median": 0.14427156746387482,
+          "reciprocal_nearest_fraction": 0.24560546875
+        }
+      ],
+      "completed_at": "2026-10-09T01:28:29.934441+00:00",
+      "test_used": false
+    }
+  },
+  "vista_selection_activity80_full_comparison": {
+    "full_seed_comparison": {
+      "method": "maximum-total activation-correlation assignment; feature identifiers remain dictionary-local",
+      "tokens": 108032,
+      "tokens_per_patient": 256,
+      "patients": 422,
+      "runs": [
+        "activity80_vista_stage2_d4_k80_s2025",
+        "activity80_vista_stage2_d4_k80_s2026",
+        "activity80_vista_stage2_d4_k80_s2027"
+      ],
+      "coverage": [
+        {
+          "seed": 2025,
+          "activation_count_quantiles": [
+            1.0,
+            6.0,
+            19.0,
+            6885.5,
+            20827.75,
+            28654.099609375,
+            52442.0
+          ],
+          "zero_activation_features": 0,
+          "features_active_below_0_1_percent": 278
+        },
+        {
+          "seed": 2026,
+          "activation_count_quantiles": [
+            0.0,
+            6.0,
+            19.0,
+            7173.0,
+            20967.5,
+            28729.095703125,
+            58034.0
+          ],
+          "zero_activation_features": 1,
+          "features_active_below_0_1_percent": 266
+        },
+        {
+          "seed": 2027,
+          "activation_count_quantiles": [
+            1.0,
+            7.0,
+            24.0,
+            7335.0,
+            21039.0,
+            28729.0,
+            56189.0
+          ],
+          "zero_activation_features": 0,
+          "features_active_below_0_1_percent": 259
+        }
+      ],
+      "comparisons": [
+        {
+          "pair": "s2025_s2026",
+          "matched_correlation_quantiles": [
+            -0.00010522068623686209,
+            0.04789227247238159,
+            0.22349725663661957,
+            0.529853439331055,
+            0.9793705940246582
+          ],
+          "fraction_correlation_ge_0_8": 0.03125,
+          "fraction_correlation_ge_0_5": 0.11197916666666667,
+          "matched_decoder_cosine_median": 0.22609776258468628,
+          "reciprocal_nearest_fraction": 0.4010416666666667
+        },
+        {
+          "pair": "s2025_s2027",
+          "matched_correlation_quantiles": [
+            -0.0001072435625246726,
+            0.05905910208821297,
+            0.22344890236854553,
+            0.5227367103099827,
+            0.9755168557167053
+          ],
+          "fraction_correlation_ge_0_8": 0.028645833333333332,
+          "fraction_correlation_ge_0_5": 0.11458333333333333,
+          "matched_decoder_cosine_median": 0.22360585629940033,
+          "reciprocal_nearest_fraction": 0.4270833333333333
+        },
+        {
+          "pair": "s2026_s2027",
+          "matched_correlation_quantiles": [
+            -0.00013082644727546722,
+            0.057456273585557945,
+            0.22974459826946259,
+            0.5633513927459717,
+            0.9845149517059326
+          ],
+          "fraction_correlation_ge_0_8": 0.037760416666666664,
+          "fraction_correlation_ge_0_5": 0.12369791666666667,
+          "matched_decoder_cosine_median": 0.2422105073928833,
+          "reciprocal_nearest_fraction": 0.4322916666666667
+        }
+      ],
+      "source_sha256": "9f5aab55845806f8a24af92a089f297eced7610104cb915fa2c025fd640cb0fc",
+      "completed_at": "2026-10-09T01:48:18.946246+00:00",
+      "test_used": false
+    }
+  },
+  "fmcib_selection_candidate_full_comparison": {
+    "full_seed_comparison": {
+      "method": "maximum-total activation-correlation assignment; feature identifiers remain dictionary-local",
+      "tokens": 108032,
+      "tokens_per_patient": 256,
+      "patients": 422,
+      "runs": [
+        "candidate_fmcib_layer1_d4_k64_s2025",
+        "candidate_fmcib_layer1_d4_k64_s2026",
+        "candidate_fmcib_layer1_d4_k64_s2027"
+      ],
+      "coverage": [
+        {
+          "seed": 2025,
+          "activation_count_quantiles": [
+            2.0,
+            61.0,
+            426.0,
+            1567.5,
+            3844.5,
+            8353.4970703125,
+            39019.0
+          ],
+          "zero_activation_features": 0,
+          "features_active_below_0_1_percent": 325
+        },
+        {
+          "seed": 2026,
+          "activation_count_quantiles": [
+            3.0,
+            63.0,
+            457.5,
+            1648.5,
+            3786.0,
+            8305.2978515625,
+            37579.0
+          ],
+          "zero_activation_features": 0,
+          "features_active_below_0_1_percent": 307
+        },
+        {
+          "seed": 2027,
+          "activation_count_quantiles": [
+            5.0,
+            62.0,
+            465.75,
+            1529.0,
+            3735.25,
+            8655.09765625,
+            41301.0
+          ],
+          "zero_activation_features": 0,
+          "features_active_below_0_1_percent": 306
+        }
+      ],
+      "comparisons": [
+        {
+          "pair": "s2025_s2026",
+          "matched_correlation_quantiles": [
+            -0.00012658665946219116,
+            0.0984534539282322,
+            0.3298741281032562,
+            0.6850899457931519,
+            0.9870430827140808
+          ],
+          "fraction_correlation_ge_0_8": 0.04296875,
+          "fraction_correlation_ge_0_5": 0.2783203125,
+          "matched_decoder_cosine_median": 0.16792912781238556,
+          "reciprocal_nearest_fraction": 0.22412109375
+        },
+        {
+          "pair": "s2025_s2027",
+          "matched_correlation_quantiles": [
+            -0.000298925704555586,
+            0.09000902473926545,
+            0.33249785006046295,
+            0.6891619443893432,
+            0.9890532493591309
+          ],
+          "fraction_correlation_ge_0_8": 0.05029296875,
+          "fraction_correlation_ge_0_5": 0.26171875,
+          "matched_decoder_cosine_median": 0.1666300743818283,
+          "reciprocal_nearest_fraction": 0.2236328125
+        },
+        {
+          "pair": "s2026_s2027",
+          "matched_correlation_quantiles": [
+            -0.0005923542776145041,
+            0.0884851299226284,
+            0.33529132604599,
+            0.6811955392360687,
+            0.9905959963798523
+          ],
+          "fraction_correlation_ge_0_8": 0.05029296875,
+          "fraction_correlation_ge_0_5": 0.26806640625,
+          "matched_decoder_cosine_median": 0.17044976353645325,
+          "reciprocal_nearest_fraction": 0.2236328125
+        }
+      ],
+      "source_sha256": "9f5aab55845806f8a24af92a089f297eced7610104cb915fa2c025fd640cb0fc",
+      "completed_at": "2026-10-09T01:48:38.740829+00:00",
+      "test_used": false
+    }
+  }
+}
