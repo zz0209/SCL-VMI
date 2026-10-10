@@ -51,6 +51,7 @@
 !/scripts/pipeline/check_sae_campaign.py
 !/scripts/pipeline/check_sae_campaign_evaluation.py
 !/scripts/pipeline/check_sae_campaign_diagnostics.py
+!/scripts/pipeline/check_sae_campaign_topk.py
 !/scripts/sae_validation/
 /scripts/sae_validation/*
 !/scripts/sae_validation/feature_screen.py

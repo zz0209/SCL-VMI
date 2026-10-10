@@ -23,7 +23,10 @@ def make_sae(request, config):
     module = importlib.util.module_from_spec(spec)
     spec.loader.exec_module(module)
     training = request["training"]
-    return module.BatchTopKSAE({
+    sae_type = training.get("sae_type", "batch_topk")
+    constructor = {"batch_topk": module.BatchTopKSAE, "topk": module.TopKSAE}[sae_type]
+    return constructor({
+        "sae_type": sae_type,
         "seed": request["seed"], "act_size": request["input_dim"],
         "dict_size": request["dict_size"], "device": "cuda", "dtype": torch.float32,
         "input_unit_norm": False, "top_k": request["k"], "l1_coeff": 0.0,
@@ -107,6 +110,24 @@ def save_checkpoint(destination, sae, optimizer, generator, step, history, best_
     temporary.replace(destination / "resume.pt")
 
 
+def feature_checks(metrics, request):
+    limits = request["acceptance"]
+    return {
+        "fvu": metrics["fvu"] <= limits["max_development_fvu"],
+        "cosine": metrics["cosine"] >= limits["min_mean_token_cosine"],
+        "inactive": metrics["inactive_fraction"] <= limits["max_inactive_fraction"],
+        "sparsity": abs(metrics["l0_mean"] / request["k"] - 1) <= limits["l0_relative_tolerance"],
+    }
+
+
+def improves_checkpoint(metrics, request, best_fvu, best_qualified):
+    qualified = all(feature_checks(metrics, request).values())
+    improve = metrics["fvu"] < best_fvu
+    if request["training"].get("checkpoint_selection", "fvu") == "qualified_fvu":
+        improve = (qualified and not best_qualified) or (qualified == best_qualified and improve)
+    return improve, qualified
+
+
 def fit_job(root, job, worker, stop_after=None):
     config = configuration()
     root = Path(root)
@@ -156,6 +177,8 @@ def fit_job(root, job, worker, stop_after=None):
         previous_elapsed = saved["elapsed_seconds"]
         del saved
         print("RESUME", job["run_id"], start_step, flush=True)
+    quality_selection = training.get("checkpoint_selection", "fvu") == "qualified_fvu"
+    best_qualified = quality_selection and any(all(feature_checks(row, request).values()) for row in history)
     started = time.monotonic()
     last_checkpoint, last_control, last_progress = started, 0.0, 0.0
     total = training["steps"]
@@ -184,13 +207,15 @@ def fit_job(root, job, worker, stop_after=None):
             stopped = pause_requested(root, worker) or step == stop_after
             last_control = now
         if step == 1 or step % training["validate_every"] == 0 or step == total:
-            threshold = calibrate_patient_balanced(sae, train, train_offsets, request["inference"]["calibration_train_tokens"], batch_size)
+            threshold = 0.0 if training.get("sae_type") == "topk" else calibrate_patient_balanced(sae, train, train_offsets, request["inference"]["calibration_train_tokens"], batch_size)
             metrics, _ = evaluate_weighted(sae, development, dev_offsets, threshold, mean, scale, batch_size)
             metrics.update({"step": step, "updated_at": timestamp()})
             history.append(metrics)
             write_json(destination / "history.json", history)
-            if metrics["fvu"] < best_fvu:
+            improve, qualified = improves_checkpoint(metrics, request, best_fvu, best_qualified)
+            if improve:
                 best_fvu = metrics["fvu"]
+                best_qualified = qualified if quality_selection else False
                 export_dictionary(sae, request, threshold, mean, scale, destination / "best.pt", step)
             print("VALIDATION", job["run_id"], metrics, flush=True)
         elapsed = previous_elapsed + time.monotonic() - started
@@ -223,8 +248,7 @@ def fit_job(root, job, worker, stop_after=None):
     loaded = SpatialDictionary(destination / "dictionary.pt")
     actual = development[:127] * scale + mean
     torch.testing.assert_close(loaded.encode(actual), torch.cat([loaded.encode(part) for part in actual.split(17)]), rtol=1e-5, atol=config["inference"]["batch_independence_atol"])
-    limits = config["acceptance"]
-    checks = {"fvu": metrics["fvu"] <= limits["max_development_fvu"], "cosine": metrics["cosine"] >= limits["min_mean_token_cosine"], "inactive": metrics["inactive_fraction"] <= limits["max_inactive_fraction"], "sparsity": abs(metrics["l0_mean"] / job["k"] - 1) <= limits["l0_relative_tolerance"]}
+    checks = feature_checks(metrics, request)
     result = {"state": "completed", "run_id": job["run_id"], "request": request, "steps": total, "best_step": best["step"], "development": metrics, "feature_checks": checks, "feature_checks_pass": all(checks.values()), "dictionary_sha256": sha256(destination / "dictionary.pt"), "elapsed_seconds": previous_elapsed + time.monotonic() - started, "peak_gpu_bytes": torch.cuda.max_memory_allocated(), "completed_at": timestamp(), "test_used": False}
     write_json(destination / "result.json", result)
     write_json(destination / "status.json", {"state": "completed", "worker": worker, "step": total, "total": total, "updated_at": timestamp()})

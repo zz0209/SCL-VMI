@@ -62,14 +62,19 @@ def select_site_candidates(root=None):
                 decision_path = root / "selection" / f"{model}-{site}.json"
                 if decision_path.exists():
                     continue
-                if not all((root / "runs" / job["run_id"] / "downstream.json").exists() for job in candidates):
+                if not all((root / "runs" / job["run_id"] / "result.json").exists() for job in candidates):
                     continue
                 evidence = []
+                awaiting_evaluation = False
                 for job in candidates:
                     run = root / "runs" / job["run_id"]
                     result = read_json(run / "result.json")
-                    downstream = read_json(run / "downstream.json")
-                    evidence.append({**result, "downstream": downstream, "qualified": result["feature_checks_pass"] and downstream["checks_pass"]})
+                    downstream = read_json(run / "downstream.json") if (run / "downstream.json").exists() else None
+                    if result["feature_checks_pass"] and downstream is None:
+                        awaiting_evaluation = True
+                    evidence.append({**result, "downstream": downstream, "qualified": bool(result["feature_checks_pass"] and downstream and downstream["checks_pass"])})
+                if awaiting_evaluation:
+                    continue
                 qualified = [row for row in evidence if row["qualified"]]
                 if not qualified:
                     write_json(root / "decisions" / f"{model}-{site}-needs-review.json", {"state": "needs_method_review", "model": model, "site": site, "evidence": evidence, "test_used": False, "updated_at": timestamp()})
@@ -78,7 +83,7 @@ def select_site_candidates(root=None):
                 template = next(job for job in candidates if job["run_id"] == chosen["run_id"])
                 replicas = []
                 for seed in config["search"]["seeds"]:
-                    run_id = f"20261009_{model}_{site}_e{template['expansion']}_k{template['k']}_s{seed}"
+                    run_id = template["run_id"].replace(f"_s{template['seed']}", f"_s{seed}")
                     replicas.append(run_id)
                     if any(job["run_id"] == run_id for job in queue["jobs"]):
                         continue

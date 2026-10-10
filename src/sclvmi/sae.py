@@ -24,6 +24,9 @@ def load_upstream():
 
 def activations(sae, x, threshold=None):
     values = F.relu((x - sae.b_dec) @ sae.W_enc)
+    if sae.cfg.get("sae_type") == "topk":
+        selected = torch.topk(values, sae.cfg["top_k"], dim=-1)
+        return torch.zeros_like(values).scatter(-1, selected.indices, selected.values)
     if threshold is not None:
         return values * (values > threshold)
     selected = torch.topk(values.flatten(), sae.cfg["top_k"] * len(x), sorted=False)
@@ -98,6 +101,9 @@ class SpatialDictionary:
     def encode(self, tokens):
         x = (tokens.to(self.device) - self.mean) / self.scale
         values = F.relu((x - self.weights["b_dec"]) @ self.weights["W_enc"])
+        if self.request["training"].get("sae_type") == "topk":
+            selected = torch.topk(values, self.request["k"], dim=-1)
+            return torch.zeros_like(values).scatter(-1, selected.indices, selected.values)
         return values * (values > self.threshold)
 
     @torch.inference_mode()
