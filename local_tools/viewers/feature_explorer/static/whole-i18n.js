@@ -1,5 +1,7 @@
 'use strict';
 ViewerLanguage.add([
+  ['编号 + Enter 跳转；目录中 ↑ / ↓ 切换。','ID + Enter to jump; ↑ / ↓ to browse the list.'],
+  ['选择图像范围、SAE 配置和 seed。每份字典的 Feature 编号独立。搜索编号后按 Enter 跳转；在目录中按 ↑ / ↓ 沿当前排列连续切换，自动翻页。点击影像后，方向键切换切片。','Choose image scope, SAE configuration and seed. Feature IDs are dictionary-local. Search an ID and press Enter to jump; use ↑ / ↓ in the list to follow its current order across pages. Focus an image to use arrow keys for slices.'],
   ['准备中','Preparing'],
   ['返回浏览入口','Return to browser'],
   ['当前图像中的响应','Responses in this image'],

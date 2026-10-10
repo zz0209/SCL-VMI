@@ -44,7 +44,10 @@ Open [heatmaps](http://127.0.0.1:8773/whole). Choose image scope, SAE configurat
 and seed in the existing three-plane viewer. The six selected configuration
 families provide seeds 2025, 2026 and 2027. Each dictionary retains its own Feature
 selection. Feature IDs are dictionary-local; the catalog uses fixed 80-item pages,
-with search, ranking and a direct numeric selector. URLs preserve the selection
+with search and ranking. Enter a Feature ID in search and press Enter to jump.
+Focus the list and use Up/Down to follow its current order across pages;
+the selected item scrolls into view. Arrow keys in the images navigate slices.
+URLs preserve the selection
 and support browser Back and Forward.
 
 Nodule crops cover 128 development patients. Spatial maps offer native samples

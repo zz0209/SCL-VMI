@@ -29,10 +29,10 @@
       <label for="scope">图像范围</label><select id="scope"><option value="whole">完整 CT</option><option value="crop">结节 crop</option></select>
       <label for="model">SAE 配置</label><select id="model"></select>
       <label for="seed">随机种子</label><select id="seed"></select>
-      <label for="feature-input">当前 Feature</label><div class="feature-navigation"><button id="previous-feature" aria-label="上一个 Feature">上一项</button><input id="feature-input" type="number" min="0" step="1" value="0" aria-label="当前 Feature 编号"><button id="next-feature" aria-label="下一个 Feature">下一项</button></div>
       <label for="search">搜索目录</label><input id="search" type="search" placeholder="Feature 编号或观察" autocomplete="off">
+      <p class="secondary" id="feature-keyboard-help">编号 + Enter 跳转；目录中 ↑ / ↓ 切换。</p>
       <label for="category">排列依据</label><select id="category"></select>
-      <div id="feature-list" class="feature-list" aria-label="Feature 列表"></div>
+      <div id="feature-list" class="feature-list" tabindex="0" aria-label="Feature 列表" aria-describedby="feature-keyboard-help"></div>
       <p id="empty-features" class="secondary" hidden>没有符合搜索条件的 Feature。</p>
       <div class="feature-pagination"><button id="previous-page">上一页</button><span id="page-label" aria-live="polite"></span><button id="next-page">下一页</button></div>
       <p class="sidebar-note" id="dictionary-note"></p>
@@ -41,7 +41,7 @@
       <section class="guide" id="help" hidden>
         <h2>查看 SAE 的图像响应</h2>
         <p>点击影像移动十字位置；滚轮、方向键和切片滑条沿对应方向查看。三张影像保留真实毫米比例。按住空格临时隐藏热图，双击影像恢复大小。</p>
-        <p>选择图像范围、SAE 配置和 seed。每份字典的 Feature 编号独立；切换回已浏览的字典会恢复该字典的选择。搜索与排列只改变目录，当前 Feature 保持不变。</p>
+        <p>选择图像范围、SAE 配置和 seed。每份字典的 Feature 编号独立。搜索编号后按 Enter 跳转；在目录中按 ↑ / ↓ 沿当前排列连续切换，自动翻页。点击影像后，方向键切换切片。</p>
         <p>结节 crop 使用 128 名开发集患者。完整 CT 使用八例固定 PETWB 扫描，前后配对为 discovery 与 confirmation。空间字典保留窗口内的原始位置；global 字典对每个输入 crop 输出一个数值。</p>
         <p id="scope-help"></p>
         <p>“研究观察”链接到生成该证据的具体字典、Feature 和病例。“Feature 实验”提供已有位置控制、输入变化和干预结果。</p>
