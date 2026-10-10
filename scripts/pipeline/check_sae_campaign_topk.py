@@ -1,3 +1,6 @@
+import argparse
+from pathlib import Path
+
 import numpy as np
 import torch
 
@@ -7,7 +10,9 @@ from sclvmi.sae_campaign import campaign_root
 from sclvmi.sae_campaign_train import fit_job
 
 
-root = campaign_root() / "smoke"
+parser = argparse.ArgumentParser()
+parser.add_argument("--root", type=Path)
+root = parser.parse_args().root or campaign_root() / "smoke"
 base = {"model": "vista", "site": "global", "seed": 2025, "k": 64, "expansion": 4, "matrix_directory": "smoke_matrices", "training": {"steps": 48, "batch_size": 64, "validate_every": 24, "checkpoint_every": 24, "sae_type": "topk", "checkpoint_selection": "qualified_fvu"}, "inference": {"calibration_train_tokens": 256}}
 complete = {**base, "run_id": "smoke_vista_global_topk_complete_s2025"}
 resumed = {**base, "run_id": "smoke_vista_global_topk_resume_s2025"}
