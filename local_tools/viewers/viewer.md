@@ -2,7 +2,7 @@
 
 The dataset browser displays locally available FLARE-AutoMSC datasets, including
 LUNA25. The feature explorer displays saved nodule-crop and whole-CT SAE outputs.
-All three surfaces share the same English/Chinese globe control. Language choice
+All viewer surfaces share the same English/Chinese globe control. Language choice
 persists across reloads and is shared across these localhost services.
 
 ## Storage and dependencies
@@ -76,3 +76,41 @@ paths in the private audit must remain accessible.
 configured local storage; the browser performs slice rendering without changing
 saved scientific values. The viewers consume completed research assets and do
 not run model training.
+
+## Qualified dictionary library
+
+The same service provides `/dictionaries`, with model-layer, seed, feature and
+patient selectors. It reads the completed catalog from the campaign named in
+`configs/sae_campaign.json`. The page displays each dictionary's reconstruction
+and fixed-classifier checks alongside the CT images. Feature IDs are local to
+their dictionary and seed.
+
+The campaign directory under configured `runs` must provide `viewer/index.json`,
+the referenced `runs/<run_id>/dictionary.pt`, `viewer/<model>/cases.json`, the
+corresponding `case_*.h5` input files, and
+`viewer/responses/<run_id>/responses.h5`. Native activation caches remain in the
+locations recorded by campaign configuration. Patient records and these derived
+arrays stay in private local storage.
+
+The default color maximum is the feature's largest response across the 128
+displayed development patients. Spatial dictionaries provide linked CT heatmaps
+with their native grid dimensions. Global dictionaries display a single response
+for the whole crop. The language button switches the complete interface between
+English and Chinese and shares the preference with the other viewers.
+
+## Raw-image SAE inference
+
+`SpatialSAEPipeline(dictionary_path).extract(image_path)` returns the processed
+input, feature activations and geometry. Spatial output includes a native-grid
+RAS affine. Global output has shape `[features, 1, 1, 1]` and a null grid affine.
+Global classifier checks replace the channel mean and retain the original spatial
+residual; the returned probability documents this specific replacement.
+
+Select dictionary paths from the completed private campaign catalog. Run:
+
+```powershell
+python -m sclvmi.sae_predict --dictionary <dictionary.pt> --image <input.nii.gz> --output <response.npz>
+```
+
+The command saves the activation array and a companion geometry JSON file,
+including original and reconstructed classifier probabilities.

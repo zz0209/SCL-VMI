@@ -23,6 +23,7 @@ from sclvmi.context import context, read_json
 from sclvmi.sae import SpatialDictionary
 from whole_api import router as whole_router
 from content_language import finding_translations, translated_fields
+from campaign_api import router as campaign_router
 
 
 ROOT = Path(__file__).parent
@@ -44,6 +45,7 @@ with np.load(SOURCE / 'discovery_spatial_statistics.npz') as saved:
 
 app = FastAPI(docs_url=None, redoc_url=None)
 app.include_router(whole_router)
+app.include_router(campaign_router)
 app.add_middleware(TrustedHostMiddleware, allowed_hosts=['127.0.0.1', 'localhost', 'testserver'])
 app.add_middleware(GZipMiddleware, minimum_size=1024, compresslevel=1)
 app.mount('/static', StaticFiles(directory=ROOT / 'static'), name='static')

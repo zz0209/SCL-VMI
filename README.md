@@ -22,20 +22,26 @@ Development data is used for configuration selection. Neural-head results averag
 
 Direct development assets: [selected metrics](results/20260926_frozen_fm_development/selected.csv), [candidate metrics](results/20260926_frozen_fm_development/ablation.csv), [pipeline comparison](results/20260926_frozen_fm_development/comparison.png), [ROC/PR/calibration](results/20260926_frozen_fm_development/diagnostics.png), and [VISTA3D pooling comparison](results/20260926_frozen_fm_development/pooling_comparison.png). The [result index](results/20260926_frozen_fm_development/README.md) records the evaluation scope.
 
-## Spatial SAE dictionaries
+## Selected SAE dictionaries
 
-BatchTopK dictionaries preserve native spatial grids for CT crop heatmaps. Each configuration passed reconstruction, sparsity and complete-development classifier checks for seeds 2025, 2026 and 2027. The table shows the default seed-2025 exports, evaluated with the same saved classifier across SAE seeds.
+Six configuration families were selected through 68 training runs, capacity/activity adjustments, full-development fixed-classifier checks and three-seed diagnostics. Each includes seeds 2025, 2026 and 2027. All 18 selected exports passed reconstruction, activity, classifier and raw-CT checks. Values below show the default seed 2025.
 
-| Encoder / site | Native grid | Dictionary size | Target mean activity | FVU | Mean cosine | Probability MAE |
-|---|---:|---:|---:|---:|---:|---:|
-| VISTA3D / stage2 | 12³ | 768 | 80 | 0.04295 | 0.95580 | 0.00293 |
-| FMCIB / layer1 | 13³ | 2,048 | 64 | 0.11884 | 0.96179 | 0.00888 |
+| Encoder / site | Role | Native grid | Features | Target activity | FVU | Probability MAE |
+|---|---|---:|---:|---:|---:|---:|---:|
+| FMCIB layer1 | Local spatial | 13³ | 2,048 | 128 | 0.07416 | 0.00943 |
+| FMCIB layer2 | Regional spatial | 7³ | 4,096 | 256 | 0.09992 | 0.00422 |
+| FMCIB global | Whole crop | 1 | 4,096 | 256 | 0.09322 | 0.00475 |
+| VISTA3D stage2 | Local spatial | 12³ | 768 | 128 | 0.00885 | 0.00137 |
+| VISTA3D stage3 | Regional spatial | 6³ | 1,536 | 256 | 0.01013 | 0.00172 |
+| VISTA3D global | Whole crop | 1 | 768 | 384 | 0.08546 | 0.00430 |
 
-Raw-CT inference checks passed for all six exports, including activation maps, physical coordinates, saved predictions and CPU/GPU reconstruction. Whole-dictionary reconstruction is consistent across seeds. Individual feature correspondence is limited: full-vector matching gives median activation correlations of 0.22–0.23 for VISTA3D and 0.33–0.34 for FMCIB. Feature IDs remain dictionary-local; anatomical interpretation requires image evidence.
+The [selection report](results/20261009_sae_selected_materials/README.md) provides the rationale, [three-seed quality figure](results/20261009_sae_selected_materials/selected_quality.png), [all candidates](results/20261009_sae_selected_materials/candidates.csv), [selected metrics](results/20261009_sae_selected_materials/selected.csv), [feature correspondence](results/20261009_sae_selected_materials/seed_consistency.csv) and [PCA references](results/20261009_sae_selected_materials/pca_reference.csv). Development metrics weight patients equally; the independent test set remains reserved.
 
-The [SAE results and design choices](results/20261008_spatial_sae/README.md) include [all selected metrics](results/20261008_spatial_sae/selected.csv), [candidate comparisons](results/20261008_spatial_sae/candidate_comparison.csv), [training curves](results/20261008_spatial_sae/training_quality.png), [capacity/activity comparisons](results/20261008_spatial_sae/candidate_quality.png), and [PCA/seed diagnostics](results/20261008_spatial_sae/diagnostics.json). `SpatialSAEPipeline` returns activation arrays and native-grid RAS coordinates. The private dictionary index is stored under the configured runs directory at `20261008_spatial_sae/dictionary_index.json`.
+Spatial BatchTopK dictionaries retain native grids. Global TopK dictionaries return a whole-crop response; their classifier check replaces the final channel mean while preserving the spatial residual. Global PCA has lower reconstruction FVU than the global SAEs. Individual feature correspondence remains limited, particularly for VISTA3D; feature IDs are dictionary-local and medical interpretation needs image evidence. `SpatialSAEPipeline` exposes actual CT activations and geometry. The private selected index is `20261009_sae_asset_selection/selection.json` under configured runs storage.
 
-The FMCIB default dictionary also has [feature-level research checks](results/20261008_sae_feature_validation/README.md): 128 patient-distinct CT inputs, three SAE seeds, translation and position controls, and patient-balanced correspondence. Thirteen features pass the numerical screens; nine provide repeated broad image-content descriptions as research starting points. The [feature catalog](results/20261008_sae_feature_validation/reviewed_features.csv) retains each description and its qualifications. These are conditional development-set observations from one AI image reviewer; clinical identity and feature-specific causal effects remain untested. The private `20261008_feature_validation/fmcib/research_materials.json` contains fixed weights and CT evidence paths.
+### Feature observation materials
+
+The separate `20261008` FMCIB layer1/k64 dictionary has [feature-level research checks](results/20261008_sae_feature_validation/README.md): 128 patient-distinct CT inputs, three SAE seeds, translation and position controls, and patient-balanced correspondence. Thirteen features pass the numerical screens; nine provide repeated broad image-content descriptions as research starting points. The [feature catalog](results/20261008_sae_feature_validation/reviewed_features.csv) retains each description and its qualifications. These are conditional development-set observations from one AI image reviewer; clinical identity and feature-specific causal effects remain untested. The private `20261008_feature_validation/fmcib/research_materials.json` contains fixed weights and CT evidence paths. Its [dictionary study](results/20261008_spatial_sae/README.md) records the associated earlier training results.
 
 ## Engineering entry points
 
