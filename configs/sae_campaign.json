@@ -1,0 +1,27 @@
+{
+  "campaign": "20261009_sae_asset_selection",
+  "previous_suite": "20261008_spatial_sae",
+  "models": {
+    "fmcib": {
+      "layer1": {"module": "layer1", "channels": 512, "stride": 4, "kind": "spatial"},
+      "layer2": {"module": "layer2", "channels": 1024, "stride": 8, "kind": "spatial"},
+      "layer3": {"module": "layer3", "channels": 2048, "stride": 16, "kind": "spatial"},
+      "layer4": {"module": "layer4", "channels": 4096, "stride": 32, "kind": "spatial"},
+      "global": {"channels": 4096, "kind": "pooled", "pooling": "mean of final native spatial positions"}
+    },
+    "vista": {
+      "stage2": {"module": "image_encoder.encoder.layers.2.blocks", "channels": 192, "stride": 4, "kind": "spatial"},
+      "stage3": {"module": "image_encoder.encoder.layers.3.blocks", "channels": 384, "stride": 8, "kind": "spatial"},
+      "stage4": {"module": "image_encoder.encoder.layers.4.blocks", "channels": 768, "stride": 16, "kind": "spatial"},
+      "global": {"channels": 768, "kind": "pooled", "pooling": "mean of final native spatial positions"}
+    }
+  },
+  "sampling": {"seed": 20261009, "train_tokens_per_patient": 512, "development_tokens_per_patient": 256, "replacement": false},
+  "search": {"initial_expansion": 4, "initial_k": [64, 128], "lower_k": [32], "higher_k": [256], "comparison_expansion": 8, "seeds": [2025, 2026, 2027]},
+  "training": {"steps": 12000, "batch_size": 2048, "learning_rate": 0.0003, "betas": [0.9, 0.99], "warmup_steps": 200, "decay_start_fraction": 0.8, "checkpoint_every": 500, "checkpoint_seconds": 60, "validate_every": 1000, "aux_penalty": 0.03125, "top_k_aux": 512, "inactive_batches": 100, "gradient_clip": 10.0, "precision": "float32", "tf32": false},
+  "inference": {"calibration_train_tokens": 65536, "batch_independence_atol": 0.0001},
+  "acceptance": {"max_development_fvu": 0.15, "min_mean_token_cosine": 0.95, "max_inactive_fraction": 0.02, "l0_relative_tolerance": 0.2, "max_probability_mae": 0.025, "max_auroc_decrease": 0.01, "max_ap_decrease": 0.02},
+  "selection": {"fvu_equivalence_margin": 0.02, "roles": ["local_spatial", "regional_spatial", "global"], "local_minimum_grid_axis": 6, "test_used": false},
+  "control": {"poll_seconds": 1, "remote_sync_seconds": 15},
+  "upstream": {"module": "third_party/batchtopk/sae.py", "commit": "b9aab1c6156381ae7ae2997e3490e7b99e195dde"}
+}

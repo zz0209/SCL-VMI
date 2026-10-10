@@ -15,6 +15,7 @@
 !/configs/model_sources.json
 !/configs/material_preparation.json
 !/configs/sae_preparation.json
+!/configs/sae_campaign.json
 !/configs/environments/
 /configs/environments/*
 !/configs/environments/pipeline.json
@@ -47,6 +48,9 @@
 !/scripts/pipeline/prepare_materials.py
 !/scripts/pipeline/summarize_spatial_sae.py
 !/scripts/pipeline/check_spatial_sae.py
+!/scripts/pipeline/check_sae_campaign.py
+!/scripts/pipeline/check_sae_campaign_evaluation.py
+!/scripts/pipeline/check_sae_campaign_diagnostics.py
 !/scripts/sae_validation/
 /scripts/sae_validation/*
 !/scripts/sae_validation/feature_screen.py
@@ -92,6 +96,12 @@
 !/src/sclvmi/sae_geometry.py
 !/src/sclvmi/sae_predict.py
 !/src/sclvmi/sae_sites.py
+!/src/sclvmi/sae_campaign.py
+!/src/sclvmi/sae_campaign_data.py
+!/src/sclvmi/sae_campaign_train.py
+!/src/sclvmi/sae_campaign_evaluate.py
+!/src/sclvmi/sae_campaign_compare.py
+!/src/sclvmi/sae_campaign_diagnostics.py
 
 !/tests/
 /tests/*
