@@ -44,6 +44,7 @@ function modes(){
 }
 function controls(){
   const current=spec(),families=[...new Set(state.catalog.filter(row=>row.scopes.includes(state.scope)).map(row=>row.family))];
+  for(const option of el('category').options)option.textContent=text(labels[option.value]);
   el('model').replaceChildren();
   for(const reference of [false,true]){
     const group=node('optgroup');group.label=text(reference?'研究观察使用的字典':'选定 SAE 组合');
