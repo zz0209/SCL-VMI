@@ -1,5 +1,6 @@
 'use strict';
 ViewerLanguage.add([
+  ['准备中','Preparing'],
   ['返回浏览入口','Return to browser'],
   ['当前图像中的响应','Responses in this image'],
   ['字典验证结果与使用范围','Dictionary checks and scope'],['没有符合搜索条件的 Feature。','No features match this search.'],

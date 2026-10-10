@@ -76,7 +76,7 @@ function featureMetric(row,key){
   if(Number.isFinite(row[key]))return {rank:row[key],label:format(row[key])};
   const region=key==='lung_enrichment'?'lung':key==='liver_enrichment'?'liver':null;
   if(region&&row.discovery_region_means?.[region]>0)return {rank:Infinity,label:text('参考区域均值为零')};
-  return {rank:-Infinity,label:text(row[key]===null?(region?'两组均无响应':key==='maximum'?'计算中':'观察病例无响应'):'统计中')};
+  return {rank:-Infinity,label:text(row[key]===null?(region?'两组均无响应':key==='maximum'?'准备中':'观察病例无响应'):'统计中')};
 }
 function featureRows(){
   const term=el('search').value.trim().toLowerCase(),key=el('category').value;
@@ -98,7 +98,7 @@ function updateCases(){
   const current=spec();
   const key=`${state.scope}/${current.model}/${ViewerLanguage.value}/${state.cases.map(row=>Number(row.ready)).join('')}`;
   if(el('case-strip').dataset.catalog!==key){
-    el('case-select').replaceChildren(...state.cases.map(row=>{const option=node('option',`${row.label} · ${row.split}${row.ready?'':` · ${text('计算中')}`}`);option.value=row.id;return option;}));
+    el('case-select').replaceChildren(...state.cases.map(row=>{const option=node('option',`${row.label} · ${row.split}${row.ready?'':` · ${text('准备中')}`}`);option.value=row.id;return option;}));
     el('case-strip').replaceChildren(...state.cases.map(row=>{const button=node('button',null,'case-tile');button.dataset.case=row.id;const image=node('img');image.className='whole-thumb';image.src=`/api/heatmaps/thumbnail/${state.scope}/${current.model}/${row.id}`;image.alt=`${row.label} ${text('冠状面 CT')}`;image.loading='lazy';button.append(image,node('strong',row.label),node('span',row.split));return button;}));el('case-strip').dataset.catalog=key;
   }
   el('case-select').value=state.case;for(const button of el('case-strip').children){const active=Number(button.dataset.case)===state.case;button.classList.toggle('active',active);button.setAttribute('aria-current',String(active));}
@@ -122,7 +122,7 @@ async function loadSelection({catalog=false,locate=false,push=false,resetPoint=f
     if(!Number.isInteger(state.feature)||state.feature<0||state.feature>=spec().features)throw new Error(text('Feature 编号超出当前字典范围。'));
     if(!Number.isInteger(state.case)||state.case<0||state.case>=state.cases.length)throw new Error(text('病例编号超出当前图像范围。'));
     controls();syncURL(push);featureList(locate);updateCases();
-    if(!state.cases[state.case].ready){state.pending=true;loading('当前字典的完整 CT 响应正在计算，完成后自动显示。',true);el('loading').textContent='';await preparation();return;}
+    if(!state.cases[state.case].ready){state.pending=true;loading('完整 CT 响应正在准备。',true);el('loading').textContent='';await preparation();return;}
     const selection=query().toString(),current=spec();
     const [meta,ct,activity]=await Promise.all([get(`/api/heatmaps/map?${selection}`,signal),get(`/api/heatmaps/ct/${state.scope}/${current.model}/${state.case}`,signal,true),get(`/api/heatmaps/activity?${selection}`,signal,true)]);if(id!==state.request)return;
     if(!renderer)renderer=new WholeVolumeRenderer();renderer.upload(meta,ct,activity,state.mode==='native'?'spatial':state.mode);state.meta=meta;state.pan={};
@@ -181,9 +181,9 @@ async function loadFindings(){
   }));
 }
 async function preparation(){
-  if(!state.pending)return;const id=state.request,model=spec().model,data=await get('/api/heatmaps/preparation');if(id!==state.request||!state.pending)return;const item=data[model];
+  if(!state.pending)return;const id=state.request,model=spec().model,data=await get(`/api/heatmaps/preparation?run=${encodeURIComponent(state.run)}`);if(id!==state.request||!state.pending)return;const item=data[model];
   if(item.state==='running')el('run-progress').textContent=`${names[model]} · CT ${item.case+1}/${item.cases} · ${format(item.completed)}/${format(item.total)} ${text('窗口')} · ${format(item.tiles_per_second)} ${text('窗口/秒')}`;
-  else el('run-progress').textContent=text(item.state==='paused'?'完整 CT 响应计算已暂停。':'完整 CT 响应正在准备。');if(item.state==='completed')await loadSelection({catalog:true});
+  else el('run-progress').textContent=text(item.state==='paused'?'完整 CT 响应计算已暂停。':'完整 CT 响应正在准备。');if(item.dictionary_ready||item.state==='completed')await loadSelection({catalog:true});
 }
 setInterval(()=>run(preparation),15000);
 function readLocation(){const params=new URLSearchParams(location.search),old=params.get('model');state.run=params.get('run')||(old?state.catalog.find(row=>row.reference&&row.model===old)?.run_id:state.catalog[0].run_id);if(!spec())throw new Error(text('地址中的 SAE 字典不存在。'));state.scope=params.get('scope')||'whole';if(!spec().scopes.includes(state.scope))throw new Error(text('此字典没有对应图像范围的材料。'));state.feature=Number(params.get('feature')||0);state.case=Number(params.get('case')||0);state.mode=params.get('mode')||'spatial';state.panel=params.get('panel')==='findings'?'findings':'explore';el('findings-scope').value=params.get('findings')==='crop'?'crop':'whole';}

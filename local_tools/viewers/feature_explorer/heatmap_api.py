@@ -20,6 +20,7 @@ router = APIRouter()
 READ_LOCK = RLock()
 SETTINGS = read_json(ROOT / "configs/sae_whole_viewer.json")
 RUN_ROOT = Path(context()[0]["runs"]) / SETTINGS["run_id"]
+BROWSER_ROOT = RUN_ROOT / "browser_cache"
 
 
 def dictionaries():
@@ -39,10 +40,14 @@ def specification(run):
 
 
 def selected_path(run, case):
-    path = RUN_ROOT / "maps" / run / f"case_{case:02d}.h5"
+    path = BROWSER_ROOT / run / f"case_{case:02d}.h5"
     if not path.with_suffix(".json").exists():
-        raise HTTPException(409, "Whole-CT responses for this dictionary and case are still being prepared")
+        raise HTTPException(409, "Whole-CT browser data for this dictionary and case is still being prepared")
     return path
+
+
+def browser_ready(run):
+    return all((BROWSER_ROOT / run / f"case_{case:02d}.json").exists() for case in range(8))
 
 
 def cases_for(spec, scope):
@@ -51,7 +56,7 @@ def cases_for(spec, scope):
     if scope == "crop":
         return [{"id": row["index"], "label": row["label"], "split": "development", "ready": True} for row in read_json(campaign_api.ROOT / "viewer" / spec["model"] / "cases.json")["cases"]]
     cases = whole_api.status()["cases"]
-    complete = (RUN_ROOT / f"completed_{spec['model']}.json").exists()
+    complete = browser_ready(spec['run_id'])
     return [{"id": row["id"], "label": row["label"], "split": row["split"], "ready": row["ready"][spec["model"]] if spec["reference"] else complete} for row in cases]
 
 
@@ -72,13 +77,15 @@ def validate(run, scope, case, feature, mode):
 
 @lru_cache(maxsize=12)
 def selected_map(run, case, feature, mode):
+    if mode in ["single", "mean", "maximum"]:
+        native, _, _ = selected_map(run, case, feature, "spatial")
     with READ_LOCK, h5py.File(selected_path(run, case), "r") as saved:
         assert saved.attrs["status"] == "completed"
-        native = saved["values"][feature].astype(np.float32)
         origin = np.asarray(saved.attrs["origin"])
         step = float(saved.attrs["step_mm"])
         core = int(saved.attrs["core_size"])
         if mode in ["spatial", "global"]:
+            native = saved["values"][feature].astype(np.float32)
             return native, origin, step
         shape = np.asarray(native.shape)
         tiles = (shape + core - 1) // core
@@ -205,5 +212,15 @@ def thumbnail(scope: str, model: str, case: int):
 
 
 @router.get("/api/heatmaps/preparation")
-def preparation():
-    return {model: read_json(RUN_ROOT / f"progress_{model}.json") if (RUN_ROOT / f"progress_{model}.json").exists() else {"state": "pending"} for model in ["fmcib", "vista"]}
+def preparation(run: str | None = None):
+    result = {}
+    current = specification(run) if run else None
+    for model in ["fmcib", "vista"]:
+        path = RUN_ROOT / f"progress_{model}.json"
+        value = read_json(path) if path.exists() else {"state": "pending"}
+        if value['state'] == 'completed' and not (BROWSER_ROOT / f'completed_{model}.json').exists():
+            value = {**value, 'state': 'preparing_browser_cache'}
+        if current and current['model'] == model:
+            value = {**value, 'dictionary_ready': browser_ready(run)}
+        result[model] = value
+    return result

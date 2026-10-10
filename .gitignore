@@ -194,6 +194,7 @@
 !/local_tools/viewers/feature_explorer/whole.py
 !/local_tools/viewers/feature_explorer/selected_whole.py
 !/local_tools/viewers/feature_explorer/selected_whole_fast.py
+!/local_tools/viewers/feature_explorer/prepare_selected_browser_cache.py
 !/local_tools/viewers/feature_explorer/check_selected_whole.py
 !/local_tools/viewers/feature_explorer/check_heatmap_api.py
 !/local_tools/viewers/feature_explorer/content_language.py

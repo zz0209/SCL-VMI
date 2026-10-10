@@ -98,6 +98,27 @@ parent asset identity under `executions/`; completion receipts identify the
 execution that finished each case. Floating-point differences near an SAE
 threshold should be checked when changing batch size or execution environment.
 
+Prepare the lossless browser files after extraction:
+
+```powershell
+python local_tools/viewers/feature_explorer/prepare_selected_browser_cache.py --workers 4
+```
+
+The command writes `browser_cache/<run_id>/case_*.h5` under the selected whole-CT
+run directory. Each compressed chunk contains one complete feature, and every
+copied float16 value is checked against the source. File receipts include SHA256
+and source identity; interrupted files resume by completed feature count. The
+command checks available RAM before starting. Choose `--workers` from 1 through
+4 according to available resources. A representative check can use `--run
+<run_id> --case 0 --workers 1 --smoke-features 32 --output-root <separate-directory>`.
+Smoke files remain separate from complete browser assets. Each dictionary becomes
+available after all eight verified browser files and their receipts are present.
+
+For remote preparation, copy complete browser files and receipts to the same
+relative location in local runs storage and verify their SHA256 values. Preserve
+the original extraction files and execution records. Run
+`check_heatmap_api.py --require-whole` after all dictionaries are available.
+
 The commands require the published encoder checkpoints registered in local
 storage, selected dictionaries and the source audit below. Run each model's
 `--smoke` option and `check_selected_whole.py --model <model>` before extraction
