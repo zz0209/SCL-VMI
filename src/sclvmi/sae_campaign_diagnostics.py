@@ -108,6 +108,7 @@ def compare_seeds(root, run_ids, destination, matrix=None, samples_per_patient=1
     np.savez(destination / "sample.npz", indices=indices, weights=weights, matrix_identity=read_json(matrix / "matrix.json")["identity"])
     tokens = torch.tensor(np.array(source[indices]), device="cuda")
     encoded = []
+    valid_features = []
     decoder_paths = []
     coverage = []
     started = time.monotonic()
@@ -115,6 +116,7 @@ def compare_seeds(root, run_ids, destination, matrix=None, samples_per_patient=1
         checkpoint_pause(root)
         encoded_path = destination / f"{run_id}_activations.npy"
         decoder_path = destination / f"{run_id}_decoder.npy"
+        valid_path = destination / f"{run_id}_nonconstant.npy"
         receipt_path = destination / f"{run_id}_encoding.json"
         if not receipt_path.exists():
             dictionary = SpatialDictionary(root / "runs" / run_id / "dictionary.pt")
@@ -136,6 +138,7 @@ def compare_seeds(root, run_ids, destination, matrix=None, samples_per_patient=1
                 frequency += ((part > 0) * weight).sum(0)
             deviation = np.sqrt(np.maximum(square - mean ** 2, 0))
             valid = deviation > 1e-8
+            np.save(valid_path, valid)
             for start in range(0, len(tokens), 512):
                 part = np.asarray(values[start:start + 512], dtype=np.float64)
                 part[:, valid] = (part[:, valid] - mean[valid]) / deviation[valid]
@@ -148,6 +151,7 @@ def compare_seeds(root, run_ids, destination, matrix=None, samples_per_patient=1
             gc.collect()
             torch.cuda.empty_cache()
         encoded.append(np.load(encoded_path, mmap_mode="r"))
+        valid_features.append(np.load(valid_path))
         decoder_paths.append(decoder_path)
         coverage.append(read_json(receipt_path))
     comparisons = []
@@ -159,6 +163,10 @@ def compare_seeds(root, run_ids, destination, matrix=None, samples_per_patient=1
             comparisons.append(read_json(result_path))
             continue
         target = torch.tensor(np.array(encoded[second]), device="cuda")
+        source_valid = valid_features[first]
+        target_valid = valid_features[second]
+        assert source_valid.any() and target_valid.any()
+        invalid_target = torch.tensor(~target_valid, device="cuda")
         count = encoded[first].shape[1]
         maxima = np.full(count, -np.inf, dtype=np.float32)
         nearest = np.zeros(count, dtype=np.int64)
@@ -168,6 +176,8 @@ def compare_seeds(root, run_ids, destination, matrix=None, samples_per_patient=1
             checkpoint_pause(root)
             batch = torch.tensor(np.array(encoded[first][:, start:start + 256]), device="cuda")
             correlation = batch.T @ target
+            correlation[:, invalid_target] = -torch.inf
+            correlation[torch.tensor(~source_valid[start:start + batch.shape[1]], device="cuda")] = -torch.inf
             best, match = correlation.max(1)
             maxima[start:start + len(best)] = best.cpu().numpy()
             nearest[start:start + len(best)] = match.cpu().numpy()
@@ -177,14 +187,18 @@ def compare_seeds(root, run_ids, destination, matrix=None, samples_per_patient=1
             reverse_max = torch.maximum(reverse_max, value)
             progress(root, f"seed-match-{pair}", "running", min(start + 256, count), count, started, worker="local")
         reverse = reverse_index.cpu().numpy()
-        reciprocal = reverse[nearest] == np.arange(count)
+        maxima[~source_valid] = np.nan
+        nearest[~source_valid] = -1
+        reciprocal = np.zeros(count, dtype=bool)
+        reciprocal[source_valid] = reverse[nearest[source_valid]] == np.flatnonzero(source_valid)
         first_decoder = np.load(decoder_paths[first], mmap_mode="r")
         second_decoder = np.load(decoder_paths[second], mmap_mode="r")
         decoder_cosine = np.empty(count, dtype=np.float32)
         for start in range(0, count, 256):
             decoder_cosine[start:start + 256] = (first_decoder[start:start + 256] * second_decoder[nearest[start:start + 256]]).sum(1)
-        np.savez(destination / f"{pair}.npz", source_index=np.arange(count), target_index=nearest, correlation=maxima, reciprocal=reciprocal, decoder_cosine=decoder_cosine)
-        result = {"pair": pair, "source_run": run_ids[first], "target_run": run_ids[second], "correlation_quantiles": np.quantile(maxima, [0, .1, .5, .9, 1]).tolist(), "reciprocal_fraction": float(reciprocal.mean()), "reciprocal_and_correlation_ge_0_8": float(np.mean(reciprocal & (maxima >= .8))), "reciprocal_and_correlation_ge_0_5": float(np.mean(reciprocal & (maxima >= .5))), "completed_at": timestamp()}
+        decoder_cosine[~source_valid] = np.nan
+        np.savez(destination / f"{pair}.npz", source_index=np.arange(count), target_index=nearest, correlation=maxima, reciprocal=reciprocal, decoder_cosine=decoder_cosine, source_nonconstant=source_valid, target_nonconstant=target_valid)
+        result = {"pair": pair, "source_run": run_ids[first], "target_run": run_ids[second], "source_eligible_features": int(source_valid.sum()), "target_eligible_features": int(target_valid.sum()), "source_features": len(source_valid), "target_features": len(target_valid), "denominator": "nonconstant source features; matching considers nonconstant target features", "correlation_quantiles": np.quantile(maxima[source_valid], [0, .1, .5, .9, 1]).tolist(), "reciprocal_fraction": float(reciprocal[source_valid].mean()), "reciprocal_and_correlation_ge_0_8": float(np.mean(reciprocal[source_valid] & (maxima[source_valid] >= .8))), "reciprocal_and_correlation_ge_0_5": float(np.mean(reciprocal[source_valid] & (maxima[source_valid] >= .5))), "completed_at": timestamp()}
         write_json(result_path, result)
         comparisons.append(result)
         del target, correlation, batch

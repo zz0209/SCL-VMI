@@ -105,6 +105,8 @@
 !/src/sclvmi/sae_campaign_evaluate.py
 !/src/sclvmi/sae_campaign_compare.py
 !/src/sclvmi/sae_campaign_diagnostics.py
+!/src/sclvmi/sae_campaign_evaluate_batched.py
+!/scripts/pipeline/check_sae_campaign_defined_diagnostics.py
 
 !/tests/
 /tests/*
