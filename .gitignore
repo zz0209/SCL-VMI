@@ -16,6 +16,7 @@
 !/configs/material_preparation.json
 !/configs/sae_preparation.json
 !/configs/sae_campaign.json
+!/configs/sae_whole_viewer.json
 !/configs/environments/
 /configs/environments/*
 !/configs/environments/pipeline.json
@@ -189,6 +190,12 @@
 !/local_tools/viewers/feature_explorer/server.py
 !/local_tools/viewers/feature_explorer/whole_api.py
 !/local_tools/viewers/feature_explorer/campaign_api.py
+!/local_tools/viewers/feature_explorer/heatmap_api.py
+!/local_tools/viewers/feature_explorer/whole.py
+!/local_tools/viewers/feature_explorer/selected_whole.py
+!/local_tools/viewers/feature_explorer/selected_whole_fast.py
+!/local_tools/viewers/feature_explorer/check_selected_whole.py
+!/local_tools/viewers/feature_explorer/check_heatmap_api.py
 !/local_tools/viewers/feature_explorer/content_language.py
 !/local_tools/viewers/feature_explorer/start.ps1
 !/local_tools/viewers/feature_explorer/requirements.txt
@@ -203,9 +210,6 @@
 !/local_tools/viewers/feature_explorer/static/whole.css
 !/local_tools/viewers/feature_explorer/static/whole-i18n.js
 !/local_tools/viewers/feature_explorer/static/whole-renderer.js
-!/local_tools/viewers/feature_explorer/static/dictionaries.html
-!/local_tools/viewers/feature_explorer/static/dictionaries.js
-!/local_tools/viewers/feature_explorer/static/dictionaries.css
 
 # Generated files remain excluded even under reviewed source directories.
 __pycache__/

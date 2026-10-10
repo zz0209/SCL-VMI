@@ -6,8 +6,8 @@ import h5py
 import nibabel as nib
 import numpy as np
 import torch
-from fastapi import APIRouter, HTTPException
-from fastapi.responses import FileResponse, Response
+from fastapi import APIRouter, HTTPException, Request
+from fastapi.responses import RedirectResponse, Response
 from scipy.ndimage import map_coordinates
 
 from sclvmi.context import ROOT as PROJECT_ROOT, context, read_json
@@ -96,8 +96,8 @@ def response_data(run_id, case, feature):
 
 
 @router.get("/dictionaries")
-def page():
-    return FileResponse(Path(__file__).parent / "static/dictionaries.html")
+def page(request: Request):
+    return RedirectResponse('/whole?scope=crop&' + request.url.query)
 
 
 @router.get("/api/dictionaries")

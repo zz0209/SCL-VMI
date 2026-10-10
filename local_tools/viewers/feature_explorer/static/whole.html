@@ -3,7 +3,7 @@
 <head>
   <meta charset="utf-8">
   <meta name="viewport" content="width=device-width,initial-scale=1">
-  <title>SCL-VMI · 整张 CT</title>
+  <title>SCL-VMI · 热图浏览</title>
   <link rel="stylesheet" href="/static/style.css">
   <link rel="stylesheet" href="/static/whole.css">
   <link rel="stylesheet" href="/shared/language.css">
@@ -15,38 +15,44 @@
 </head>
 <body>
   <header class="app-header">
-    <a class="brand" href="/whole">SCL–VMI <span>整张 CT</span></a>
-    <nav aria-label="研究内容"><button id="explore-tab" class="nav-button active">热图浏览</button><button id="findings-tab" class="nav-button">研究观察</button><a href="/" class="crop-link">结节 crop</a><a href="/dictionaries" class="crop-link">SAE 字典</a></nav>
-    <span class="dataset-stamp">固定 SAE · 完整扫描视野</span>
+    <a class="brand" id="home-link" href="/whole">SCL–VMI <span>热图浏览</span></a>
+    <nav aria-label="研究内容"><button id="explore-tab" class="nav-button active" aria-current="page">热图浏览</button><button id="findings-tab" class="nav-button">研究观察</button><a href="/experiments" class="crop-link">Feature 实验</a></nav>
+    <span class="dataset-stamp" id="dictionary-stamp"></span>
     <button id="help-toggle" class="quiet">使用说明</button>
     <button id="language-toggle" class="quiet" aria-label="Switch to English"><svg viewBox="0 0 24 24" width="19" height="19" fill="none" stroke="currentColor" stroke-width="1.6" aria-hidden="true"><circle cx="12" cy="12" r="9"/><ellipse cx="12" cy="12" rx="4" ry="9"/><path d="M3 12h18M5 6.5h14M5 17.5h14"/></svg><span>English</span></button>
   </header>
-  <div id="error" role="alert" hidden></div>
+  <div id="error" role="alert" hidden><span id="error-message"></span><button id="retry">重新读取</button><a href="/whole">返回浏览入口</a></div>
   <div id="run-progress" role="status" aria-live="polite"></div>
   <div class="app-layout" id="explore-panel">
     <aside class="sidebar" aria-label="模型与 Feature 目录">
       <h2>Feature 目录 <span id="feature-count"></span></h2>
-      <label for="model">模型</label><select id="model"><option value="fmcib">FMCIB · layer1</option><option value="vista">VISTA3D · stage2</option></select>
-      <label for="search">Feature 编号或观察</label><input id="search" type="search" placeholder="例如 1976" autocomplete="off">
-      <label for="category">排列依据（discovery）</label><select id="category"><option value="id">Feature 编号</option><option value="lung_enrichment">肺部富集程度</option><option value="liver_enrichment">肝脏富集程度</option><option value="outside_fraction">图像边缘空气响应</option><option value="high_hu_fraction">高 HU 区域的响应</option></select>
-      <div id="feature-list" class="feature-list" aria-label="Feature 列表"></div><button id="more-features" hidden>显示更多</button>
+      <label for="scope">图像范围</label><select id="scope"><option value="whole">完整 CT</option><option value="crop">结节 crop</option></select>
+      <label for="model">SAE 配置</label><select id="model"></select>
+      <label for="seed">随机种子</label><select id="seed"></select>
+      <label for="feature-input">当前 Feature</label><div class="feature-navigation"><button id="previous-feature" aria-label="上一个 Feature">上一项</button><input id="feature-input" type="number" min="0" step="1" value="0" aria-label="当前 Feature 编号"><button id="next-feature" aria-label="下一个 Feature">下一项</button></div>
+      <label for="search">搜索目录</label><input id="search" type="search" placeholder="Feature 编号或观察" autocomplete="off">
+      <label for="category">排列依据</label><select id="category"></select>
+      <div id="feature-list" class="feature-list" aria-label="Feature 列表"></div>
+      <p id="empty-features" class="secondary" hidden>没有符合搜索条件的 Feature。</p>
+      <div class="feature-pagination"><button id="previous-page">上一页</button><span id="page-label" aria-live="polite"></span><button id="next-page">下一页</button></div>
       <p class="sidebar-note" id="dictionary-note"></p>
     </aside>
     <main>
       <section class="guide" id="help" hidden>
-        <h2>从整张 CT 查看 feature 的位置</h2>
+        <h2>查看 SAE 的图像响应</h2>
         <p>点击影像移动十字位置；滚轮、方向键和切片滑条沿对应方向查看。三张影像保留真实毫米比例。按住空格临时隐藏热图，双击影像恢复大小。</p>
-        <p>“空间激活”保留每个位置的 SAE 数值。FMCIB 每隔 4 mm 采样，VISTA3D 每隔 6 mm 采样。“单点 SAE 值”使用每个区域的中央位置，一个 feature 对应一个数字。平均值和峰值分别汇集该区域 8³ 个空间位置；扫描边缘使用视野内的位置。</p>
-        <p>FMCIB 使用连续卷积，每个空间位置具有完整的 35 mm 感受野，区域数值每隔 32 mm 取样。中央 SAE 值与对应 50 mm 输入 crop 内部位置的计算相同。VISTA3D 使用 72 mm 输入 crop，每隔 48 mm 移动，保留中央 8³ 个位置。研究观察提供实际的上下文检查结果。</p>
-        <p>这里使用 FLARE-AutoMSC 的 PETWB 完整 CT，原始体素约为 4.07 × 4.07 × 5 mm。全部图像属于提供方的训练部分。字典来自此前的 LUNA25 crop 训练；器官响应与异常图案均作为探索证据。</p>
+        <p>选择图像范围、SAE 配置和 seed。每份字典的 Feature 编号独立；切换回已浏览的字典会恢复该字典的选择。搜索与排列只改变目录，当前 Feature 保持不变。</p>
+        <p>结节 crop 使用 128 名开发集患者。完整 CT 使用八例固定 PETWB 扫描，前后配对为 discovery 与 confirmation。空间字典保留窗口内的原始位置；global 字典对每个输入 crop 输出一个数值。</p>
+        <p id="scope-help"></p>
+        <p>“研究观察”链接到生成该证据的具体字典、Feature 和病例。“Feature 实验”提供已有位置控制、输入变化和干预结果。</p>
       </section>
       <section class="feature-heading"><div><h1 id="feature-title">整张 CT 的 Feature 响应</h1><p id="feature-description"></p></div><span id="loading" role="status" aria-live="polite">读取数据…</span></section>
       <section class="toolbar" aria-label="完整 CT 显示设置">
         <label>病例<select id="case-select"></select></label>
-        <label>Feature 数值<select id="mode"><option value="spatial">空间激活 · 原始采样</option><option value="single">每个 crop · 单点 SAE 值</option><option value="mean">每个区域 · 平均值</option><option value="maximum">每个区域 · 峰值</option></select></label>
+        <label>Feature 数值<select id="mode"></select></label>
         <label>CT 显示窗<select id="window"><option value="tissue">组织窗 −160 / 240 HU</option><option value="lung">肺窗 −1000 / 400 HU</option><option value="bone">骨窗 −500 / 1500 HU</option></select></label>
         <label>影像大小<select id="zoom"><option value="1">适合窗口</option><option value="1.5">150%</option><option value="2">200%</option><option value="3">300%</option></select></label>
-        <button id="peak">定位峰值</button><button id="center" class="quiet">回到中心</button>
+        <button id="peak">定位峰值</button><button id="center" class="quiet">回到中心</button><button id="strongest" class="quiet" hidden>最强响应病例</button>
       </section>
       <section class="view-toolbar">
         <label class="check"><input id="overlay" type="checkbox" checked>显示热图</label>
@@ -64,11 +70,12 @@
       </div>
       </div>
       <div class="legend-row"><span>Activation</span><span>0</span><div id="colorbar"></div><span id="legend-high">1</span><span id="geometry-note"></span></div>
-      <section class="whole-evidence"><h2>当前扫描中的响应</h2><dl id="map-stats"></dl><p id="feature-evidence" class="secondary"></p></section>
-      <section class="patients-section"><div class="section-heading"><h2>完整 CT 病例</h2><span class="secondary">每组第一例用于观察，第二例用于确认</span></div><div id="case-strip" class="case-strip"></div></section>
-      <footer class="page-footer"><span>仅本地 · 保存的真实 CT 与 SAE 数值</span><span>原始 CT 约 4.07 × 4.07 × 5 mm</span><span>20261009_whole_ct_exploration</span></footer>
+      <section class="whole-evidence"><h2>当前图像中的响应</h2><dl id="map-stats"></dl><p id="feature-evidence" class="secondary"></p></section>
+      <details id="dictionary-checks"><summary>字典验证结果与使用范围</summary><dl id="quality-values"></dl><p class="secondary" id="quality-scope"></p><p class="dictionary-identity" id="dictionary-identity"></p></details>
+      <section class="patients-section"><div class="section-heading"><h2 id="cases-title">病例</h2><span class="secondary" id="cases-note"></span></div><div id="case-strip" class="case-strip"></div></section>
+      <footer class="page-footer"><span>仅本地 · 保存的真实 CT 与 SAE 数值</span><span id="dataset-note"></span><span id="source-note"></span></footer>
     </main>
   </div>
-  <main id="findings-panel" class="findings-page" hidden><header><h1>整张 CT 中的规律与异常图案</h1><p>检查响应出现在哪里、能否跨病例重复，以及窗口位置如何改变同一身体位置的响应。</p></header><div id="findings-list"></div></main>
+  <main id="findings-panel" class="findings-page" hidden><header><h1>研究观察</h1><p>每条观察保留其字典身份；打开证据会显示生成该结果的字典与图像。</p><label for="findings-scope">观察范围</label><select id="findings-scope"><option value="whole">完整 CT</option><option value="crop">结节 crop 实验</option></select></header><div id="findings-list"></div></main>
 </body>
 </html>

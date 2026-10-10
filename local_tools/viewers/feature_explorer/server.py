@@ -13,7 +13,7 @@ from PIL import Image
 import torch
 import uvicorn
 from fastapi import FastAPI, HTTPException, Query, Request
-from fastapi.responses import FileResponse, JSONResponse, Response
+from fastapi.responses import FileResponse, JSONResponse, RedirectResponse, Response
 from fastapi.staticfiles import StaticFiles
 from scipy.ndimage import map_coordinates
 from starlette.middleware.gzip import GZipMiddleware
@@ -24,6 +24,7 @@ from sclvmi.sae import SpatialDictionary
 from whole_api import router as whole_router
 from content_language import finding_translations, translated_fields
 from campaign_api import router as campaign_router
+from heatmap_api import router as heatmap_router
 
 
 ROOT = Path(__file__).parent
@@ -46,6 +47,7 @@ with np.load(SOURCE / 'discovery_spatial_statistics.npz') as saved:
 app = FastAPI(docs_url=None, redoc_url=None)
 app.include_router(whole_router)
 app.include_router(campaign_router)
+app.include_router(heatmap_router)
 app.add_middleware(TrustedHostMiddleware, allowed_hosts=['127.0.0.1', 'localhost', 'testserver'])
 app.add_middleware(GZipMiddleware, minimum_size=1024, compresslevel=1)
 app.mount('/static', StaticFiles(directory=ROOT / 'static'), name='static')
@@ -157,7 +159,12 @@ def feature_maps(feature, case):
 
 
 @app.get('/')
-def index():
+def index(request: Request):
+    return RedirectResponse('/experiments?' + request.url.query if request.url.query else '/whole')
+
+
+@app.get('/experiments')
+def experiments():
     return FileResponse(ROOT / 'static/index.html')
 
 

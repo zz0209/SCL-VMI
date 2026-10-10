@@ -59,7 +59,7 @@ class WholeVolumeRenderer {
     this.lookup=meta.shape.map((size,axis)=>{
       const result=new Int32Array(size);
       for(let i=0;i<size;i++){
-        const sample=(i*meta.spacing[axis]+meta.origin[axis]-meta.map_origin[axis])/meta.map_spacing_mm;
+        const sample=(i*meta.spacing[axis]+meta.origin[axis]-meta.map_origin[axis])/(Array.isArray(meta.map_spacing_mm)?meta.map_spacing_mm[axis]:meta.map_spacing_mm);
         const low=Math.floor(sample),fraction=sample-low;
         const index=mode==='spatial'?(fraction===.5?(low%2===0?low:low+1):Math.round(sample)):low;
         result[i]=Math.max(0,Math.min(meta.map_shape[axis]-1,index));indices[axis*width+i]=result[i];

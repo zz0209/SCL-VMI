@@ -158,7 +158,7 @@ async function selectCase(caseIndex) {
   if(ticket!==state.caseTicket || feature!==state.feature)return;
   state.interventions=interventions;renderInterventions();
 }
-function updateURL() { const parameters=new URLSearchParams({feature:state.feature,case:state.case,split:$('split').value});history.replaceState(null,'',`/?${parameters}`); }
+function updateURL() { const parameters=new URLSearchParams({feature:state.feature,case:state.case,split:$('split').value});history.replaceState(null,'',`/experiments?${parameters}`); }
 async function reorderCases() {
   beginLoading('读取病例排序…');state.bundle=null;++state.caseTicket;++state.mapTicket;$('case-strip').replaceChildren();
   const ticket=++state.featureTicket, feature=state.feature;

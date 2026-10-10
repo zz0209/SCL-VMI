@@ -1,5 +1,6 @@
 const CropI18n = (() => {
   const pairs = [
+    ['Feature 实验','Feature experiments'],
     ['SAE 字典','SAE dictionaries'],
     ['SCL-VMI · Feature 探索','SCL-VMI · Feature explorer'],['Feature 探索','Feature explorer'],['主要内容','Main navigation'],['热图浏览','Heatmaps'],['研究观察','Observations'],['整张 CT','Whole CT'],['使用说明','Help'],['Feature 目录','Feature catalog'],['Feature 列表','Feature list'],['查找 feature','Find a feature'],['编号、响应名称或类别','ID, response name or category'],['浏览范围','Browse'],['已查看的 13 个 feature','13 reviewed features'],['全部 2,048 个 feature','All 2,048 features'],['界面响应','Interface responses'],['明亮区域','Bright regions'],['暗色区域','Dark regions'],['纹理探索','Texture exploration'],['位置控制','Position controls'],['排列方式','Feature order'],['Feature 编号','Feature ID'],['图像变量解释程度','Image-variable explanation'],['空间集中程度','Spatial concentration'],['跨 seed 重复性','Across-seed repeatability'],['固定位置响应','Fixed-position response'],['显示更多','Show more'],
     ['128 名不同患者的开发样本。编号仅对应当前字典；描述用于探索。','Development samples from 128 distinct patients. IDs refer to this dictionary; descriptions are exploratory.'],

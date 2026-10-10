@@ -46,8 +46,9 @@ The separate `20261008` FMCIB layer1/k64 dictionary has [feature-level research 
 ## Engineering entry points
 
 The [dataset and SAE heatmap viewers](local_tools/viewers/viewer.md) provide
-English/Chinese interfaces for local FLARE-AutoMSC images, nodule-crop responses
-and whole-CT responses. Viewer source and launch instructions are included;
+English/Chinese interfaces for local FLARE-AutoMSC images and a shared heatmap
+browser with configuration, seed, Feature and image-scope selectors. Viewer source
+and launch instructions are included;
 datasets, dictionaries and private analysis assets are supplied through local
 storage configuration.
 
