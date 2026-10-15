@@ -17,6 +17,7 @@
 !/configs/sae_preparation.json
 !/configs/sae_campaign.json
 !/configs/sae_whole_viewer.json
+!/configs/sae_interpretation.json
 !/configs/environments/
 /configs/environments/*
 !/configs/environments/pipeline.json
@@ -57,6 +58,8 @@
 !/scripts/pipeline/export_sae_campaign_results.py
 !/scripts/pipeline/select_sae_campaign_assets.py
 !/scripts/pipeline/prepare_campaign_viewer.ps1
+!/scripts/pipeline/export_sae_interpretation_results.py
+!/scripts/pipeline/summarize_sae_interpretation.py
 !/scripts/sae_validation/
 /scripts/sae_validation/*
 !/scripts/sae_validation/feature_screen.py
@@ -111,6 +114,12 @@
 !/src/sclvmi/sae_campaign_evaluate_batched.py
 !/src/sclvmi/sae_campaign_viewer.py
 !/src/sclvmi/sae_campaign_maps.py
+!/src/sclvmi/sae_context.py
+!/src/sclvmi/sae_interp_queue.py
+!/src/sclvmi/sae_interp_stability.py
+!/src/sclvmi/sae_interp_evaluate.py
+!/src/sclvmi/sae_interp_select.py
+!/src/sclvmi/sae_interp_profiles.py
 !/scripts/pipeline/check_sae_campaign_defined_diagnostics.py
 
 !/tests/
@@ -159,6 +168,19 @@
 !/results/20261009_sae_selected_materials/selected_quality.svg
 !/results/20261009_sae_selected_materials/candidate_quality.png
 !/results/20261009_sae_selected_materials/candidate_quality.svg
+!/results/20261014_sae_interpretation_materials/
+/results/20261014_sae_interpretation_materials/*
+!/results/20261014_sae_interpretation_materials/README.md
+!/results/20261014_sae_interpretation_materials/configurations.csv
+!/results/20261014_sae_interpretation_materials/training_length.csv
+!/results/20261014_sae_interpretation_materials/selected_configurations.csv
+!/results/20261014_sae_interpretation_materials/selected.csv
+!/results/20261014_sae_interpretation_materials/reappearance_distribution.csv
+!/results/20261014_sae_interpretation_materials/nodule_reference_summary.json
+!/results/20261014_sae_interpretation_materials/provenance.json
+!/results/20261014_sae_interpretation_materials/production_summary.json
+!/results/20261014_sae_interpretation_materials/selection.png
+!/results/20261014_sae_interpretation_materials/selection.svg
 
 !/local_tools/
 /local_tools/*
@@ -197,6 +219,8 @@
 !/local_tools/viewers/feature_explorer/prepare_selected_browser_cache.py
 !/local_tools/viewers/feature_explorer/check_selected_whole.py
 !/local_tools/viewers/feature_explorer/check_heatmap_api.py
+!/local_tools/viewers/feature_explorer/interpretation_api.py
+!/local_tools/viewers/feature_explorer/check_interpretation_api.py
 !/local_tools/viewers/feature_explorer/content_language.py
 !/local_tools/viewers/feature_explorer/start.ps1
 !/local_tools/viewers/feature_explorer/requirements.txt

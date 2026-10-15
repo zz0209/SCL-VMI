@@ -1,0 +1,45 @@
+{
+  "campaign": "20261014_sae_interpretation",
+  "previous_suite": "20261008_spatial_sae",
+  "deployed_matrix_campaign": "20261009_sae_asset_selection",
+  "models": {
+    "fmcib": {
+      "layer1_context": {"module": "layer1", "channels": 512, "stride": 4, "kind": "spatial", "deployed_site": "layer1", "context": "complete 35-voxel receptive field inside the source field of view; 84 mm cube centered on the nodule, retained native positions 5-16"},
+      "layer2": {"module": "layer2", "channels": 1024, "stride": 8, "kind": "spatial", "deployed_site": "layer2", "context": "deployed 50 mm input window"}
+    },
+    "vista": {
+      "stage2": {"module": "image_encoder.encoder.layers.2.blocks", "channels": 192, "stride": 4, "kind": "spatial", "deployed_site": "stage2", "context": "deployed 72 mm input window; instance normalization uses whole-window statistics"},
+      "stage3": {"module": "image_encoder.encoder.layers.3.blocks", "channels": 384, "stride": 8, "kind": "spatial", "deployed_site": "stage3", "context": "deployed 72 mm input window; instance normalization uses whole-window statistics"}
+    }
+  },
+  "context": {"cube_size": 84, "cube_offset": 41, "first_position": 5, "positions": 12, "receptive_field": 35},
+  "random_encoder": {"initialization_seed": 20261014, "initialization": "MONAI default parameter initialization; BatchNorm running statistics at initialization; evaluation mode"},
+  "sampling": {"seed": 20261009, "train_tokens_per_patient": 512, "development_tokens_per_patient": 256, "replacement": false},
+  "grid": {"k": [16, 32, 64], "expansion": [4, 8], "seeds": [2025, 2026, 2027, 2028, 2029, 2030, 2031, 2032], "reference_seed": 2025},
+  "training": {"steps": 12000, "batch_size": 2048, "learning_rate": 0.0003, "betas": [0.9, 0.99], "warmup_steps": 200, "decay_start_fraction": 0.8, "checkpoint_every": 500, "checkpoint_seconds": 60, "validate_every": 1000, "aux_penalty": 0.03125, "top_k_aux": 512, "inactive_batches": 100, "gradient_clip": 10.0, "precision": "float32", "tf32": false, "checkpoint_selection": "final"},
+  "inference": {"calibration_train_tokens": 65536, "batch_independence_atol": 0.0001},
+  "acceptance": {"max_development_fvu": 0.15, "min_mean_token_cosine": 0.95, "max_inactive_fraction": 0.02, "l0_relative_tolerance": 0.2, "max_probability_mae": 0.025, "max_auroc_decrease": 0.01, "max_ap_decrease": 0.02},
+  "acceptance_roles": {"representation": "max_development_fvu, min_mean_token_cosine, max_inactive_fraction and l0_relative_tolerance are reported diagnostics", "selection_gate": "max_probability_mae, max_auroc_decrease and max_ap_decrease under full replacement of the deployed map"},
+  "stability": {"decoder_cosine": 0.7, "stable_minimum_reappearance": 6, "unstable_maximum_reappearance": 1, "development_tokens_per_patient": 64, "subspace_energy": 0.9},
+  "selection": {"objective": "per site, the smallest k whose reference-seed dictionary passes the fixed-classifier checks, expansion 4, training length from the budget diagnostic; stable features defined by cross-seed reappearance", "test_used": false},
+  "budget_diagnostic": {
+    "question": "whether more SAE training tokens on the same matrices raise cross-seed feature reappearance",
+    "seeds": [2025, 2026, 2027, 2028],
+    "variants": [
+      {"name": "tokens4x", "training": {"steps": 48000}, "configurations": [["fmcib", "layer1_context", 4, 16], ["fmcib", "layer2", 4, 16], ["vista", "stage2", 4, 16], ["vista", "stage3", 4, 16]]},
+      {"name": "tokens16x", "training": {"steps": 192000}, "configurations": [["fmcib", "layer1_context", 4, 16]]}
+    ]
+  },
+  "production": {
+    "sites": {
+      "fmcib:layer2": {"variant": "tokens4x", "expansion": 4, "k": 16},
+      "vista:stage3": {"variant": "tokens4x", "expansion": 4, "k": 16},
+      "vista:stage2": {"variant": "tokens4x", "expansion": 4, "k": 16},
+      "fmcib:layer1_context": {"variant": "tokens4x", "expansion": 4, "k": 32}
+    },
+    "local": [["vista", "stage2", "random"]],
+    "basis": "k is the smallest grid value whose reference-seed dictionary passes the fixed-classifier checks; at every site cross-seed reappearance decreases as k increases. Expansion 4: expansion 8 changes the variance explained by stable features by -0.008 to +0.056 across sites without a consistent direction and doubles the features to inspect. Training length 4x from the budget diagnostic."
+  },
+  "control": {"poll_seconds": 1, "remote_sync_seconds": 15},
+  "upstream": {"module": "third_party/batchtopk/sae.py", "commit": "b9aab1c6156381ae7ae2997e3490e7b99e195dde"}
+}

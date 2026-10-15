@@ -1,0 +1,16 @@
+{
+  "records": 5014,
+  "records_with_multiple_mask_components": 787,
+  "volume_mm3_quartiles": [
+    64.81,
+    117.62,
+    349.25
+  ],
+  "size_only_development_auroc_one_record_per_patient": {
+    "fmcib:layer1_context": 0.8076693905345591,
+    "fmcib:layer2": 0.8076693905345591,
+    "vista:stage2": 0.8076693905345591,
+    "vista:stage3": 0.8076693905345591
+  },
+  "test_used": false
+}

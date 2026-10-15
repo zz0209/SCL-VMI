@@ -9,7 +9,7 @@ from .context import ROOT, context, read_json, timestamp, write_json
 
 
 def configuration():
-    return read_json(ROOT / "configs/sae_campaign.json")
+    return read_json(ROOT / os.environ.get("SCLVMI_SAE_CAMPAIGN_CONFIG", "configs/sae_campaign.json"))
 
 
 def campaign_root(value=None):

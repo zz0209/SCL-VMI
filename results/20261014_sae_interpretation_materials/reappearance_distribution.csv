@@ -1,0 +1,9 @@
+encoder,model,site,expansion,k,reappear_0_of_7,reappear_1_of_7,reappear_2_of_7,reappear_3_of_7,reappear_4_of_7,reappear_5_of_7,reappear_6_of_7,reappear_7_of_7
+trained,fmcib,layer1_context,4,32,1540,170,87,61,51,46,33,51
+random,fmcib,layer1_context,4,32,1421,222,120,88,62,38,32,36
+trained,fmcib,layer2,4,16,2007,383,301,254,248,236,237,408
+random,fmcib,layer2,4,16,1123,450,346,244,172,123,94,57
+trained,vista,stage2,4,16,266,86,62,51,67,56,54,126
+random,vista,stage2,4,16,581,17,8,14,9,13,19,107
+trained,vista,stage3,4,16,437,189,177,159,123,126,118,207
+random,vista,stage3,4,16,1362,16,21,22,8,17,25,65

@@ -1,0 +1,11 @@
+{
+  "campaign": "20261014_sae_interpretation",
+  "selection_sha256": "5654951e03d479d1f108b02931d1de2e92d2e22859c9ff2acc09f06893363307",
+  "viewer_index_sha256": "7e6d601b6cdea091bb04bca28cc7b9b015904003264b809a0241d1c77b5bdee7",
+  "configuration_sha256": "88aaf91e1fa0478721f4d132598b137f0b6ae96b22ddccad6e2a35f385a09b7c",
+  "source_sha256": "278c5cf2d68d8fd5e37d50b2e3132aa985972a5b575086f1f54ee5eacb8c6c51",
+  "python": "3.12.14",
+  "matplotlib": "3.11.2",
+  "created_at": "2026-10-15T06:15:17.431258+00:00",
+  "test_used": false
+}

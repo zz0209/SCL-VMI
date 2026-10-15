@@ -12,6 +12,7 @@ from PIL import Image
 from scipy.ndimage import map_coordinates
 
 import campaign_api
+import interpretation_api
 import whole_api
 from sclvmi.context import ROOT, context, read_json
 
@@ -24,11 +25,12 @@ BROWSER_ROOT = RUN_ROOT / "browser_cache"
 
 
 def dictionaries():
-    selected = [{**row, "family": f"selected:{row['model']}:{row['site']}", "reference": False, "scopes": ["crop", "whole"]} for row in campaign_api.catalog_data()["dictionaries"]]
+    selected = interpretation_api.catalog_entries()
+    selected += [{**row, "family": f"selected:{row['model']}:{row['site']}", "group": "selected", "reference": False, "scopes": ["crop", "whole"]} for row in campaign_api.catalog_data()["dictionaries"]]
     old = read_json(Path(context()[0]["runs"]) / "20261008_spatial_sae/dictionary_index.json")
     for row in old["dictionaries"]:
         if row["default"]:
-            selected.append({"run_id": row["run_id"], "model": row["model"], "site": row["site"], "seed": row["seed"], "features": row["dictionary_size"], "k": row["target_l0"], "dictionary_sha256": row["dictionary_sha256"], "family": f"reference:{row['model']}", "reference": True, "scopes": ["whole"]})
+            selected.append({"run_id": row["run_id"], "model": row["model"], "site": row["site"], "seed": row["seed"], "features": row["dictionary_size"], "k": row["target_l0"], "dictionary_sha256": row["dictionary_sha256"], "family": f"reference:{row['model']}", "group": "reference", "reference": True, "scopes": ["whole"]})
     return selected
 
 
@@ -53,6 +55,8 @@ def browser_ready(run):
 def cases_for(spec, scope):
     if scope not in spec["scopes"]:
         raise HTTPException(422, "This dictionary has no saved data for the requested image scope")
+    if scope == "nodule":
+        return interpretation_api.cases()
     if scope == "crop":
         return [{"id": row["index"], "label": row["label"], "split": "development", "ready": True} for row in read_json(campaign_api.ROOT / "viewer" / spec["model"] / "cases.json")["cases"]]
     cases = whole_api.status()["cases"]
@@ -70,6 +74,8 @@ def validate(run, scope, case, feature, mode):
     if not cases[case]["ready"]:
         raise HTTPException(409, "This whole-CT response is still being prepared")
     modes = ["global"] if spec["site"] == "global" else ["spatial", "single", "mean", "maximum"] if scope == "whole" else ["spatial", "native"]
+    if scope == "nodule":
+        modes = ["spatial", "native"]
     if mode not in modes:
         raise HTTPException(422, "Unknown display mode for this dictionary and image scope")
     return spec
@@ -136,6 +142,8 @@ def catalog():
 def features(run: str, scope: str):
     spec = specification(run)
     cases = cases_for(spec, scope)
+    if scope == "nodule":
+        return {"features": interpretation_api.features(run), "cases": cases, "rankings": interpretation_api.RANKINGS, "interpretation": True}
     if spec["reference"]:
         result = whole_api.catalog(spec["model"])
         return {"features": result["features"], "cases": cases, "rankings": ["id", "lung_enrichment", "liver_enrichment", "outside_fraction", "high_hu_fraction"]}
@@ -151,6 +159,8 @@ def features(run: str, scope: str):
 @router.get("/api/heatmaps/map")
 def metadata(run: str, scope: str, case: int, feature: int, mode: str):
     spec = validate(run, scope, case, feature, mode)
+    if scope == "nodule":
+        return interpretation_api.metadata(run, case, feature, mode)
     if scope == "whole" and spec["reference"]:
         return {**whole_api.map_metadata(spec["model"], case, feature, mode), "pooled": False, "scope": scope, "reference": True}
     with READ_LOCK:
@@ -174,7 +184,9 @@ def metadata(run: str, scope: str, case: int, feature: int, mode: str):
 def activity(run: str, scope: str, case: int, feature: int, mode: str):
     spec = validate(run, scope, case, feature, mode)
     with READ_LOCK:
-        if scope == "crop":
+        if scope == "nodule":
+            values = interpretation_api.activity(run, case, feature, mode)[0]
+        elif scope == "crop":
             values = crop_map(run, case, feature, mode)
         elif spec["reference"]:
             values = whole_api.activity_map(spec["model"], case, feature, mode)[0]
@@ -183,8 +195,26 @@ def activity(run: str, scope: str, case: int, feature: int, mode: str):
         return Response(values.astype("<f4").tobytes(), media_type="application/octet-stream")
 
 
+@router.get("/api/heatmaps/detail")
+def detail(run: str, feature: int):
+    specification(run)
+    with READ_LOCK:
+        return interpretation_api.detail(run, feature)
+
+
+@router.get("/api/heatmaps/mask/nodule/{source}/{case}")
+def mask(source: str, case: int):
+    with READ_LOCK:
+        values = interpretation_api.volume(source, case)[1]
+    return Response(values.astype("<f4").tobytes(), media_type="application/octet-stream")
+
+
 @router.get("/api/heatmaps/ct/{scope}/{model}/{case}")
 def ct(scope: str, model: str, case: int):
+    if scope == "nodule":
+        with READ_LOCK:
+            values = interpretation_api.volume(model, case)[0]
+        return Response(values.astype("<f4").tobytes(), media_type="application/octet-stream")
     if model not in ["fmcib", "vista"] or scope not in ["crop", "whole"]:
         raise HTTPException(404, "Unknown image scope or model")
     if scope == "whole":
@@ -197,6 +227,13 @@ def ct(scope: str, model: str, case: int):
 @router.get("/api/heatmaps/thumbnail/{scope}/{model}/{case}")
 @lru_cache(maxsize=264)
 def thumbnail(scope: str, model: str, case: int):
+    if scope == "nodule":
+        values = interpretation_api.volume(model, case)[0]
+        values = values[:, values.shape[1] // 2, :]
+        grey = np.uint8(np.clip((values + 1000) / 1400, 0, 1).T[::-1] * 255)
+        buffer = BytesIO()
+        Image.fromarray(grey).resize((128, 128)).save(buffer, format="PNG")
+        return Response(buffer.getvalue(), media_type="image/png")
     if model not in ["fmcib", "vista"] or scope not in ["crop", "whole"]:
         raise HTTPException(404, "Unknown image scope or model")
     if scope == "whole":

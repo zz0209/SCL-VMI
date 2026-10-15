@@ -50,6 +50,32 @@ the selected item scrolls into view. Arrow keys in the images navigate slices.
 URLs preserve the selection
 and support browser Back and Forward.
 
+The **Nodule interpretation materials** scope shows the interpretation dictionaries
+of the campaign named in `configs/sae_interpretation.json`, each with eight seeds,
+and their random-weight encoder controls. It covers 256 patients: 128 training
+patients (D, discovery) and 128 development patients (C, confirmation), one nodule
+record each, with malignancy label and maximum diameter in the case list. FMCIB
+layer1 uses an 84 mm nodule-centered input and displays only positions whose
+35-voxel receptive field lies inside the source field of view; the other sites use
+the deployed input windows. Each site uses the smallest k whose dictionary passes
+the fixed-classifier checks, expansion 4 and the longer training schedule listed
+in the dictionary checks. The default CT window is the lung window, and a green
+outline shows the nodule mask and can be hidden. The catalog marks each feature as stable, partially reappearing, unstable
+or inactive from decoder matching across seeds, and can rank by reappearance,
+nodule-region enrichment, size-adjusted malignancy association, image-variable
+R² and activation frequency. **Feature evidence** lists the matched feature in
+every other seed (open it directly), mean response by distance to the nodule
+surface, development AUROC, size-adjusted partial correlations in both patient
+groups, and percentiles relative to the random-weight encoder. Dictionary checks
+report training steps, FVU, matched-rank PCA FVU, stable features, variance
+explained by stable features, PW-MCC and fixed-classifier preservation.
+
+This scope requires, under the configured campaign directory, `viewer/index.json`,
+`viewer_members.csv`, `nodule_references.csv`, `viewer_inputs/<source>/*.h5`,
+`cases/<model>/*.npz` with their geometry JSON files, the referenced
+`runs/<run_id>/dictionary.pt`, `stability/<group>/` and `profiles/<model>_<site>/`.
+Deployed trained activations are read from the previous suite's case caches.
+
 Nodule crops cover 128 development patients. Spatial maps offer native samples
 and interpolation. Global dictionaries return one value for the entire crop;
 linked CT browsing remains available and spatial overlay controls are disabled.

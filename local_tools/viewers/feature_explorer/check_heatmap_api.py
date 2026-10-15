@@ -16,7 +16,7 @@ def get(path, **params):
 
 
 def check(require_whole):
-    rows = get('/api/heatmaps/catalog').json()['dictionaries']
+    rows = [row for row in get('/api/heatmaps/catalog').json()['dictionaries'] if row['group'] in ('selected', 'reference')]
     assert len(rows) == 20
     selected = [row for row in rows if not row['reference']]
     assert len(selected) == 18 and len({row['family'] for row in selected}) == 6

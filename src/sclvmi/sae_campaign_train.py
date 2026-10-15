@@ -123,8 +123,11 @@ def feature_checks(metrics, request):
 def improves_checkpoint(metrics, request, best_fvu, best_qualified):
     qualified = all(feature_checks(metrics, request).values())
     improve = metrics["fvu"] < best_fvu
-    if request["training"].get("checkpoint_selection", "fvu") == "qualified_fvu":
+    policy = request["training"].get("checkpoint_selection", "fvu")
+    if policy == "qualified_fvu":
         improve = (qualified and not best_qualified) or (qualified == best_qualified and improve)
+    elif policy == "final":
+        improve = True
     return improve, qualified
 
 

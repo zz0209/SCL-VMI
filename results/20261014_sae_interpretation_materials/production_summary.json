@@ -1,0 +1,228 @@
+{
+  "sites": [
+    {
+      "site": "fmcib:layer1_context",
+      "expansion": 4,
+      "k": 32,
+      "training_steps": 48000,
+      "features": 2048,
+      "trained_stable_per_seed": [
+        84,
+        81,
+        96,
+        90,
+        82,
+        81,
+        88,
+        93
+      ],
+      "random_stable_per_seed": [
+        68,
+        60,
+        71,
+        61,
+        77,
+        68,
+        65,
+        72
+      ],
+      "trained_stable_explained_variance": 0.34908534981050054,
+      "random_stable_explained_variance": 0.5914817672921711,
+      "trained_fvu_range": [
+        0.12126987223924886,
+        0.12219688946395464
+      ],
+      "pca_fvu": 0.33441328042359136,
+      "trained_pw_mcc": 0.44025909900665283,
+      "random_pw_mcc": 0.4610689878463745,
+      "probability_mae_range": [
+        0.01949245250234857,
+        0.021852108317575687
+      ],
+      "recovered_auroc_range": [
+        0.8784034300211645,
+        0.8806815919174841
+      ],
+      "original_auroc": 0.8820327399374956,
+      "interior_probability_mae_range": [
+        0.005017166714630438,
+        0.0057106835159977274
+      ],
+      "reference_seed_stable_features": 84,
+      "random_95th_nodule_enrichment": 4.981330871582031,
+      "stable_above_random_95th_enrichment": 0,
+      "random_95th_abs_partial_confirmation": 0.12824617326259613,
+      "stable_with_concordant_partial_above_random_95th": 3,
+      "max_single_feature_development_auroc_trained": 0.8395471572875977,
+      "max_single_feature_development_auroc_random": 0.7969866991043091
+    },
+    {
+      "site": "fmcib:layer2",
+      "expansion": 4,
+      "k": 16,
+      "training_steps": 48000,
+      "features": 4096,
+      "trained_stable_per_seed": [
+        645,
+        632,
+        630,
+        645,
+        624,
+        662,
+        634,
+        617
+      ],
+      "random_stable_per_seed": [
+        151,
+        148,
+        140,
+        163,
+        134,
+        158,
+        150,
+        138
+      ],
+      "trained_stable_explained_variance": 0.2255035982240644,
+      "random_stable_explained_variance": 0.31418596867820237,
+      "trained_fvu_range": [
+        0.2691079678363426,
+        0.26979252638091966
+      ],
+      "pca_fvu": 0.5644579698380576,
+      "trained_pw_mcc": 0.5364015698432922,
+      "random_pw_mcc": 0.42299020290374756,
+      "probability_mae_range": [
+        0.009584328574294998,
+        0.010117646190213938
+      ],
+      "recovered_auroc_range": [
+        0.8820626292163058,
+        0.8854809033773475
+      ],
+      "original_auroc": 0.8820327399374956,
+      "interior_probability_mae_range": null,
+      "reference_seed_stable_features": 645,
+      "random_95th_nodule_enrichment": 5.265392303466797,
+      "stable_above_random_95th_enrichment": 29,
+      "random_95th_abs_partial_confirmation": 0.1203521341085434,
+      "stable_with_concordant_partial_above_random_95th": 23,
+      "max_single_feature_development_auroc_trained": 0.8266938924789429,
+      "max_single_feature_development_auroc_random": 0.7939223647117615
+    },
+    {
+      "site": "vista:stage2",
+      "expansion": 4,
+      "k": 16,
+      "training_steps": 48000,
+      "features": 768,
+      "trained_stable_per_seed": [
+        180,
+        185,
+        187,
+        172,
+        186,
+        178,
+        178,
+        198
+      ],
+      "random_stable_per_seed": [
+        126,
+        121,
+        127,
+        126,
+        119,
+        125,
+        126,
+        126
+      ],
+      "trained_stable_explained_variance": 0.36257414331924176,
+      "random_stable_explained_variance": 0.24331164349250467,
+      "trained_fvu_range": [
+        0.26948057306478523,
+        0.2703587503359497
+      ],
+      "pca_fvu": 0.5809882810944027,
+      "trained_pw_mcc": 0.6023496985435486,
+      "random_pw_mcc": 0.3930763304233551,
+      "probability_mae_range": [
+        0.012664466500785525,
+        0.014239012671103782
+      ],
+      "recovered_auroc_range": [
+        0.8802454397623909,
+        0.8850667635299307
+      ],
+      "original_auroc": 0.8847130904352469,
+      "interior_probability_mae_range": null,
+      "reference_seed_stable_features": 180,
+      "random_95th_nodule_enrichment": 2.4857704639434814,
+      "stable_above_random_95th_enrichment": 11,
+      "random_95th_abs_partial_confirmation": 0.11953600496053696,
+      "stable_with_concordant_partial_above_random_95th": 13,
+      "max_single_feature_development_auroc_trained": 0.8775961995124817,
+      "max_single_feature_development_auroc_random": 0.7816224098205566
+    },
+    {
+      "site": "vista:stage3",
+      "expansion": 4,
+      "k": 16,
+      "training_steps": 48000,
+      "features": 1536,
+      "trained_stable_per_seed": [
+        325,
+        335,
+        317,
+        323,
+        333,
+        319,
+        327,
+        325
+      ],
+      "random_stable_per_seed": [
+        90,
+        93,
+        88,
+        91,
+        89,
+        87,
+        92,
+        93
+      ],
+      "trained_stable_explained_variance": 0.201395542903531,
+      "random_stable_explained_variance": 0.225050172265853,
+      "trained_fvu_range": [
+        0.389053882576259,
+        0.39005415463183957
+      ],
+      "pca_fvu": 0.729184296340536,
+      "trained_pw_mcc": 0.6075730323791504,
+      "random_pw_mcc": 0.2543307840824127,
+      "probability_mae_range": [
+        0.02296122228004538,
+        0.024888369782059484
+      ],
+      "recovered_auroc_range": [
+        0.8779719722066286,
+        0.883864222617408
+      ],
+      "original_auroc": 0.8847130904352469,
+      "interior_probability_mae_range": null,
+      "reference_seed_stable_features": 325,
+      "random_95th_nodule_enrichment": 4.1144561767578125,
+      "stable_above_random_95th_enrichment": 11,
+      "random_95th_abs_partial_confirmation": 0.1271105259656906,
+      "stable_with_concordant_partial_above_random_95th": 8,
+      "max_single_feature_development_auroc_trained": 0.7680456042289734,
+      "max_single_feature_development_auroc_random": 0.6902451515197754
+    }
+  ],
+  "size_only_development_auroc": 0.8076693905345591,
+  "rules": {
+    "stable": "reappears with decoder cosine >= 0.7 in at least 6 of 7 other seeds and is live on development",
+    "enrichment": "nodule-region enrichment above the 95th percentile of the random-weight reference-seed features",
+    "association": "absolute size-adjusted Spearman partial correlation above the random 95th percentile in both discovery and confirmation patients, same sign"
+  },
+  "selection_sha256": "5654951e03d479d1f108b02931d1de2e92d2e22859c9ff2acc09f06893363307",
+  "created_at": "2026-10-15T06:19:59.626280+00:00",
+  "test_used": false
+}
