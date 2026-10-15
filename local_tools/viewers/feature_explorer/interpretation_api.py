@@ -42,7 +42,7 @@ def whole_planned(row):
 
 
 def catalog_entries():
-    return [{**row, "reference": False, "scopes": ["nodule", "whole"] if whole_planned(row) else ["nodule"]} for row in index()["dictionaries"]]
+    return [{**row, "scopes": ["nodule", "whole"] if whole_planned(row) else ["nodule"]} for row in index()["dictionaries"]]
 
 
 def whole_path(run, case):
@@ -313,5 +313,5 @@ def metadata(run, case, feature, mode):
         "native_shape": list(native_values.shape), "maximum": float(native_values.max()), "mean": float(native_values[valid].mean()), "nonzero_fraction": float((native_values[valid] > 0).mean()),
         "valid_positions": int(valid.sum()), "native_positions": int(valid.size),
         "scale": max(float(table["maximum"][feature]), .001), "scale_source": "固定 256 名浏览患者的颜色上限", "strongest_case": int(table["strongest"][feature]),
-        "peak": peak.tolist(), "pooled": False, "scope": "nodule", "reference": False, "mask": True,
+        "peak": peak.tolist(), "scope": "nodule", "mask": True,
     }

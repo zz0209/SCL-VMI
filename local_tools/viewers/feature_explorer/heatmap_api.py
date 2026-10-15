@@ -1,6 +1,5 @@
 from functools import lru_cache
 from io import BytesIO
-from pathlib import Path
 from threading import RLock
 
 import h5py
@@ -9,53 +8,28 @@ import numpy as np
 from fastapi import APIRouter, HTTPException
 from fastapi.responses import Response
 from PIL import Image
-from scipy.ndimage import map_coordinates
 
-import campaign_api
 import interpretation_api
 import whole_api
-from sclvmi.context import ROOT, context, read_json
 
 
 router = APIRouter()
 READ_LOCK = RLock()
-SETTINGS = read_json(ROOT / "configs/sae_whole_viewer.json")
-RUN_ROOT = Path(context()[0]["runs"]) / SETTINGS["run_id"]
-BROWSER_ROOT = RUN_ROOT / "browser_cache"
-
-
-def dictionaries():
-    selected = interpretation_api.catalog_entries()
-    selected += [{**row, "family": f"selected:{row['model']}:{row['site']}", "group": "selected", "reference": False, "archived": True, "scopes": ["crop", "whole"]} for row in campaign_api.catalog_data()["dictionaries"]]
-    old = read_json(Path(context()[0]["runs"]) / "20261008_spatial_sae/dictionary_index.json")
-    for row in old["dictionaries"]:
-        if row["default"]:
-            selected.append({"run_id": row["run_id"], "model": row["model"], "site": row["site"], "seed": row["seed"], "features": row["dictionary_size"], "k": row["target_l0"], "dictionary_sha256": row["dictionary_sha256"], "family": f"reference:{row['model']}", "group": "reference", "reference": True, "archived": True, "scopes": ["whole"]})
-    return selected
+MODES = {"nodule": ["spatial", "native"], "whole": ["spatial", "single", "mean", "maximum"]}
 
 
 def specification(run):
-    found = [item for item in dictionaries() if item["run_id"] == run]
+    found = [item for item in interpretation_api.catalog_entries() if item["run_id"] == run]
     if len(found) != 1:
         raise HTTPException(404, "Unknown SAE dictionary")
     return found[0]
 
 
-def interpretive(spec):
-    return spec.get("group") in ["interpretation", "control"]
-
-
 def selected_path(run, case):
-    path = interpretation_api.whole_path(run, case) if interpretive(specification(run)) else BROWSER_ROOT / run / f"case_{case:02d}.h5"
+    path = interpretation_api.whole_path(run, case)
     if not path.with_suffix(".json").exists():
-        raise HTTPException(409, "Whole-CT browser data for this dictionary and case is still being prepared")
+        raise HTTPException(409, "Whole-CT browser data for this dictionary and case is not available")
     return path
-
-
-def browser_ready(run):
-    if interpretive(specification(run)):
-        return interpretation_api.whole_complete(run)
-    return all((BROWSER_ROOT / run / f"case_{case:02d}.json").exists() for case in range(8))
 
 
 def cases_for(spec, scope):
@@ -63,13 +37,7 @@ def cases_for(spec, scope):
         raise HTTPException(422, "This dictionary has no saved data for the requested image scope")
     if scope == "nodule":
         return interpretation_api.cases()
-    if scope == "crop":
-        return [{"id": row["index"], "label": row["label"], "split": "development", "ready": True} for row in read_json(campaign_api.ROOT / "viewer" / spec["model"] / "cases.json")["cases"]]
-    cases = whole_api.status()["cases"]
-    if interpretive(spec):
-        return [{"id": row["id"], "label": row["label"], "split": row["split"], "ready": interpretation_api.whole_ready(spec["run_id"], row["id"])} for row in cases]
-    complete = browser_ready(spec['run_id'])
-    return [{"id": row["id"], "label": row["label"], "split": row["split"], "ready": row["ready"][spec["model"]] if spec["reference"] else complete} for row in cases]
+    return [{**row, "ready": interpretation_api.whole_ready(spec["run_id"], row["id"])} for row in whole_api.cases()]
 
 
 def validate(run, scope, case, feature, mode):
@@ -80,12 +48,9 @@ def validate(run, scope, case, feature, mode):
     if not 0 <= case < len(cases):
         raise HTTPException(422, "Case is outside this image scope")
     if not cases[case]["ready"]:
-        raise HTTPException(409, "This whole-CT response is still being prepared")
-    modes = ["global"] if spec["site"] == "global" else ["spatial", "single", "mean", "maximum"] if scope == "whole" else ["spatial", "native"]
-    if scope == "nodule":
-        modes = ["spatial", "native"]
-    if mode not in modes:
-        raise HTTPException(422, "Unknown display mode for this dictionary and image scope")
+        raise HTTPException(409, "Whole-CT browser data for this dictionary and case is not available")
+    if mode not in MODES[scope]:
+        raise HTTPException(422, "Unknown display mode for this image scope")
     return spec
 
 
@@ -98,7 +63,7 @@ def selected_map(run, case, feature, mode):
         origin = np.asarray(saved.attrs["origin"])
         step = float(saved.attrs["step_mm"])
         core = int(saved.attrs["core_size"])
-        if mode in ["spatial", "global"]:
+        if mode == "spatial":
             native = saved["values"][feature].astype(np.float32)
             return native, origin, step
         shape = np.asarray(native.shape)
@@ -128,22 +93,10 @@ def whole_scale(run):
     return np.max(maxima, axis=0)
 
 
-@lru_cache(maxsize=16)
-def crop_map(run, case, feature, mode):
-    result = campaign_api.response_data(run, case, feature)
-    if mode == "global":
-        return result["native"]
-    if mode == "spatial":
-        return result["dense"]
-    shape = campaign_api.volume_data(specification(run)["model"], case)[0].shape
-    coordinates = np.indices(shape, dtype=np.float64).reshape(3, -1).T
-    native_coordinates = nib.affines.apply_affine(np.linalg.inv(result["native_to_canonical"]), coordinates)
-    return map_coordinates(result["native"], native_coordinates.T, order=0, mode="nearest").reshape(shape)
-
-
 @router.get("/api/heatmaps/catalog")
 def catalog():
-    return {"dictionaries": dictionaries(), "default_run": dictionaries()[0]["run_id"], "test_used": False}
+    dictionaries = interpretation_api.catalog_entries()
+    return {"dictionaries": dictionaries, "default_run": dictionaries[0]["run_id"], "test_used": False}
 
 
 @router.get("/api/heatmaps/features")
@@ -151,34 +104,17 @@ def features(run: str, scope: str):
     spec = specification(run)
     cases = cases_for(spec, scope)
     if scope == "nodule":
-        return {"features": interpretation_api.features(run), "cases": cases, "rankings": interpretation_api.RANKINGS, "interpretation": True}
-    if interpretive(spec):
-        return {"features": interpretation_api.whole_features(run), "cases": cases, "rankings": interpretation_api.WHOLE_RANKINGS if interpretation_api.whole_complete(run) else ["id", "reappearance"], "interpretation": True}
-    if spec["reference"]:
-        result = whole_api.catalog(spec["model"])
-        return {"features": result["features"], "cases": cases, "rankings": ["id", "lung_enrichment", "liver_enrichment", "outside_fraction", "high_hu_fraction"]}
-    ready = all(row["ready"] for row in cases)
-    if scope == "crop":
-        with h5py.File(campaign_api.ROOT / "viewer/responses" / run / "responses.h5", "r") as saved:
-            maximum = saved["maximum"][...].max(0)
-    else:
-        maximum = whole_scale(run) if ready else np.full(spec["features"], np.nan)
-    return {"features": [{"id": index, "description": "", "maximum": float(value) if np.isfinite(value) else None} for index, value in enumerate(maximum)], "cases": cases, "rankings": ["id", "maximum"]}
+        return {"features": interpretation_api.features(run), "cases": cases, "rankings": interpretation_api.RANKINGS}
+    complete = interpretation_api.whole_complete(run)
+    return {"features": interpretation_api.whole_features(run), "cases": cases, "rankings": interpretation_api.WHOLE_RANKINGS if complete else ["id", "reappearance"]}
 
 
 @router.get("/api/heatmaps/map")
 def metadata(run: str, scope: str, case: int, feature: int, mode: str):
-    spec = validate(run, scope, case, feature, mode)
+    validate(run, scope, case, feature, mode)
     if scope == "nodule":
         return interpretation_api.metadata(run, case, feature, mode)
-    if scope == "whole" and spec["reference"]:
-        return {**whole_api.map_metadata(spec["model"], case, feature, mode), "pooled": False, "scope": scope, "reference": True}
     with READ_LOCK:
-        if scope == "crop":
-            meta = campaign_api.metadata(run, case, feature)
-            values = crop_map(run, case, feature, mode)
-            shape, spacing = meta["shape"], meta["spacing"]
-            return {**meta, "origin": [0, 0, 0], "map_origin": [0, 0, 0], "map_shape": list(values.shape), "map_spacing_mm": spacing, "scale": max(meta["reference_maximum"], .001), "scale_source": "固定 128 名开发集患者的颜色上限", "nonzero_fraction": meta["active_fraction"], "scope": scope, "reference": False}
         values, origin, step = selected_map(run, case, feature, mode)
         volume, affine = whole_api.raw_volume(case)
         maximum = np.asarray(np.unravel_index(values.argmax(), values.shape))
@@ -187,19 +123,15 @@ def metadata(run: str, scope: str, case: int, feature: int, mode: str):
             world += step / 2
         peak = np.rint(nib.affines.apply_affine(np.linalg.inv(affine), world)).astype(int)
         peak = np.clip(peak, 0, np.asarray(volume.shape) - 1)
-        return {"shape": list(volume.shape), "spacing": nib.affines.voxel_sizes(affine).tolist(), "origin": affine[:3, 3].tolist(), "map_shape": list(values.shape), "map_origin": origin.tolist(), "map_spacing_mm": step, "peak": peak.tolist(), "scale": max(float(whole_scale(run)[feature]), .001), "scale_source": "固定四例 discovery 扫描的颜色上限", "maximum": float(values.max()), "mean": float(values.mean()), "nonzero_fraction": float((values > 0).mean()), "pooled": False, "scope": scope, "reference": False, "window_response": spec["site"] == "global"}
+        return {"shape": list(volume.shape), "spacing": nib.affines.voxel_sizes(affine).tolist(), "origin": affine[:3, 3].tolist(), "map_shape": list(values.shape), "map_origin": origin.tolist(), "map_spacing_mm": step, "peak": peak.tolist(), "scale": max(float(whole_scale(run)[feature]), .001), "scale_source": "固定四例 discovery 扫描的颜色上限", "maximum": float(values.max()), "mean": float(values.mean()), "nonzero_fraction": float((values > 0).mean()), "scope": scope}
 
 
 @router.get("/api/heatmaps/activity")
 def activity(run: str, scope: str, case: int, feature: int, mode: str):
-    spec = validate(run, scope, case, feature, mode)
+    validate(run, scope, case, feature, mode)
     with READ_LOCK:
         if scope == "nodule":
             values = interpretation_api.activity(run, case, feature, mode)[0]
-        elif scope == "crop":
-            values = crop_map(run, case, feature, mode)
-        elif spec["reference"]:
-            values = whole_api.activity_map(spec["model"], case, feature, mode)[0]
         else:
             values = selected_map(run, case, feature, mode)[0]
         return Response(values.astype("<f4").tobytes(), media_type="application/octet-stream")
@@ -225,13 +157,11 @@ def ct(scope: str, model: str, case: int):
         with READ_LOCK:
             values = interpretation_api.volume(model, case)[0]
         return Response(values.astype("<f4").tobytes(), media_type="application/octet-stream")
-    if model not in ["fmcib", "vista"] or scope not in ["crop", "whole"]:
+    if model not in ["fmcib", "vista"] or scope != "whole":
         raise HTTPException(404, "Unknown image scope or model")
-    if scope == "whole":
-        if not 0 <= case < 8:
-            raise HTTPException(422, "Case is outside this image scope")
-        return whole_api.ct_volume(case)
-    return campaign_api.volume(model, case)
+    if not 0 <= case < len(whole_api.cases()):
+        raise HTTPException(422, "Case is outside this image scope")
+    return whole_api.ct_volume(case)
 
 
 @router.get("/api/heatmaps/thumbnail/{scope}/{model}/{case}")
@@ -244,30 +174,8 @@ def thumbnail(scope: str, model: str, case: int):
         buffer = BytesIO()
         Image.fromarray(grey).resize((128, 128)).save(buffer, format="PNG")
         return Response(buffer.getvalue(), media_type="image/png")
-    if model not in ["fmcib", "vista"] or scope not in ["crop", "whole"]:
+    if model not in ["fmcib", "vista"] or scope != "whole":
         raise HTTPException(404, "Unknown image scope or model")
-    if scope == "whole":
-        if not 0 <= case < 8:
-            raise HTTPException(422, "Case is outside this image scope")
-        return whole_api.thumbnail(case)
-    volume, _, _ = campaign_api.volume_data(model, case)
-    values = volume[:, volume.shape[1] // 2, :]
-    grey = np.uint8(np.clip((values + 1000) / 1400, 0, 1).T[::-1] * 255)
-    buffer = BytesIO()
-    Image.fromarray(grey).resize((128, 128)).save(buffer, format="PNG")
-    return Response(buffer.getvalue(), media_type="image/png")
-
-
-@router.get("/api/heatmaps/preparation")
-def preparation(run: str | None = None):
-    result = {}
-    current = specification(run) if run else None
-    for model in ["fmcib", "vista"]:
-        path = RUN_ROOT / f"progress_{model}.json"
-        value = read_json(path) if path.exists() else {"state": "pending"}
-        if value['state'] == 'completed' and not (BROWSER_ROOT / f'completed_{model}.json').exists():
-            value = {**value, 'state': 'preparing_browser_cache'}
-        if current and current['model'] == model:
-            value = {**value, 'dictionary_ready': browser_ready(run)}
-        result[model] = value
-    return result
+    if not 0 <= case < len(whole_api.cases()):
+        raise HTTPException(422, "Case is outside this image scope")
+    return whole_api.thumbnail(case)

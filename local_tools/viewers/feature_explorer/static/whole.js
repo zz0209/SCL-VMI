@@ -2,23 +2,21 @@
 const el = id => document.getElementById(id);
 const names = {fmcib:'FMCIB',vista:'VISTA3D'};
 const labels = {id:'Feature 编号',maximum:'最大响应',lung_enrichment:'肺部富集程度',liver_enrichment:'肝脏富集程度',outside_fraction:'图像边缘空气响应',high_hu_fraction:'高 HU 区域的响应',reappearance:'跨 seed 重现次数',nodule_enrichment:'结节区域富集',malignancy_partial:'控制大小后的恶性关联（discovery）',image_r2:'图像变量解释程度',frequency:'激活频率'};
-const groupLabels = {interpretation:'解释用字典 · 训练后 encoder',control:'随机权重 encoder 对照',selected:'旧版字典 · 研究观察链接',reference:'旧版字典 · 研究观察参考'};
+const groupLabels = {interpretation:'解释用字典 · 训练后 encoder',control:'随机权重 encoder 对照'};
 const stabilityLabels = {stable:'稳定',partial:'部分重现',unstable:'不稳定',inactive:'开发集未激活'};
 const regionLabels = {inside:'结节内部',margin_0_4mm:'表面外 0–4 mm',near_4_10mm:'表面外 4–10 mm',far_over_10mm:'表面外 10 mm 以上'};
 const memories = JSON.parse(localStorage.getItem('sclvmi-heatmap-selections')||'{}');
-const state = {catalog:[],run:null,scope:'nodule',feature:0,case:0,mode:'spatial',panel:'explore',point:null,pointKey:null,meta:null,features:[],cases:[],page:0,request:0,space:false,pan:{},drag:null,rects:{},scaleKey:null,pending:false,mask:null,detail:null};
+const state = {catalog:[],run:null,scope:'nodule',feature:0,case:0,mode:'spatial',point:null,pointKey:null,meta:null,features:[],cases:[],page:0,request:0,space:false,pan:{},drag:null,rects:{},scaleKey:null,mask:null,detail:null};
 const pageSize=80,volumeCache=new Map();
-let renderer,controller,drawFrame=0,findingsRequest=0;
+let renderer,controller,drawFrame=0;
 const format=value=>Number(value).toLocaleString(ViewerLanguage.locale,{maximumFractionDigits:3});
 const text=value=>ViewerLanguage.value==='en'?ViewerLanguage.text(value):value;
 const node=(tag,value,className)=>{const item=document.createElement(tag);if(value!=null)item.textContent=value;if(className)item.className=className;return item;};
 const spec=()=>state.catalog.find(row=>row.run_id===state.run);
 const source=()=>state.scope==='nodule'?spec().image_source:spec().model;
 const interpretive=()=>state.scope==='nodule';
-const entry=()=>['interpretation','control'].includes(spec().group);
-const visible=(row,current)=>!row.archived||row.family===current.family;
 const siteName=row=>row.site==='layer1_context'?`layer1 · ${text('完整上下文')}`:row.site;
-const configurationName=row=>row.group==='interpretation'||row.group==='control'?`${names[row.model]} · ${siteName(row)} · e${row.expansion} · k${row.k}`:`${names[row.model]} · ${row.site} · k${row.k}`;
+const configurationName=row=>`${names[row.model]} · ${siteName(row)} · e${row.expansion} · k${row.k}`;
 const selectionKey=()=>`${state.scope}/${state.run}`;
 const query=()=>new URLSearchParams({run:state.run,scope:state.scope,case:state.case,feature:state.feature,mode:state.mode});
 
@@ -33,8 +31,7 @@ async function get(url,signal,binary=false){
 }
 function remember(){memories[selectionKey()]={feature:state.feature,mode:state.mode};memories[`case:${state.scope}`]=state.case;localStorage.setItem('sclvmi-heatmap-selections',JSON.stringify(memories));}
 function syncURL(push=false){
-  const values=query();if(state.panel==='findings'){values.set('panel','findings');values.set('findings',el('findings-scope').value);}
-  const url=`/whole?${values}`;
+  const url=`/whole?${query()}`;
   if(push&&`${location.pathname}${location.search}`!==url)history.pushState(null,'',url);else history.replaceState(null,'',url);
   localStorage.setItem('sclvmi-heatmap-location',url);remember();
 }
@@ -43,54 +40,44 @@ function loading(message,error=false){
   el('viewer-loading').hidden=false;el('viewer-loading-text').textContent=text(message);document.querySelector('.viewer-grid').style.visibility='hidden';state.meta=null;state.rects={};
   for(const axis of [0,1,2]){const canvas=el(`canvas-${axis}`);canvas.getContext('2d').clearRect(0,0,canvas.width,canvas.height);el(`slice-${axis}`).disabled=true;el(`position-${axis}`).textContent='';}
   for(const id of ['peak','center','strongest','reset-scale'])el(id).disabled=true;
-  for(const id of ['map-stats','point-value','map-label','geometry-note','feature-evidence','case-label','stability-summary','stability-table','region-bars','region-note','malignancy-values','malignancy-note','control-values','control-note','evidence-scope'])el(id).replaceChildren();
+  for(const id of ['map-stats','point-value','map-label','geometry-note','case-label','stability-summary','stability-table','region-bars','region-note','malignancy-values','malignancy-note','control-values','control-note','evidence-scope'])el(id).replaceChildren();
   state.detail=null;
 }
 function report(error){if(error.name==='AbortError')return;el('loading').textContent='';el('error-message').textContent=error.message;el('error').hidden=false;loading('影像读取失败。可以重新读取，或选择另一份图像。',true);}
 function run(action){Promise.resolve().then(action).catch(report);}
 function modes(){
-  if(spec().site==='global')return [['global',state.scope==='whole'?'每个输入 crop 的响应':'整个 crop 的响应']];
   if(interpretive())return [['spatial','空间激活 · 插值显示'],['native','空间激活 · 原始采样']];
-  return state.scope==='whole'?[['spatial','空间激活 · 原始采样'],['single','每个区域 · 中央位置'],['mean','每个区域 · 平均值'],['maximum','每个区域 · 峰值']]:[['spatial','空间激活 · 插值显示'],['native','空间激活 · 原始采样']];
+  return [['spatial','空间激活 · 原始采样'],['single','每个区域 · 中央位置'],['mean','每个区域 · 平均值'],['maximum','每个区域 · 峰值']];
 }
 function controls(){
-  const current=spec(),families=[...new Set(state.catalog.filter(row=>row.scopes.includes(state.scope)&&visible(row,current)).map(row=>row.family))];
+  const current=spec(),families=[...new Set(state.catalog.filter(row=>row.scopes.includes(state.scope)).map(row=>row.family))];
   for(const option of el('category').options)option.textContent=text(labels[option.value]);
   el('model').replaceChildren();
-  for(const name of ['interpretation','control','selected','reference']){
+  for(const name of ['interpretation','control']){
     const group=node('optgroup');group.label=text(groupLabels[name]);
-    for(const family of families){const row=state.catalog.find(item=>item.family===family);if((row.group||(row.reference?'reference':'selected'))!==name)continue;const option=node('option',configurationName(row));option.value=family;group.append(option);}
+    for(const family of families){const row=state.catalog.find(item=>item.family===family);if(row.group!==name)continue;const option=node('option',configurationName(row));option.value=family;group.append(option);}
     if(group.children.length)el('model').append(group);
   }
   el('model').value=current.family;
   el('seed').replaceChildren(...state.catalog.filter(row=>row.family===current.family&&row.scopes.includes(state.scope)).map(row=>{const option=node('option',row.seed);option.value=row.run_id;return option;}));
   el('seed').value=state.run;el('seed').disabled=el('seed').options.length===1;el('scope').value=state.scope;
-  for(const option of el('scope').options){option.disabled=!state.catalog.some(row=>row.scopes.includes(option.value)&&visible(row,current));option.hidden=option.disabled;}
   const available=modes();if(!available.some(([value])=>value===state.mode))state.mode=available[0][0];
   el('mode').replaceChildren(...available.map(([value,label])=>{const option=node('option',text(label));option.value=value;return option;}));el('mode').value=state.mode;
   const encoderName=current.group==='control'?` · ${text('随机权重')}`:'';
   el('dictionary-stamp').textContent=`${names[current.model]} · ${siteName(current)}${encoderName} · seed ${current.seed}`;
   el('dictionary-note').textContent=`${format(current.features)} features · k${current.k} · seed ${current.seed}. ${text('Feature 编号属于当前字典。')}`;
   el('feature-title').textContent=`${names[current.model]} · ${siteName(current)}${encoderName} · Feature ${state.feature}`;el('feature-description').textContent=state.features.find(row=>row.id===state.feature)?.description||'';
-  el('cases-title').textContent=text(state.scope==='whole'?'完整 CT 病例':interpretive()?'结节解释病例':'结节 crop 病例');
-  el('cases-note').textContent=text(state.scope==='whole'?'每组第一例用于观察，第二例用于确认':interpretive()?'D：128 名训练集患者（discovery）；C：128 名开发集患者（confirmation）':'128 名不同患者的开发集输入');
-  el('dataset-note').textContent=state.scope==='whole'?'PETWB · training':interpretive()?'LUNA25 · training + development':'LUNA25 · development';el('source-note').textContent=current.reference?'20261008 · '+text('研究观察字典'):entry()?'20261014 · '+text(groupLabels[current.group]):'20261009 · '+text('旧版字典');
-  el('scope-help').textContent=text(interpretive()?(current.site==='layer1_context'?'FMCIB layer1 使用以结节为中心的 84 mm 输入，只保留 35 体素感受野完全位于原始视野内的位置；感受野触及视野外的位置不显示响应。绿色轮廓为结节 mask。':'该字典使用模型部署时的输入窗口；窗口上下文会影响响应。绿色轮廓为结节 mask。'):entry()?'在完整 CT 上使用与训练相同大小的输入窗口：FMCIB layer1 完整上下文为 84 mm、每隔 48 mm，只保留感受野完全位于 CT 内的位置；FMCIB layer2 为 50 mm、每隔 32 mm；VISTA3D 为 72 mm、每隔 48 mm。相邻窗口的中央区域拼接成完整图，窗口上下文可能影响相邻区域的响应。':current.reference?'研究观察中的 FMCIB 使用连续卷积，VISTA3D 使用固定窗口。具体采样方式随字典身份显示。':state.scope==='whole'?'选定字典使用与训练相同大小的输入窗口。FMCIB 每隔 32 mm、VISTA3D 每隔 48 mm 移动窗口；空间图保留中央位置，global 图显示每个窗口的响应。窗口上下文可能影响相邻区域的响应。':'空间图可以选择原始采样或插值显示。global 给出整个 crop 的单个响应，CT 仍可联动浏览。');
+  el('cases-title').textContent=text(interpretive()?'结节解释病例':'完整 CT 病例');
+  el('cases-note').textContent=text(interpretive()?'D：128 名训练集患者（discovery）；C：128 名开发集患者（confirmation）':'每组第一例用于观察，第二例用于确认');
+  el('dataset-note').textContent=interpretive()?'LUNA25 · training + development':'PETWB · training';el('source-note').textContent='20261014 · '+text(groupLabels[current.group]);
+  el('scope-help').textContent=text(interpretive()?(current.site==='layer1_context'?'FMCIB layer1 使用以结节为中心的 84 mm 输入，只保留 35 体素感受野完全位于原始视野内的位置；感受野触及视野外的位置不显示响应。绿色轮廓为结节 mask。':'该字典使用模型部署时的输入窗口；窗口上下文会影响响应。绿色轮廓为结节 mask。'):'在完整 CT 上使用与训练相同大小的输入窗口：FMCIB layer1 完整上下文为 84 mm、每隔 48 mm，只保留感受野完全位于 CT 内的位置；FMCIB layer2 为 50 mm、每隔 32 mm；VISTA3D 为 72 mm、每隔 48 mm。相邻窗口的中央区域拼接成完整图，窗口上下文可能影响相邻区域的响应。');
   el('mask-control').hidden=!interpretive();
-  el('dictionary-checks').hidden=current.reference;
-  if(entry()){
-    const quality=current.quality,rows=[['训练数据',text(current.site==='layer1_context'?'完整感受野位置':'部署输入窗口')],['训练步数',`${format(current.training_steps)} × 2,048`],['开发集 FVU',quality.fvu.toFixed(4)],['同系数 PCA 的 FVU',quality.pca_fvu.toFixed(4)],['稳定 Feature',`${format(quality.stable_features)} / ${format(quality.live_features)}`],['稳定 Feature 解释的方差',quality.stable_explained_variance.toFixed(4)],['decoder 配对相关（PW-MCC）',quality.pw_mcc.toFixed(4)]];
-    if(current.downstream)rows.push(['分类概率 MAE',current.downstream.probability_mae.toFixed(5)],['重建后 AUROC',`${current.downstream.recovered_auroc.toFixed(4)} / ${current.downstream.original_auroc.toFixed(4)}`]);
-    if(current.interior_downstream)rows.push(['只替换完整感受野位置的 MAE',current.interior_downstream.probability_mae.toFixed(5)]);
-    el('quality-values').replaceChildren(...rows.flatMap(([label,value])=>[node('dt',text(label)),node('dd',value)]));
-    el('quality-scope').textContent=text(current.group==='control'?'随机权重 encoder 使用相同的结构、预处理、采样和 SAE 配置；它没有分类器，用于判断哪些 Feature 性质超过随机网络对 CT 灰度的响应。':'每个位置使用通过固定分类器检查的最小 k（k 越小，Feature 在不同 seed 中重现越多），expansion 4，训练 token 为初始网格的 4 倍。数值来自训练集与开发集；独立测试集未使用。');
-    el('dictionary-identity').textContent=`${current.run_id} · SHA-256 ${current.dictionary_sha256}`;
-  }else if(!current.reference){
-    const rows=[['开发集 FVU',current.development.fvu.toFixed(5)],['平均 cosine',current.development.cosine.toFixed(5)],['分类概率 MAE',current.downstream.probability_mae.toFixed(5)],['重建后 AUROC',current.downstream.recovered_auroc.toFixed(5)],['未激活 Feature 比例',`${(current.development.inactive_fraction*100).toFixed(2)}%`]];
-    el('quality-values').replaceChildren(...rows.flatMap(([label,value])=>[node('dt',text(label)),node('dd',value)]));
-    el('quality-scope').textContent=text('这些检查来自 LUNA25 开发集。完整 CT 响应属于跨数据来源的探索；医学含义和具体 Feature 的干预效果需要独立证据。');
-    el('dictionary-identity').textContent=`${current.run_id} · SHA-256 ${current.dictionary_sha256}`;
-  }
+  const quality=current.quality,rows=[['训练数据',text(current.site==='layer1_context'?'完整感受野位置':'部署输入窗口')],['训练步数',`${format(current.training_steps)} × 2,048`],['开发集 FVU',quality.fvu.toFixed(4)],['同系数 PCA 的 FVU',quality.pca_fvu.toFixed(4)],['稳定 Feature',`${format(quality.stable_features)} / ${format(quality.live_features)}`],['稳定 Feature 解释的方差',quality.stable_explained_variance.toFixed(4)],['decoder 配对相关（PW-MCC）',quality.pw_mcc.toFixed(4)]];
+  if(current.downstream)rows.push(['分类概率 MAE',current.downstream.probability_mae.toFixed(5)],['重建后 AUROC',`${current.downstream.recovered_auroc.toFixed(4)} / ${current.downstream.original_auroc.toFixed(4)}`]);
+  if(current.interior_downstream)rows.push(['只替换完整感受野位置的 MAE',current.interior_downstream.probability_mae.toFixed(5)]);
+  el('quality-values').replaceChildren(...rows.flatMap(([label,value])=>[node('dt',text(label)),node('dd',value)]));
+  el('quality-scope').textContent=text(current.group==='control'?'随机权重 encoder 使用相同的结构、预处理、采样和 SAE 配置；它没有分类器，用于判断哪些 Feature 性质超过随机网络对 CT 灰度的响应。':'每个位置使用通过固定分类器检查的最小 k（k 越小，Feature 在不同 seed 中重现越多），expansion 4，训练 token 为初始网格的 4 倍。数值来自训练集与开发集；独立测试集未使用。');
+  el('dictionary-identity').textContent=`${current.run_id} · SHA-256 ${current.dictionary_sha256}`;
 }
 function featureMetric(row,key){
   if(Number.isFinite(row[key]))return {rank:row[key],label:format(row[key])};
@@ -129,10 +116,9 @@ function updateCases(){
   el('case-label').textContent=currentCase?`${currentCase.label} · ${currentCase.split}${currentCase.malignant==null?'':` · ${text(currentCase.malignant?'恶性':'良性')} · ${text('最大直径')} ${format(currentCase.diameter_mm)} mm`}`:'';
 }
 function showMetadata(){
-  const meta=state.meta;if(!meta)return;const pooled=Boolean(meta.pooled),spacing=Array.isArray(meta.map_spacing_mm)?meta.map_spacing_mm.map(format).join(' × '):format(meta.map_spacing_mm);
-  el('map-label').textContent=pooled?text('整个 crop 的响应'):`${el('mode').selectedOptions[0].textContent} · ${spacing} mm`;el('geometry-note').textContent=pooled?text('整个输入对应一个响应值'):text(meta.scale_source);
+  const meta=state.meta;if(!meta)return;const spacing=Array.isArray(meta.map_spacing_mm)?meta.map_spacing_mm.map(format).join(' × '):format(meta.map_spacing_mm);
+  el('map-label').textContent=`${el('mode').selectedOptions[0].textContent} · ${spacing} mm`;el('geometry-note').textContent=text(meta.scale_source);
   const rows=[['最大值',format(meta.maximum)],['平均值',format(meta.mean)],['有响应的位置',`${format(meta.nonzero_fraction*100)}%`],['真实采样网格',(meta.native_shape||meta.map_shape).join(' × ')]];el('map-stats').replaceChildren(...rows.flatMap(([label,value])=>[node('dt',text(label)),node('dd',value)]));
-  el('feature-evidence').textContent=state.features.find(row=>row.id===state.feature)?.evidence||text(pooled?'global 对整个输入给出一个响应值。':meta.window_response?'每个区域的颜色表示对应输入 crop 的 global 响应。':'');
 }
 function evidenceRows(target,rows){target.replaceChildren(...rows.flatMap(([label,value])=>[node('dt',text(label)),node('dd',value)]));}
 function showEvidence(){
@@ -161,8 +147,8 @@ function showEvidence(){
   }
   el('evidence-scope').textContent=`${text('统计使用每名患者一个结节记录')}：discovery ${detail.discovery_patients} · confirmation ${detail.confirmation_patients}。${text('这些是描述性统计，医学含义需要独立证据；独立测试集未使用。')}`;
 }
-async function loadSelection({catalog=false,locate=false,push=false,resetPoint=false,point=null}={}){
-  catalog=catalog||!state.features.length;controller?.abort();controller=new AbortController();const signal=controller.signal,id=++state.request,started=performance.now();state.pending=false;
+async function loadSelection({catalog=false,locate=false,push=false,resetPoint=false}={}){
+  catalog=catalog||!state.features.length;controller?.abort();controller=new AbortController();const signal=controller.signal,id=++state.request,started=performance.now();
   if(state.windowScope!==state.scope){el('window').value=state.scope==='nodule'?'lung':'tissue';state.windowScope=state.scope;}
   if(catalog){state.features=[];state.cases=[];el('feature-list').replaceChildren();el('feature-list').inert=true;el('case-select').replaceChildren();el('case-strip').replaceChildren();delete el('case-strip').dataset.catalog;el('feature-count').textContent='';el('page-label').textContent='…';el('previous-page').disabled=true;el('next-page').disabled=true;}
   controls();loading(`正在加载 ${names[spec().model]} · Feature ${state.feature}…`);el('error').hidden=true;el('loading').textContent=text('读取影像与响应…');
@@ -174,17 +160,16 @@ async function loadSelection({catalog=false,locate=false,push=false,resetPoint=f
     if(!Number.isInteger(state.feature)||state.feature<0||state.feature>=spec().features)throw new Error(text('Feature 编号超出当前字典范围。'));
     if(!Number.isInteger(state.case)||state.case<0||state.case>=state.cases.length)throw new Error(text('病例编号超出当前图像范围。'));
     controls();syncURL(push);featureList(locate);updateCases();
-    if(!state.cases[state.case].ready){state.pending=true;loading('完整 CT 响应正在准备。',true);el('loading').textContent='';await preparation();return;}
+    if(!state.cases[state.case].ready)throw new Error(text('当前病例的完整 CT 浏览文件尚未生成。'));
     const selection=query().toString(),current=spec();
-    const [meta,ct,activity,mask,detail]=await Promise.all([get(`/api/heatmaps/map?${selection}`,signal),get(`/api/heatmaps/ct/${state.scope}/${source()}/${state.case}`,signal,true),get(`/api/heatmaps/activity?${selection}`,signal,true),interpretive()?get(`/api/heatmaps/mask/nodule/${source()}/${state.case}`,signal,true):null,entry()?get(`/api/heatmaps/detail?${new URLSearchParams({run:state.run,feature:state.feature})}`,signal):null]);if(id!==state.request)return;
+    const [meta,ct,activity,mask,detail]=await Promise.all([get(`/api/heatmaps/map?${selection}`,signal),get(`/api/heatmaps/ct/${state.scope}/${source()}/${state.case}`,signal,true),get(`/api/heatmaps/activity?${selection}`,signal,true),interpretive()?get(`/api/heatmaps/mask/nodule/${source()}/${state.case}`,signal,true):null,get(`/api/heatmaps/detail?${new URLSearchParams({run:state.run,feature:state.feature})}`,signal)]);if(id!==state.request)return;
     if(!renderer)renderer=new WholeVolumeRenderer();renderer.upload(meta,ct,activity,state.mode==='native'?'spatial':state.mode);state.meta=meta;state.pan={};state.mask=mask;state.detail=detail;
-    const pointKey=`${state.scope}/${current.model}/${state.case}`;if(resetPoint||state.pointKey!==pointKey||!state.point)state.point=meta.shape.map(size=>Math.floor(size/2));if(point)state.point=[...point];state.point=state.point.map((value,axis)=>Math.max(0,Math.min(meta.shape[axis]-1,value)));state.pointKey=pointKey;
+    const pointKey=`${state.scope}/${current.model}/${state.case}`;if(resetPoint||state.pointKey!==pointKey||!state.point)state.point=meta.shape.map(size=>Math.floor(size/2));state.point=state.point.map((value,axis)=>Math.max(0,Math.min(meta.shape[axis]-1,value)));state.pointKey=pointKey;
     const scaleKey=`${state.scope}/${state.run}/${state.feature}/${state.mode}`;if(scaleKey!==state.scaleKey){el('scale').value=Number(meta.scale.toPrecision(5));state.scaleKey=scaleKey;}
     for(let axis=0;axis<3;axis++){el(`slice-${axis}`).max=meta.shape[axis]-1;el(`slice-${axis}`).value=state.point[axis];el(`slice-${axis}`).disabled=false;}
-    const pooled=Boolean(meta.pooled);for(const name of ['overlay','opacity','threshold','scale','reset-scale','peak'])el(name).disabled=pooled;
-    el('center').disabled=false;el('strongest').hidden=state.scope==='whole';el('strongest').disabled=meta.strongest_case==null;
+    for(const name of ['reset-scale','peak','center'])el(name).disabled=false;el('strongest').hidden=state.scope==='whole';el('strongest').disabled=meta.strongest_case==null;
     showMetadata();showEvidence();
-    paintAll();document.querySelector('.viewer-grid').style.visibility='visible';el('viewer-loading').hidden=true;document.querySelector('.viewer-shell').setAttribute('aria-busy','false');el('loading').textContent='';el('run-progress').textContent='';document.querySelector('.viewer-shell').dataset.selection=selection;document.querySelector('.viewer-shell').dataset.loadMs=String(performance.now()-started);
+    paintAll();document.querySelector('.viewer-grid').style.visibility='visible';el('viewer-loading').hidden=true;document.querySelector('.viewer-shell').setAttribute('aria-busy','false');el('loading').textContent='';document.querySelector('.viewer-shell').dataset.selection=selection;document.querySelector('.viewer-shell').dataset.loadMs=String(performance.now()-started);
   }catch(error){if(id===state.request)report(error);}
 }
 function draw(axis){
@@ -193,7 +178,7 @@ function draw(axis){
   const ctx=canvas.getContext('2d');ctx.setTransform(dpr,0,0,dpr,0,0);ctx.fillStyle='#0b151a';ctx.fillRect(0,0,box.width,box.height);
   const [u,v]=[0,1,2].filter(value=>value!==axis),nx=meta.shape[u],ny=meta.shape[v],physical=[nx*meta.spacing[u],ny*meta.spacing[v]],zoom=Number(el('zoom').value),unit=Math.min((box.width-32)/physical[0],(box.height-32)/physical[1])*zoom;
   const width=physical[0]*unit,height=physical[1]*unit,pan=state.pan[axis]||[0,0],left=(box.width-width)/2+pan[0],top=(box.height-height)/2+pan[1];state.rects[axis]={left,top,width,height,nx,ny,u,v};
-  const windows={tissue:[-160,240],lung:[-1000,400],bone:[-500,1500]},scale=Math.max(.001,Number(el('scale').value)),opacity=Number(el('opacity').value)/100,threshold=Number(el('threshold').value)/100,overlay=el('overlay').checked&&!state.space&&!meta.pooled;
+  const windows={tissue:[-160,240],lung:[-1000,400],bone:[-500,1500]},scale=Math.max(.001,Number(el('scale').value)),opacity=Number(el('opacity').value)/100,threshold=Number(el('threshold').value)/100,overlay=el('overlay').checked&&!state.space;
   const off=renderer.render(axis,state.point[axis],{window:windows[el('window').value],scale,opacity:overlay?opacity:0,threshold});ctx.imageSmoothingEnabled=false;ctx.drawImage(off,left,top,width,height);
   if(state.mask&&interpretive()&&el('mask-outline').checked&&!state.space){
     const shape=meta.shape,cw=width/nx,ch=height/ny,position=state.point[axis];
@@ -242,8 +227,8 @@ el('search').onkeydown=event=>{
 };
 el('model').onchange=()=>{const candidates=state.catalog.filter(row=>row.family===el('model').value);selectDictionary((candidates.find(row=>row.seed===spec().seed)||candidates[0]).run_id);};el('seed').onchange=()=>selectDictionary(el('seed').value);
 el('scope').onchange=()=>{
-  const scope=el('scope').value,current=spec(),catalog=state.catalog;
-  const next=current.scopes.includes(scope)?current:scope==='nodule'?(catalog.find(row=>row.group==='interpretation'&&row.model===current.model&&row.site===current.site)||catalog.find(row=>row.group==='interpretation'&&row.model===current.model)||catalog.find(row=>row.scopes.includes('nodule'))):(catalog.find(row=>row.group==='selected'&&row.model===current.model&&row.site===current.site)||catalog.find(row=>row.group==='selected'&&row.model===current.model)||catalog.find(row=>row.scopes.includes(scope)));
+  const scope=el('scope').value,current=spec();
+  const next=current.scopes.includes(scope)?current:state.catalog.find(row=>row.family===current.family&&row.scopes.includes(scope));
   selectDictionary(next.run_id,scope);
 };
 el('mode').onchange=()=>{state.mode=el('mode').value;run(()=>loadSelection({push:true}));};
@@ -251,26 +236,11 @@ function selectCase(value){if(value===state.case)return;state.case=value;run(()=
 el('case-select').onchange=()=>selectCase(Number(el('case-select').value));el('case-strip').onclick=event=>{const button=event.target.closest('[data-case]');if(button)selectCase(Number(button.dataset.case));};el('strongest').onclick=()=>{if(state.meta?.strongest_case!=null)selectCase(state.meta.strongest_case);};
 for(const id of ['overlay','window','zoom','mask-outline'])el(id).onchange=drawAll;el('scale').onchange=()=>{if(!Number.isFinite(Number(el('scale').value))||Number(el('scale').value)<=0)el('scale').value=state.meta?.scale||1;drawAll();};
 for(const id of ['opacity','threshold'])el(id).oninput=()=>{el(`${id}-value`).textContent=`${el(id).value}%`;drawAll();};el('peak').onclick=()=>{if(state.meta)movePoint([...state.meta.peak]);};el('center').onclick=()=>{if(state.meta)movePoint(state.meta.shape.map(size=>Math.floor(size/2)));};el('reset-scale').onclick=()=>{if(state.meta){el('scale').value=Number(state.meta.scale.toPrecision(5));drawAll();}};el('retry').onclick=()=>run(()=>loadSelection({catalog:!state.features.length}));
-el('help-toggle').onclick=()=>{if(state.panel!=='explore')showPanel('explore',true);el('help').hidden=!el('help').hidden;el('help-toggle').setAttribute('aria-expanded',String(!el('help').hidden));};
+el('help-toggle').onclick=()=>{el('help').hidden=!el('help').hidden;el('help-toggle').setAttribute('aria-expanded',String(!el('help').hidden));};
 document.querySelectorAll('.expand').forEach(button=>button.onclick=()=>{const grid=document.querySelector('.viewer-grid'),view=button.closest('.viewport'),expanded=!grid.classList.contains('expanded');grid.classList.toggle('expanded',expanded);document.querySelectorAll('.viewport').forEach(item=>item.classList.toggle('selected-view',expanded&&item===view));document.querySelectorAll('.expand').forEach(item=>item.textContent=text(expanded&&item===button?'恢复':'放大'));requestAnimationFrame(drawAll);});
 document.addEventListener('keydown',event=>{if(event.code==='Space'&&!['INPUT','SELECT','BUTTON','TEXTAREA','A'].includes(document.activeElement.tagName)){event.preventDefault();state.space=true;drawAll();}});document.addEventListener('keyup',event=>{if(event.code==='Space'){state.space=false;drawAll();}});window.addEventListener('blur',()=>{state.space=false;state.drag=null;drawAll();});new ResizeObserver(drawAll).observe(document.querySelector('.viewer-grid'));
-function showPanel(panel,push=false,sync=true){state.panel=panel;const findings=panel==='findings';el('explore-panel').hidden=findings;el('findings-panel').hidden=!findings;for(const [id,active] of [['explore-tab',!findings],['findings-tab',findings]]){el(id).classList.toggle('active',active);if(active)el(id).setAttribute('aria-current','page');else el(id).removeAttribute('aria-current');}if(sync)syncURL(push);if(!findings)requestAnimationFrame(drawAll);}
-el('explore-tab').onclick=()=>showPanel('explore',true);el('home-link').onclick=event=>{event.preventDefault();showPanel('explore',true);};el('findings-tab').onclick=()=>{showPanel('findings',true);run(loadFindings);};el('findings-scope').onchange=()=>{syncURL(true);run(loadFindings);};
-async function loadFindings(){
-  const id=++findingsRequest,scope=el('findings-scope').value;el('findings-list').textContent=text('读取研究观察…');const data=await get(scope==='whole'?'/api/whole/findings':'/api/catalog');if(id!==findingsRequest)return;const items=scope==='whole'?data.findings:data.findings.items;
-  el('findings-list').replaceChildren(...items.map(item=>{
-    const article=node('article',null,'finding'),body=node('div'),links=node('div',null,'finding-links');body.append(node('h2',text(item.title)),node('p',text(item.observation)),node('p',text(item.evidence),'finding-evidence'),node('p',text(item.boundary),'qualification'));
-    for(const link of scope==='whole'?(item.links||[]):item.features.map(feature=>({feature}))){const button=node('button',scope==='whole'?`${names[link.model]} · ${link.feature} · CT ${String(link.case+1).padStart(2,'0')}`:`Feature ${link.feature}`);button.onclick=()=>{if(scope==='crop'){location.href=`/experiments?${new URLSearchParams(link)}`;return;}run(async()=>{remember();const target=state.catalog.find(row=>row.reference&&row.model===link.model);state.run=target.run_id;state.scope='whole';state.feature=link.feature;state.case=link.case;state.mode=link.mode||'spatial';el('search').value='';showPanel('explore',false,false);await loadSelection({catalog:true,locate:true,push:true,resetPoint:true,point:link.point});});};links.append(button);}
-    article.append(body,links);if(item.figure){const figure=node('figure'),image=node('img');image.src=item.figure;image.alt=text(item.title);figure.append(image,node('figcaption',text(item.caption||'')));article.append(figure);}return article;
-  }));
-}
-async function preparation(){
-  if(!state.pending)return;const id=state.request,model=spec().model,data=await get(`/api/heatmaps/preparation?run=${encodeURIComponent(state.run)}`);if(id!==state.request||!state.pending)return;const item=data[model];
-  if(item.state==='running')el('run-progress').textContent=`${names[model]} · CT ${item.case+1}/${item.cases} · ${format(item.completed)}/${format(item.total)} ${text('窗口')} · ${format(item.tiles_per_second)} ${text('窗口/秒')}`;
-  else el('run-progress').textContent=text(item.state==='paused'?'完整 CT 响应计算已暂停。':'完整 CT 响应正在准备。');if(item.dictionary_ready||item.state==='completed')await loadSelection({catalog:true});
-}
-setInterval(()=>run(preparation),15000);
-function readLocation(){const params=new URLSearchParams(location.search),old=params.get('model');state.run=params.get('run')||(old?state.catalog.find(row=>row.reference&&row.model===old)?.run_id:state.catalog[0].run_id);if(!spec())throw new Error(text('地址中的 SAE 字典不存在。'));state.scope=params.get('scope')||spec().scopes[0];if(!spec().scopes.includes(state.scope))throw new Error(text('此字典没有对应图像范围的材料。'));state.feature=Number(params.get('feature')||0);state.case=Number(params.get('case')||0);state.mode=params.get('mode')||'spatial';state.panel=params.get('panel')==='findings'?'findings':'explore';el('findings-scope').value=params.get('findings')==='crop'?'crop':'whole';}
-window.addEventListener('popstate',()=>run(async()=>{readLocation();el('search').value='';showPanel(state.panel,false,false);await loadSelection({catalog:true,locate:true});if(state.panel==='findings')await loadFindings();}));
-window.addEventListener('viewer-language-change',()=>{if(state.catalog.length){controls();featureList();updateCases();showMetadata();showEvidence();drawAll();if(state.panel==='findings')run(loadFindings);}document.title=`SCL-VMI · ${text('热图浏览')}`;});
-run(async()=>{const data=await get('/api/heatmaps/catalog');state.catalog=data.dictionaries;if(!location.search&&localStorage.getItem('sclvmi-heatmap-location'))history.replaceState(null,'',localStorage.getItem('sclvmi-heatmap-location'));readLocation();showPanel(state.panel,false,false);await loadSelection({catalog:true,locate:true,resetPoint:true});if(state.panel==='findings')await loadFindings();});
+function available(params){const row=state.catalog.find(item=>item.run_id===params.get('run'));return Boolean(row)&&row.scopes.includes(params.get('scope'));}
+function readLocation(){const params=new URLSearchParams(location.search);state.run=params.get('run')||state.catalog[0].run_id;if(!spec())throw new Error(text('地址中的 SAE 字典不存在。'));state.scope=params.get('scope')||spec().scopes[0];if(!spec().scopes.includes(state.scope))throw new Error(text('此字典没有对应图像范围的材料。'));state.feature=Number(params.get('feature')||0);state.case=Number(params.get('case')||0);state.mode=params.get('mode')||'spatial';}
+window.addEventListener('popstate',()=>run(async()=>{readLocation();el('search').value='';await loadSelection({catalog:true,locate:true});}));
+window.addEventListener('viewer-language-change',()=>{if(state.catalog.length){controls();featureList();updateCases();showMetadata();showEvidence();drawAll();}document.title=`SCL-VMI · ${text('热图浏览')}`;});
+run(async()=>{const data=await get('/api/heatmaps/catalog');state.catalog=data.dictionaries;const saved=localStorage.getItem('sclvmi-heatmap-location');if(!location.search&&saved&&available(new URLSearchParams(saved.split('?')[1])))history.replaceState(null,'',saved);readLocation();await loadSelection({catalog:true,locate:true,resetPoint:true});});

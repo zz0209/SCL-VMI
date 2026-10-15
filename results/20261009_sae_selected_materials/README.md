@@ -100,8 +100,7 @@ python scripts/pipeline/export_sae_campaign_results.py --selection --output <fre
 
 Private weights are listed in `20261009_sae_asset_selection/selection.json` under
 the configured runs directory, with per-run dictionaries in
-`runs/<run_id>/dictionary.pt`. The local viewer's `/dictionaries` route provides
-all selected seeds, spatial maps, whole-crop responses and saved quality checks.
-See the [viewer guide](../../local_tools/viewers/viewer.md) and
-`SpatialSAEPipeline` for raw-image inference. Weights, CT inputs and per-patient
+`runs/<run_id>/dictionary.pt`. See `SpatialSAEPipeline` in the
+[viewer guide](../../local_tools/viewers/viewer.md) for raw-image inference.
+Weights, CT inputs and per-patient
 records are kept in private project storage.

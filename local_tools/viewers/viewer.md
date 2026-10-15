@@ -1,8 +1,8 @@
 # Dataset and SAE heatmap viewers
 
 The dataset browser displays locally available FLARE-AutoMSC datasets, including
-LUNA25. The feature explorer displays saved nodule-crop and whole-CT SAE outputs.
-All viewer surfaces share the same English/Chinese globe control. Language choice
+LUNA25. The heatmap browser displays saved nodule and whole-CT responses of the
+interpretation SAE dictionaries. All viewer surfaces share the same English/Chinese globe control. Language choice
 persists across reloads and is shared across these localhost services.
 
 ## Storage and dependencies
@@ -89,12 +89,9 @@ cross-seed stability tags and can rank by lung and liver enrichment (discovery
 mean over the region divided by the mean over other soft tissue) and by the share
 of response in edge air and high-HU regions; Feature evidence and dictionary
 checks are the same as in the nodule scope. A dictionary becomes available once
-its eight browser files have arrived.
-
-The Observations tab and Feature experiments come from the earlier dictionaries
-of 8 and 9 October. Those dictionaries are no longer listed in the configuration
-menu; opening evidence from Observations shows the corresponding earlier
-dictionary with its original sampling explanation.
+its eight browser files have arrived. The eight source scans are listed in
+`runs/20261009_whole_ct_exploration/source_audit.json`; the CT paths recorded
+there must remain accessible.
 
 All three planes retain physical axis spacing. Click to position the crosshair;
 use the wheel, arrow keys or slice slider to navigate. Shift-drag pans a plane;
@@ -102,7 +99,7 @@ double-click resets image size. Hold Space over an image to hide the overlay.
 Each plane can expand independently. CT windows, opacity, threshold and color
 maximum control display. Dictionary checks expose saved development metrics and
 the exact run/weight identity. The page clears old images during a new request and
-provides explicit loading, preparation and retry states.
+provides explicit loading, error and retry states.
 
 Whole-CT maps for the interpretation dictionaries use the `whole_ct` section of
 `configs/sae_interpretation.json` and are written under the run it names:
@@ -125,48 +122,11 @@ The random-weight encoder is rebuilt from its initialization seed and its
 parameter hash is checked against the configuration. Run `check_interpretation_api.py`
 after browser files arrive.
 
-The earlier dictionaries opened from Observations keep their own assets: the
-campaign named in `configs/sae_campaign.json` (nodule crops) and the whole-CT run
-named in `configs/sae_whole_viewer.json`, produced with `selected_whole_fast.py`
-and `prepare_selected_browser_cache.py`. `check_heatmap_api.py --require-whole`
-checks them.
-
-## Feature experiments
-
-Open [Feature experiments](http://127.0.0.1:8773/experiments) for the saved FMCIB
-layer1/k64 study: 2,048 features and 128 development patients. Controls include
-position templates, matched seeds, input changes and saved interventions.
-
-The configured `runs` directory must contain the corresponding artifacts:
-
-- `20261008_spatial_sae/`: the dictionaries referenced by the feature screen.
-- `20261008_feature_validation/fmcib/`: screen, case arrays, case geometry and
-  discovery spatial statistics.
-- `20261009_feature_exploration/`: members, feature descriptors, rankings,
-  analysis, probe maps and summaries, intervention records, `findings.json`,
-  `interpretations.json`, their `findings.en.json` and `interpretations.en.json`
-  translations, and the per-case `crop_browser_cache` HDF5 files.
-
-Private findings and interpretation files travel with their analysis assets.
-These files and the patient records are excluded from the source repository.
-
-## Whole-CT source and observation assets
-
-Required local outputs under `runs/20261009_whole_ct_exploration/` include
-`source_audit.json`, completed extraction receipts and HDF5 files in
-`continuous_fmcib/fmcib/` and `vista_windows/vista/`, complete analysis catalogs
-and findings (including `complete_analysis/findings.en.json`), and the viewer
-caches referenced by those artifacts. Source CT
-paths in the private audit must remain accessible.
-
 `start.ps1` reuses a healthy service. CT values and activation arrays remain in
 configured local storage; the browser performs slice rendering without changing
 saved scientific values. The viewers consume completed research assets and do
-not run model training.
-
-Patient records and derived arrays stay in private local storage. Existing
-`/dictionaries?...` bookmarks open the same selection in the crop scope of the
-heatmap browser. Historical `/?feature=...` bookmarks open Feature experiments.
+not run model training. Patient records and derived arrays stay in private local
+storage.
 
 ## Raw-image SAE inference
 

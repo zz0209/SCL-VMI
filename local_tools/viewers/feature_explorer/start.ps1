@@ -10,18 +10,18 @@ $pythonPath = Join-Path $storage.environments 'pipeline/Scripts/python.exe'
 $existing = Get-NetTCPConnection -LocalPort 8773 -State Listen -ErrorAction SilentlyContinue
 if ($existing) {
     $health = Invoke-RestMethod http://127.0.0.1:8773/api/health
-    if ($health.run -ne '20261009_feature_exploration') { throw 'Port 8773 belongs to another service' }
-    Write-Output 'http://127.0.0.1:8773/'
+    if ($health.service -ne 'sclvmi-heatmaps') { throw 'Port 8773 belongs to another service' }
+    Write-Output 'http://127.0.0.1:8773/whole'
     return
 }
 $stamp = Get-Date -Format yyyyMMddTHHmmss
 $process = Start-Process -FilePath $pythonPath -ArgumentList '-u', 'local_tools/viewers/feature_explorer/server.py' -WorkingDirectory $projectRoot -WindowStyle Hidden -RedirectStandardOutput "$PSScriptRoot/server_$stamp.stdout.log" -RedirectStandardError "$PSScriptRoot/server_$stamp.stderr.log" -PassThru
 $deadline = (Get-Date).AddSeconds(30)
 while (-not (Get-NetTCPConnection -LocalPort 8773 -State Listen -ErrorAction SilentlyContinue)) {
-    if ($process.HasExited) { throw "Feature explorer exited. Read server_$stamp.stderr.log." }
-    if ((Get-Date) -gt $deadline) { throw "Feature explorer startup timed out. Read server_$stamp.stderr.log." }
+    if ($process.HasExited) { throw "Heatmap browser exited. Read server_$stamp.stderr.log." }
+    if ((Get-Date) -gt $deadline) { throw "Heatmap browser startup timed out. Read server_$stamp.stderr.log." }
     Start-Sleep -Milliseconds 200
 }
 $health = Invoke-RestMethod http://127.0.0.1:8773/api/health
-if ($health.run -ne '20261009_feature_exploration') { throw 'Unexpected service on port 8773.' }
-Write-Output "Feature explorer ready: http://127.0.0.1:8773/"
+if ($health.service -ne 'sclvmi-heatmaps') { throw 'Unexpected service on port 8773.' }
+Write-Output "Heatmap browser ready: http://127.0.0.1:8773/whole"
