@@ -44,6 +44,31 @@ def independent_native(row, identifier):
     return activity, valid, np.asarray(read_json(CAMPAIGN / "cases" / "fmcib" / f"{identifier}.json")[affine_key])
 
 
+def check_whole(rows):
+    root = Path(context()[0]["runs"]) / SETTINGS["whole_ct"]["run_id"] / "browser_cache"
+    checks = []
+    for row in rows:
+        if "whole" not in row["scopes"] or not all((root / row["run_id"] / f"case_{case:02d}.json").exists() for case in range(8)):
+            continue
+        catalog = get("/api/heatmaps/features", run=row["run_id"], scope="whole").json()
+        assert [item["id"] for item in catalog["features"]] == list(range(row["features"])) and all(item["ready"] for item in catalog["cases"])
+        assert "lung_enrichment" in catalog["rankings"] and all("stability" in item for item in catalog["features"])
+        feature = int(np.nanargmax([item["maximum"] if item["maximum"] is not None else -1 for item in catalog["features"]]))
+        for case in [0, 1]:
+            params = dict(run=row["run_id"], scope="whole", case=case, feature=feature, mode="spatial")
+            meta = get("/api/heatmaps/map", **params).json()
+            activity = np.frombuffer(get("/api/heatmaps/activity", **params).content, "<f4").reshape(meta["map_shape"])
+            with h5py.File(root / row["run_id"] / f"case_{case:02d}.h5", "r") as saved:
+                np.testing.assert_array_equal(activity, saved["values"][feature].astype(np.float32))
+            for mode in ["single", "mean", "maximum"]:
+                pooled_meta = get("/api/heatmaps/map", **{**params, "mode": mode}).json()
+                pooled = np.frombuffer(get("/api/heatmaps/activity", **{**params, "mode": mode}).content, "<f4")
+                assert len(pooled) == np.prod(pooled_meta["map_shape"]) and np.isfinite(pooled).all()
+        checks.append({"run_id": row["run_id"], "feature": feature, "map_shape": meta["map_shape"], "scale": meta["scale"]})
+        print("whole", row["run_id"], feature, meta["map_shape"], flush=True)
+    return checks
+
+
 def main():
     rows = [row for row in get("/api/heatmaps/catalog").json()["dictionaries"] if "nodule" in row["scopes"]]
     index = read_json(CAMPAIGN / "viewer/index.json")["dictionaries"]
@@ -84,10 +109,11 @@ def main():
     for changes in [{"feature": -1}, {"feature": base["features"]}, {"case": -1}, {"case": 256}, {"mode": "unknown"}]:
         response = requests.get("http://127.0.0.1:8773/api/heatmaps/map", params={**dict(run=base["run_id"], scope="nodule", case=0, feature=0, mode="spatial"), **changes}, timeout=300)
         assert response.status_code == 422, (changes, response.status_code)
-    result = {"state": "passed", "dictionaries": len(rows), "checks": checks, "invalid_input_checks": 5, "created_at": timestamp(), "test_used": False}
+    whole_checks = check_whole(rows)
+    result = {"state": "passed", "dictionaries": len(rows), "checks": checks, "whole_checks": whole_checks, "invalid_input_checks": 5, "created_at": timestamp(), "test_used": False}
     stamp = timestamp().replace(":", "").replace("+", "_")
     write_json(CAMPAIGN / "verification" / f"viewer_api_{stamp}.json", result)
-    print(json.dumps({"state": "passed", "dictionaries": len(rows)}), flush=True)
+    print(json.dumps({"state": "passed", "dictionaries": len(rows), "whole_dictionaries": len(whole_checks)}), flush=True)
 
 
 if __name__ == "__main__":

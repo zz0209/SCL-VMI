@@ -26,11 +26,11 @@ BROWSER_ROOT = RUN_ROOT / "browser_cache"
 
 def dictionaries():
     selected = interpretation_api.catalog_entries()
-    selected += [{**row, "family": f"selected:{row['model']}:{row['site']}", "group": "selected", "reference": False, "scopes": ["crop", "whole"]} for row in campaign_api.catalog_data()["dictionaries"]]
+    selected += [{**row, "family": f"selected:{row['model']}:{row['site']}", "group": "selected", "reference": False, "archived": True, "scopes": ["crop", "whole"]} for row in campaign_api.catalog_data()["dictionaries"]]
     old = read_json(Path(context()[0]["runs"]) / "20261008_spatial_sae/dictionary_index.json")
     for row in old["dictionaries"]:
         if row["default"]:
-            selected.append({"run_id": row["run_id"], "model": row["model"], "site": row["site"], "seed": row["seed"], "features": row["dictionary_size"], "k": row["target_l0"], "dictionary_sha256": row["dictionary_sha256"], "family": f"reference:{row['model']}", "group": "reference", "reference": True, "scopes": ["whole"]})
+            selected.append({"run_id": row["run_id"], "model": row["model"], "site": row["site"], "seed": row["seed"], "features": row["dictionary_size"], "k": row["target_l0"], "dictionary_sha256": row["dictionary_sha256"], "family": f"reference:{row['model']}", "group": "reference", "reference": True, "archived": True, "scopes": ["whole"]})
     return selected
 
 
@@ -41,14 +41,20 @@ def specification(run):
     return found[0]
 
 
+def interpretive(spec):
+    return spec.get("group") in ["interpretation", "control"]
+
+
 def selected_path(run, case):
-    path = BROWSER_ROOT / run / f"case_{case:02d}.h5"
+    path = interpretation_api.whole_path(run, case) if interpretive(specification(run)) else BROWSER_ROOT / run / f"case_{case:02d}.h5"
     if not path.with_suffix(".json").exists():
         raise HTTPException(409, "Whole-CT browser data for this dictionary and case is still being prepared")
     return path
 
 
 def browser_ready(run):
+    if interpretive(specification(run)):
+        return interpretation_api.whole_complete(run)
     return all((BROWSER_ROOT / run / f"case_{case:02d}.json").exists() for case in range(8))
 
 
@@ -60,6 +66,8 @@ def cases_for(spec, scope):
     if scope == "crop":
         return [{"id": row["index"], "label": row["label"], "split": "development", "ready": True} for row in read_json(campaign_api.ROOT / "viewer" / spec["model"] / "cases.json")["cases"]]
     cases = whole_api.status()["cases"]
+    if interpretive(spec):
+        return [{"id": row["id"], "label": row["label"], "split": row["split"], "ready": interpretation_api.whole_ready(spec["run_id"], row["id"])} for row in cases]
     complete = browser_ready(spec['run_id'])
     return [{"id": row["id"], "label": row["label"], "split": row["split"], "ready": row["ready"][spec["model"]] if spec["reference"] else complete} for row in cases]
 
@@ -144,6 +152,8 @@ def features(run: str, scope: str):
     cases = cases_for(spec, scope)
     if scope == "nodule":
         return {"features": interpretation_api.features(run), "cases": cases, "rankings": interpretation_api.RANKINGS, "interpretation": True}
+    if interpretive(spec):
+        return {"features": interpretation_api.whole_features(run), "cases": cases, "rankings": interpretation_api.WHOLE_RANKINGS if interpretation_api.whole_complete(run) else ["id", "reappearance"], "interpretation": True}
     if spec["reference"]:
         result = whole_api.catalog(spec["model"])
         return {"features": result["features"], "cases": cases, "rankings": ["id", "lung_enrichment", "liver_enrichment", "outside_fraction", "high_hu_fraction"]}

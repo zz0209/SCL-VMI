@@ -97,7 +97,7 @@ def response_data(run_id, case, feature):
 
 @router.get("/dictionaries")
 def page(request: Request):
-    return RedirectResponse('/whole?scope=crop&' + request.url.query)
+    return RedirectResponse('/whole?scope=crop&' + request.url.query if request.query_params.get("run") else '/whole?scope=nodule')
 
 
 @router.get("/api/dictionaries")

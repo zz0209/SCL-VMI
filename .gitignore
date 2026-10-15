@@ -115,6 +115,7 @@
 !/src/sclvmi/sae_campaign_viewer.py
 !/src/sclvmi/sae_campaign_maps.py
 !/src/sclvmi/sae_context.py
+!/src/sclvmi/sae_encoders.py
 !/src/sclvmi/sae_interp_queue.py
 !/src/sclvmi/sae_interp_stability.py
 !/src/sclvmi/sae_interp_evaluate.py
@@ -221,6 +222,8 @@
 !/local_tools/viewers/feature_explorer/check_heatmap_api.py
 !/local_tools/viewers/feature_explorer/interpretation_api.py
 !/local_tools/viewers/feature_explorer/check_interpretation_api.py
+!/local_tools/viewers/feature_explorer/interpretation_whole.py
+!/local_tools/viewers/feature_explorer/check_interpretation_whole.py
 !/local_tools/viewers/feature_explorer/content_language.py
 !/local_tools/viewers/feature_explorer/start.ps1
 !/local_tools/viewers/feature_explorer/requirements.txt

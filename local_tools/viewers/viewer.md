@@ -40,10 +40,9 @@ browser. Research runs retain their own explicit split records.
 .\local_tools\viewers\feature_explorer\start.ps1
 ```
 
-Open [heatmaps](http://127.0.0.1:8773/whole). Choose image scope, SAE configuration
-and seed in the existing three-plane viewer. The six selected configuration
-families provide seeds 2025, 2026 and 2027. Each dictionary retains its own Feature
-selection. Feature IDs are dictionary-local; the catalog uses fixed 80-item pages,
+Open [heatmaps](http://127.0.0.1:8773/whole). Choose image scope (nodule
+interpretation materials or whole CT), SAE configuration and seed in the
+three-plane viewer. Each dictionary retains its own Feature selection. Feature IDs are dictionary-local; the catalog uses fixed 80-item pages,
 with search and ranking. Enter a Feature ID in search and press Enter to jump.
 Focus the list and use Up/Down to follow its current order across pages;
 the selected item scrolls into view. Arrow keys in the images navigate slices.
@@ -76,25 +75,26 @@ This scope requires, under the configured campaign directory, `viewer/index.json
 `runs/<run_id>/dictionary.pt`, `stability/<group>/` and `profiles/<model>_<site>/`.
 Deployed trained activations are read from the previous suite's case caches.
 
-Nodule crops cover 128 development patients. Spatial maps offer native samples
-and interpolation. Global dictionaries return one value for the entire crop;
-linked CT browsing remains available and spatial overlay controls are disabled.
-The default color maximum is fixed across these 128 patients. The strongest-case
-button opens the patient with the largest saved response for the current Feature.
+Whole CT uses eight provider-training PETWB scans in discovery–confirmation pairs
+and the same interpretation dictionaries: trained-encoder seeds 2025, 2026 and
+2027 and the random-weight control seed 2025 of each site. Each dictionary is
+applied to its training-sized window on a regular grid: FMCIB layer1 complete
+context uses 84 mm windows every 48 mm and keeps positions whose 35-voxel
+receptive field lies inside the CT volume; FMCIB layer2 uses 50 mm windows every
+32 mm; VISTA3D uses 72 mm windows every 48 mm. Spatial maps keep the central native
+positions (4, 8, 6 and 12 mm). Regional modes show a central sample, mean or
+maximum. Window context can influence neighboring responses. The color maximum
+uses the four discovery scans and stays fixed across cases. The catalog keeps the
+cross-seed stability tags and can rank by lung and liver enrichment (discovery
+mean over the region divided by the mean over other soft tissue) and by the share
+of response in edge air and high-HU regions; Feature evidence and dictionary
+checks are the same as in the nodule scope. A dictionary becomes available once
+its eight browser files have arrived.
 
-Whole CT uses eight provider-training PETWB scans in discovery–confirmation pairs.
-Selected dictionaries use training-sized windows at 32 mm intervals for FMCIB and
-48 mm for VISTA3D. Spatial maps retain central native positions: 4/8 mm for FMCIB
-layer1/layer2 and 6/12 mm for VISTA3D stage2/stage3. Regional modes show a central
-sample, mean or maximum. Global maps show one response per input window. Window
-context can influence neighboring responses. The color maximum uses four
-discovery scans and remains fixed across cases.
-
-The Observations tab opens evidence with its original dictionary, Feature and
-case. Its FMCIB layer1/k64 and VISTA3D stage2/k80 dictionaries remain selectable
-under the observation group. FMCIB observation maps use continuous convolutions;
-selected-dictionary maps use training-sized windows. The viewer shows dictionary
-identity and the relevant sampling explanation in Help.
+The Observations tab and Feature experiments come from the earlier dictionaries
+of 8 and 9 October. Those dictionaries are no longer listed in the configuration
+menu; opening evidence from Observations shows the corresponding earlier
+dictionary with its original sampling explanation.
 
 All three planes retain physical axis spacing. Click to position the crosshair;
 use the wheel, arrow keys or slice slider to navigate. Shift-drag pans a plane;
@@ -104,54 +104,32 @@ maximum control display. Dictionary checks expose saved development metrics and
 the exact run/weight identity. The page clears old images during a new request and
 provides explicit loading, preparation and retry states.
 
-The campaign named in `configs/sae_campaign.json` must provide `viewer/index.json`,
-the referenced `runs/<run_id>/dictionary.pt`, `viewer/<model>/cases.json`, the
-corresponding `case_*.h5` inputs and `viewer/responses/<run_id>/responses.h5`.
-Native activation caches stay at their configured campaign locations.
-
-Selected whole-CT outputs use the run named in `configs/sae_whole_viewer.json`:
-`maps/<run_id>/case_*.h5`, completion receipts and per-model completion records.
-Preparation can be resumed with:
+Whole-CT maps for the interpretation dictionaries use the `whole_ct` section of
+`configs/sae_interpretation.json` and are written under the run it names:
 
 ```powershell
-python local_tools/viewers/feature_explorer/selected_whole.py --model fmcib
-python local_tools/viewers/feature_explorer/selected_whole.py --model vista
+python local_tools/viewers/feature_explorer/interpretation_whole.py --stage maps --model fmcib --sites layer1_context --trained-seeds 2025 --random-seeds ""
+python local_tools/viewers/feature_explorer/interpretation_whole.py --stage maps --model fmcib --sites layer2 --trained-seeds 2025 --random-seeds ""
+python local_tools/viewers/feature_explorer/interpretation_whole.py --stage maps --model vista --sites stage2,stage3 --trained-seeds 2025 --random-seeds ""
+python local_tools/viewers/feature_explorer/interpretation_whole.py --stage caches --workers 6
+python local_tools/viewers/feature_explorer/check_interpretation_whole.py --model fmcib --cases 0,1
 ```
 
-For parallel output processing, use `selected_whole_fast.py --model <model>
---batch-size 16 --writers 3`. It computes the same window geometry and dictionary
-responses, converts output to contiguous float16 on the GPU, and overlaps GPU
-work with three independent HDF5 writers. Completed files and saved tile positions
-are reused. Each execution records its source hash, batch size, writer count and
-parent asset identity under `executions/`; completion receipts identify the
-execution that finished each case. Floating-point differences near an SAE
-threshold should be checked when changing batch size or execution environment.
+`--limit N` processes N windows per case for a smoke run in a separate directory.
+Map files record their completed windows and resume from them. The cache stage
+writes one gzip-compressed float16 feature per chunk, checks every copied value,
+and stores per-feature sums over the lung, liver, other-tissue, high-HU and
+edge-air regions used for ranking. The check script recomputes sampled positions
+from the CT, encoder and dictionary independently and compares them with the maps.
+The random-weight encoder is rebuilt from its initialization seed and its
+parameter hash is checked against the configuration. Run `check_interpretation_api.py`
+after browser files arrive.
 
-Prepare the lossless browser files after extraction:
-
-```powershell
-python local_tools/viewers/feature_explorer/prepare_selected_browser_cache.py --workers 4
-```
-
-The command writes `browser_cache/<run_id>/case_*.h5` under the selected whole-CT
-run directory. Each compressed chunk contains one complete feature, and every
-copied float16 value is checked against the source. File receipts include SHA256
-and source identity; interrupted files resume by completed feature count. The
-command checks available RAM before starting. Choose `--workers` from 1 through
-4 according to available resources. A representative check can use `--run
-<run_id> --case 0 --workers 1 --smoke-features 32 --output-root <separate-directory>`.
-Smoke files remain separate from complete browser assets. Each dictionary becomes
-available after all eight verified browser files and their receipts are present.
-
-For remote preparation, copy complete browser files and receipts to the same
-relative location in local runs storage and verify their SHA256 values. Preserve
-the original extraction files and execution records. Run
-`check_heatmap_api.py --require-whole` after all dictionaries are available.
-
-The commands require the published encoder checkpoints registered in local
-storage, selected dictionaries and the source audit below. Run each model's
-`--smoke` option and `check_selected_whole.py --model <model>` before extraction
-in a new environment. Large extractions require available GPU memory and storage.
+The earlier dictionaries opened from Observations keep their own assets: the
+campaign named in `configs/sae_campaign.json` (nodule crops) and the whole-CT run
+named in `configs/sae_whole_viewer.json`, produced with `selected_whole_fast.py`
+and `prepare_selected_browser_cache.py`. `check_heatmap_api.py --require-whole`
+checks them.
 
 ## Feature experiments
 

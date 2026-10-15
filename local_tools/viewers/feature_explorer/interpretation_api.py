@@ -26,6 +26,10 @@ ARRAYS = {
     ("vista", "stage3"): {"trained": ("previous", "stage3"), "random": ("new", "stage3_random"), "geometry": "stage3_grid_affine_ras", "valid": None},
 }
 RANKINGS = ["id", "maximum", "reappearance", "nodule_enrichment", "malignancy_partial", "image_r2", "frequency"]
+WHOLE = SETTINGS["whole_ct"]
+WHOLE_ROOT = Path(context()[0]["runs"]) / WHOLE["run_id"] / "browser_cache"
+WHOLE_REGIONS = ["all", "lung", "liver", "other_tissue", "high_hu", "edge_air"]
+WHOLE_RANKINGS = ["id", "maximum", "reappearance", "lung_enrichment", "liver_enrichment", "outside_fraction", "high_hu_fraction"]
 
 
 def index():
@@ -33,8 +37,63 @@ def index():
     return read_json(path) if path.exists() else {"dictionaries": []}
 
 
+def whole_planned(row):
+    return row["seed"] in (WHOLE["trained_seeds"] if row["encoder"] == "trained" else WHOLE["random_seeds"])
+
+
 def catalog_entries():
-    return [{**row, "reference": False, "scopes": ["nodule"]} for row in index()["dictionaries"]]
+    return [{**row, "reference": False, "scopes": ["nodule", "whole"] if whole_planned(row) else ["nodule"]} for row in index()["dictionaries"]]
+
+
+def whole_path(run, case):
+    return WHOLE_ROOT / run / f"case_{case:02d}.h5"
+
+
+def whole_ready(run, case):
+    return whole_path(run, case).with_suffix(".json").exists()
+
+
+def whole_complete(run):
+    return all(whole_ready(run, case) for case in range(8))
+
+
+def ratio(numerator, denominator):
+    return float(numerator / denominator) if denominator > 0 else None
+
+
+@lru_cache(maxsize=16)
+def whole_statistics(run):
+    assert whole_complete(run)
+    sums, counts, maxima = [], [], []
+    for case in range(8):
+        with READ_LOCK, h5py.File(whole_path(run, case), "r") as saved:
+            assert list(saved.attrs["regions"]) == WHOLE_REGIONS
+            sums.append(saved["region_sums"][...])
+            counts.append(saved["region_counts"][...])
+            maxima.append(saved["maximum"][...])
+    sums, counts = np.stack(sums)[::2], np.stack(counts)[::2]
+    means = np.divide(sums, counts[:, None, :], out=np.zeros_like(sums), where=counts[:, None, :] > 0)
+    active = sums[:, :, 0] > 0
+    cases = active.sum(0)
+
+    def share(region):
+        values = np.divide(sums[:, :, region], sums[:, :, 0], out=np.zeros_like(sums[:, :, 0]), where=active)
+        return np.divide(values.sum(0), cases, out=np.full(cases.shape, np.nan), where=cases > 0)
+
+    return {"maximum": np.max(np.stack(maxima)[::2], axis=0), "discovery_means": means.mean(0), "outside_fraction": share(5), "high_hu_fraction": share(4)}
+
+
+def whole_features(run):
+    rows = features(run)
+    if not whole_complete(run):
+        return [{**row, "maximum": None} for row in rows]
+    statistics = whole_statistics(run)
+    result = []
+    for row in rows:
+        feature = row["id"]
+        means = statistics["discovery_means"][feature]
+        result.append({**row, "maximum": finite(statistics["maximum"][feature]), "lung_enrichment": ratio(means[1], means[3]), "liver_enrichment": ratio(means[2], means[3]), "outside_fraction": finite(statistics["outside_fraction"][feature]), "high_hu_fraction": finite(statistics["high_hu_fraction"][feature])})
+    return result
 
 
 def entry(run):
@@ -205,7 +264,7 @@ def features(run):
         rows.append({
             "id": feature, "description": "", "maximum": finite(table["maximum"][feature]),
             "reappearance": int(table["reappearance"][feature]), "stability": stability_label(table["reappearance"][feature], table["live"][feature], total),
-            "nodule_enrichment": finite(table["nodule_enrichment"][feature]), "malignancy_partial": finite(abs(table["partial_development"][feature])) if np.isfinite(table["partial_development"][feature]) else None,
+            "nodule_enrichment": finite(table["nodule_enrichment"][feature]), "malignancy_partial": finite(abs(table["partial_train"][feature])) if np.isfinite(table["partial_train"][feature]) else None,
             "image_r2": finite(table["image_r2"][feature]) if table["image_r2"] is not None else None, "frequency": finite(table["frequency"][feature]),
         })
     return rows

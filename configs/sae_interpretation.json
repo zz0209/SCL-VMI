@@ -40,6 +40,22 @@
     "local": [["vista", "stage2", "random"]],
     "basis": "k is the smallest grid value whose reference-seed dictionary passes the fixed-classifier checks; at every site cross-seed reappearance decreases as k increases. Expansion 4: expansion 8 changes the variance explained by stable features by -0.008 to +0.056 across sites without a consistent direction and doubles the features to inspect. Training length 4x from the budget diagnostic."
   },
+  "whole_ct": {
+    "run_id": "20261015_interpretation_whole_ct",
+    "source_run": "20261009_whole_ct_exploration",
+    "trained_seeds": [2025, 2026, 2027],
+    "random_seeds": [2025],
+    "batch_size": 16,
+    "sites": {
+      "fmcib:layer1_context": {"window": 84, "window_offset": -16, "step_mm": 48, "first": 5, "count": 12, "stride": 4, "receptive_field": 35, "last_module": "layer1"},
+      "fmcib:layer2": {"window": 50, "window_offset": 0, "step_mm": 32, "first": 1, "count": 4, "stride": 8, "last_module": "layer2"},
+      "vista:stage2": {"window": 48, "window_offset": 0, "step_mm": 48, "first": 2, "count": 8, "stride": 4},
+      "vista:stage3": {"window": 48, "window_offset": 0, "step_mm": 48, "first": 1, "count": 4, "stride": 8}
+    },
+    "random_encoder_sha256": {"fmcib": "f9cec5a3f43503838ea36029b07829dfd614a1e7483746ffaaf59ac52291865e", "vista": "b021a35cc5b2f50d5d929420757b3f9ce7d7626af9f6888a86452ac5770bd8e5"},
+    "regions": "lung and liver from FLARE-AutoMSC masks; other tissue HU in (-500, 300) outside lung and liver; high HU >= 300; edge air HU < -950 within the outer 10% of the in-plane field",
+    "scope": "Each dictionary is applied to its training-sized window on a regular whole-CT grid; maps keep the window's central native positions so neighbouring windows tile the scan. FMCIB layer1 complete-context maps keep positions whose 35-voxel receptive field lies inside the CT volume."
+  },
   "control": {"poll_seconds": 1, "remote_sync_seconds": 15},
   "upstream": {"module": "third_party/batchtopk/sae.py", "commit": "b9aab1c6156381ae7ae2997e3490e7b99e195dde"}
 }

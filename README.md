@@ -67,6 +67,7 @@ storage configuration.
 | Image and feature inference | [material_predict.py](src/sclvmi/material_predict.py) |
 | Spatial SAE training and inference | [sae.py](src/sclvmi/sae.py), [sae_predict.py](src/sclvmi/sae_predict.py) |
 | Multi-layer SAE comparison | [Input preparation](src/sclvmi/sae_campaign_data.py), [resumable training](src/sclvmi/sae_campaign_train.py), [fixed-classifier evaluation](src/sclvmi/sae_campaign_evaluate.py), [candidate selection](src/sclvmi/sae_campaign_compare.py), [PCA and seed diagnostics](src/sclvmi/sae_campaign_diagnostics.py) |
+| Interpretation dictionaries | [inputs and random-weight encoders](src/sclvmi/sae_context.py), [cross-seed stability](src/sclvmi/sae_interp_stability.py), [fixed-classifier checks](src/sclvmi/sae_interp_evaluate.py), [feature statistics](src/sclvmi/sae_interp_profiles.py), [selection](src/sclvmi/sae_interp_select.py), [whole-CT maps](local_tools/viewers/feature_explorer/interpretation_whole.py) |
 | Official baseline adapters | [luna25.py](src/sclvmi/luna25.py), [automsc.py](src/sclvmi/automsc.py) |
 | Dataset and heatmap viewers | [Viewer setup and local asset requirements](local_tools/viewers/viewer.md) |
 

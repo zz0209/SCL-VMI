@@ -1,8 +1,8 @@
 'use strict';
 const el = id => document.getElementById(id);
 const names = {fmcib:'FMCIB',vista:'VISTA3D'};
-const labels = {id:'Feature 编号',maximum:'最大响应',lung_enrichment:'肺部富集程度',liver_enrichment:'肝脏富集程度',outside_fraction:'图像边缘空气响应',high_hu_fraction:'高 HU 区域的响应',reappearance:'跨 seed 重现次数',nodule_enrichment:'结节区域富集',malignancy_partial:'控制大小后的恶性关联',image_r2:'图像变量解释程度',frequency:'激活频率'};
-const groupLabels = {interpretation:'解释用字典 · 训练后 encoder',control:'随机权重 encoder 对照',selected:'选定 SAE 组合',reference:'研究观察使用的字典'};
+const labels = {id:'Feature 编号',maximum:'最大响应',lung_enrichment:'肺部富集程度',liver_enrichment:'肝脏富集程度',outside_fraction:'图像边缘空气响应',high_hu_fraction:'高 HU 区域的响应',reappearance:'跨 seed 重现次数',nodule_enrichment:'结节区域富集',malignancy_partial:'控制大小后的恶性关联（discovery）',image_r2:'图像变量解释程度',frequency:'激活频率'};
+const groupLabels = {interpretation:'解释用字典 · 训练后 encoder',control:'随机权重 encoder 对照',selected:'旧版字典 · 研究观察链接',reference:'旧版字典 · 研究观察参考'};
 const stabilityLabels = {stable:'稳定',partial:'部分重现',unstable:'不稳定',inactive:'开发集未激活'};
 const regionLabels = {inside:'结节内部',margin_0_4mm:'表面外 0–4 mm',near_4_10mm:'表面外 4–10 mm',far_over_10mm:'表面外 10 mm 以上'};
 const memories = JSON.parse(localStorage.getItem('sclvmi-heatmap-selections')||'{}');
@@ -13,8 +13,10 @@ const format=value=>Number(value).toLocaleString(ViewerLanguage.locale,{maximumF
 const text=value=>ViewerLanguage.value==='en'?ViewerLanguage.text(value):value;
 const node=(tag,value,className)=>{const item=document.createElement(tag);if(value!=null)item.textContent=value;if(className)item.className=className;return item;};
 const spec=()=>state.catalog.find(row=>row.run_id===state.run);
-const source=()=>spec().image_source||spec().model;
+const source=()=>state.scope==='nodule'?spec().image_source:spec().model;
 const interpretive=()=>state.scope==='nodule';
+const entry=()=>['interpretation','control'].includes(spec().group);
+const visible=(row,current)=>!row.archived||row.family===current.family;
 const siteName=row=>row.site==='layer1_context'?`layer1 · ${text('完整上下文')}`:row.site;
 const configurationName=row=>row.group==='interpretation'||row.group==='control'?`${names[row.model]} · ${siteName(row)} · e${row.expansion} · k${row.k}`:`${names[row.model]} · ${row.site} · k${row.k}`;
 const selectionKey=()=>`${state.scope}/${state.run}`;
@@ -52,7 +54,7 @@ function modes(){
   return state.scope==='whole'?[['spatial','空间激活 · 原始采样'],['single','每个区域 · 中央位置'],['mean','每个区域 · 平均值'],['maximum','每个区域 · 峰值']]:[['spatial','空间激活 · 插值显示'],['native','空间激活 · 原始采样']];
 }
 function controls(){
-  const current=spec(),families=[...new Set(state.catalog.filter(row=>row.scopes.includes(state.scope)).map(row=>row.family))];
+  const current=spec(),families=[...new Set(state.catalog.filter(row=>row.scopes.includes(state.scope)&&visible(row,current)).map(row=>row.family))];
   for(const option of el('category').options)option.textContent=text(labels[option.value]);
   el('model').replaceChildren();
   for(const name of ['interpretation','control','selected','reference']){
@@ -61,9 +63,9 @@ function controls(){
     if(group.children.length)el('model').append(group);
   }
   el('model').value=current.family;
-  el('seed').replaceChildren(...state.catalog.filter(row=>row.family===current.family).map(row=>{const option=node('option',row.seed);option.value=row.run_id;return option;}));
+  el('seed').replaceChildren(...state.catalog.filter(row=>row.family===current.family&&row.scopes.includes(state.scope)).map(row=>{const option=node('option',row.seed);option.value=row.run_id;return option;}));
   el('seed').value=state.run;el('seed').disabled=el('seed').options.length===1;el('scope').value=state.scope;
-  for(const option of el('scope').options)option.disabled=!state.catalog.some(row=>row.scopes.includes(option.value));
+  for(const option of el('scope').options){option.disabled=!state.catalog.some(row=>row.scopes.includes(option.value)&&visible(row,current));option.hidden=option.disabled;}
   const available=modes();if(!available.some(([value])=>value===state.mode))state.mode=available[0][0];
   el('mode').replaceChildren(...available.map(([value,label])=>{const option=node('option',text(label));option.value=value;return option;}));el('mode').value=state.mode;
   const encoderName=current.group==='control'?` · ${text('随机权重')}`:'';
@@ -72,11 +74,11 @@ function controls(){
   el('feature-title').textContent=`${names[current.model]} · ${siteName(current)}${encoderName} · Feature ${state.feature}`;el('feature-description').textContent=state.features.find(row=>row.id===state.feature)?.description||'';
   el('cases-title').textContent=text(state.scope==='whole'?'完整 CT 病例':interpretive()?'结节解释病例':'结节 crop 病例');
   el('cases-note').textContent=text(state.scope==='whole'?'每组第一例用于观察，第二例用于确认':interpretive()?'D：128 名训练集患者（discovery）；C：128 名开发集患者（confirmation）':'128 名不同患者的开发集输入');
-  el('dataset-note').textContent=state.scope==='whole'?'PETWB · training':interpretive()?'LUNA25 · training + development':'LUNA25 · development';el('source-note').textContent=current.reference?'20261008 · '+text('研究观察字典'):interpretive()?'20261014 · '+text(groupLabels[current.group]):'20261009 · '+text('选定 SAE 组合');
-  el('scope-help').textContent=text(interpretive()?(current.site==='layer1_context'?'FMCIB layer1 使用以结节为中心的 84 mm 输入，只保留 35 体素感受野完全位于原始视野内的位置；感受野触及视野外的位置不显示响应。绿色轮廓为结节 mask。':'该字典使用模型部署时的输入窗口；窗口上下文会影响响应。绿色轮廓为结节 mask。'):current.reference?'研究观察中的 FMCIB 使用连续卷积，VISTA3D 使用固定窗口。具体采样方式随字典身份显示。':state.scope==='whole'?'选定字典使用与训练相同大小的输入窗口。FMCIB 每隔 32 mm、VISTA3D 每隔 48 mm 移动窗口；空间图保留中央位置，global 图显示每个窗口的响应。窗口上下文可能影响相邻区域的响应。':'空间图可以选择原始采样或插值显示。global 给出整个 crop 的单个响应，CT 仍可联动浏览。');
+  el('dataset-note').textContent=state.scope==='whole'?'PETWB · training':interpretive()?'LUNA25 · training + development':'LUNA25 · development';el('source-note').textContent=current.reference?'20261008 · '+text('研究观察字典'):entry()?'20261014 · '+text(groupLabels[current.group]):'20261009 · '+text('旧版字典');
+  el('scope-help').textContent=text(interpretive()?(current.site==='layer1_context'?'FMCIB layer1 使用以结节为中心的 84 mm 输入，只保留 35 体素感受野完全位于原始视野内的位置；感受野触及视野外的位置不显示响应。绿色轮廓为结节 mask。':'该字典使用模型部署时的输入窗口；窗口上下文会影响响应。绿色轮廓为结节 mask。'):entry()?'在完整 CT 上使用与训练相同大小的输入窗口：FMCIB layer1 完整上下文为 84 mm、每隔 48 mm，只保留感受野完全位于 CT 内的位置；FMCIB layer2 为 50 mm、每隔 32 mm；VISTA3D 为 72 mm、每隔 48 mm。相邻窗口的中央区域拼接成完整图，窗口上下文可能影响相邻区域的响应。':current.reference?'研究观察中的 FMCIB 使用连续卷积，VISTA3D 使用固定窗口。具体采样方式随字典身份显示。':state.scope==='whole'?'选定字典使用与训练相同大小的输入窗口。FMCIB 每隔 32 mm、VISTA3D 每隔 48 mm 移动窗口；空间图保留中央位置，global 图显示每个窗口的响应。窗口上下文可能影响相邻区域的响应。':'空间图可以选择原始采样或插值显示。global 给出整个 crop 的单个响应，CT 仍可联动浏览。');
   el('mask-control').hidden=!interpretive();
   el('dictionary-checks').hidden=current.reference;
-  if(interpretive()){
+  if(entry()){
     const quality=current.quality,rows=[['训练数据',text(current.site==='layer1_context'?'完整感受野位置':'部署输入窗口')],['训练步数',`${format(current.training_steps)} × 2,048`],['开发集 FVU',quality.fvu.toFixed(4)],['同系数 PCA 的 FVU',quality.pca_fvu.toFixed(4)],['稳定 Feature',`${format(quality.stable_features)} / ${format(quality.live_features)}`],['稳定 Feature 解释的方差',quality.stable_explained_variance.toFixed(4)],['decoder 配对相关（PW-MCC）',quality.pw_mcc.toFixed(4)]];
     if(current.downstream)rows.push(['分类概率 MAE',current.downstream.probability_mae.toFixed(5)],['重建后 AUROC',`${current.downstream.recovered_auroc.toFixed(4)} / ${current.downstream.original_auroc.toFixed(4)}`]);
     if(current.interior_downstream)rows.push(['只替换完整感受野位置的 MAE',current.interior_downstream.probability_mae.toFixed(5)]);
@@ -174,7 +176,7 @@ async function loadSelection({catalog=false,locate=false,push=false,resetPoint=f
     controls();syncURL(push);featureList(locate);updateCases();
     if(!state.cases[state.case].ready){state.pending=true;loading('完整 CT 响应正在准备。',true);el('loading').textContent='';await preparation();return;}
     const selection=query().toString(),current=spec();
-    const [meta,ct,activity,mask,detail]=await Promise.all([get(`/api/heatmaps/map?${selection}`,signal),get(`/api/heatmaps/ct/${state.scope}/${source()}/${state.case}`,signal,true),get(`/api/heatmaps/activity?${selection}`,signal,true),interpretive()?get(`/api/heatmaps/mask/nodule/${source()}/${state.case}`,signal,true):null,interpretive()?get(`/api/heatmaps/detail?${new URLSearchParams({run:state.run,feature:state.feature})}`,signal):null]);if(id!==state.request)return;
+    const [meta,ct,activity,mask,detail]=await Promise.all([get(`/api/heatmaps/map?${selection}`,signal),get(`/api/heatmaps/ct/${state.scope}/${source()}/${state.case}`,signal,true),get(`/api/heatmaps/activity?${selection}`,signal,true),interpretive()?get(`/api/heatmaps/mask/nodule/${source()}/${state.case}`,signal,true):null,entry()?get(`/api/heatmaps/detail?${new URLSearchParams({run:state.run,feature:state.feature})}`,signal):null]);if(id!==state.request)return;
     if(!renderer)renderer=new WholeVolumeRenderer();renderer.upload(meta,ct,activity,state.mode==='native'?'spatial':state.mode);state.meta=meta;state.pan={};state.mask=mask;state.detail=detail;
     const pointKey=`${state.scope}/${current.model}/${state.case}`;if(resetPoint||state.pointKey!==pointKey||!state.point)state.point=meta.shape.map(size=>Math.floor(size/2));if(point)state.point=[...point];state.point=state.point.map((value,axis)=>Math.max(0,Math.min(meta.shape[axis]-1,value)));state.pointKey=pointKey;
     const scaleKey=`${state.scope}/${state.run}/${state.feature}/${state.mode}`;if(scaleKey!==state.scaleKey){el('scale').value=Number(meta.scale.toPrecision(5));state.scaleKey=scaleKey;}

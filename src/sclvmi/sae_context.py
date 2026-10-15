@@ -12,7 +12,6 @@ import nibabel as nib
 import numpy as np
 import pandas as pd
 import torch
-from monai.networks.nets import resnet50, vista3d132
 from monai.transforms import Compose
 from scipy import ndimage
 from scipy.spatial import ConvexHull
@@ -20,8 +19,9 @@ from skimage import measure
 from tqdm import tqdm
 
 from .context import ROOT, context, read_json, sha256, timestamp, write_json
-from .models import load_encoder, spatial_features
+from .models import load_encoder
 from .sae_campaign import digest
+from .sae_encoders import captured_sites, fmcib_prefix, random_encoder
 from .sae_geometry import fmcib_sampling_affine
 from .sae_sites import SITES, material, translation, volume_with_geometry
 
@@ -268,29 +268,8 @@ def unchanged(value):
     return value
 
 
-def random_encoder(name, seed):
-    torch.manual_seed(seed)
-    if name == "fmcib":
-        model = resnet50(pretrained=False, n_input_channels=1, widen_factor=2, conv1_t_stride=2, feed_forward=False, bias_downsample=True)
-    else:
-        model = vista3d132(encoder_embed_dim=48, in_channels=1)
-    return model.eval().requires_grad_(False)
-
-
-def fmcib_prefix(model, tensor, last):
-    value = model.maxpool(model.act(model.bn1(model.conv1(tensor))))
-    for name in ["layer1", "layer2"][:["layer1", "layer2"].index(last) + 1]:
-        value = getattr(model, name)(value)
-    return value
-
-
 def vista_sites(model, tensor):
-    captures = {}
-    handles = [model.get_submodule(SITES["vista"][site]["module"]).register_forward_hook(lambda module, inputs, output, key=site: captures.__setitem__(key, output.detach().clone())) for site in ["stage2", "stage3"]]
-    spatial_features(model, "vista", tensor)
-    for handle in handles:
-        handle.remove()
-    return captures
+    return captured_sites(model, "vista", tensor, {site: SITES["vista"][site]["module"] for site in ["stage2", "stage3"]})
 
 
 def complete_case(path, keys):
