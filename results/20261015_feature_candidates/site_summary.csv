@@ -1,0 +1,9 @@
+site,encoder,random_threshold,features,stable,discovery_selected,confirmed,confirmed_positive,confirmed_negative,beyond_morphology,families,stable_enrichment_above_random_95
+fmcib_layer1_context,trained,0.13269522158376001,2048,84,4,3,3,0,3,3,0
+fmcib_layer1_context,random,0.13269522158376001,2048,68,4,3,3,0,3,3,1
+fmcib_layer2,trained,0.11561946063202921,4096,645,35,26,26,0,26,18,29
+fmcib_layer2,random,0.11561946063202921,4096,151,4,0,0,0,0,0,2
+vista_stage2,trained,0.12194733739125957,768,180,29,14,13,1,14,14,11
+vista_stage2,random,0.12194733739125957,768,126,4,0,0,0,0,0,1
+vista_stage3,trained,0.11161120771371705,1536,325,14,8,8,0,8,8,11
+vista_stage3,random,0.11161120771371705,1536,90,5,2,2,0,2,2,0

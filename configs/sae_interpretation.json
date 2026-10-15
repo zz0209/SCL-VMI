@@ -56,6 +56,19 @@
     "regions": "lung and liver from FLARE-AutoMSC masks; other tissue HU in (-500, 300) outside lung and liver; high HU >= 300; edge air HU < -950 within the outer 10% of the in-plane field",
     "scope": "Each dictionary is applied to its training-sized window on a regular whole-CT grid; maps keep the window's central native positions so neighbouring windows tile the scan. FMCIB layer1 complete-context maps keep positions whose 35-voxel receptive field lies inside the CT volume."
   },
+  "candidates": {
+    "run_id": "20261015_feature_candidates",
+    "near_mm": 4.0,
+    "random_percentile": 95,
+    "false_discovery_rate": 0.05,
+    "morphology": ["sphericity", "hu_mean", "hu_std", "solid_fraction", "ring_0_5mm_hu_mean"],
+    "references": ["sphericity", "hu_mean", "hu_std", "hu_p10", "hu_p90", "solid_fraction", "ring_0_5mm_hu_mean", "ring_5_10mm_hu_mean"],
+    "references_rule": "rank correlation with each reference measurement on discovery patients after removing the rank of log nodule volume from both; size_rho is the unadjusted rank correlation with log volume",
+    "family_correlation": 0.7,
+    "bootstrap": 2000,
+    "bootstrap_seed": 20261015,
+    "selection": "Discovery (training patients): stable features of the reference seed whose size-adjusted partial correlation exceeds the random-weight reference seed's 95th percentile of absolute values. Confirmation (development patients): same sign and Benjamini-Hochberg q below the false discovery rate within the discovery-selected set of each site and encoder; a feature without confirmation variance counts as p = 1."
+  },
   "control": {"poll_seconds": 1, "remote_sync_seconds": 15},
   "upstream": {"module": "third_party/batchtopk/sae.py", "commit": "b9aab1c6156381ae7ae2997e3490e7b99e195dde"}
 }
