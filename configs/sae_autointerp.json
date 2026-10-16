@@ -1,5 +1,6 @@
 {
   "run_id": "20261015_autointerp_pilot",
+  "viewer_label": "第一轮：对照只匹配结节大小",
   "question": "whether a general vision-language model, given fixed CT examples, writes descriptions of SAE features that predict the feature's response on held-out patients beyond size-matched nodules, random-weight controls, shuffled groups and measured nodule properties",
   "campaign": "20261014_sae_interpretation",
   "candidates_run": "20261015_feature_candidates_nodule",

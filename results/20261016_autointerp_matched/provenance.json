@@ -1,0 +1,133 @@
+{
+  "run_id": "20261016_autointerp_matched",
+  "campaign": "20261014_sae_interpretation",
+  "candidates_run": "20261015_feature_candidates_nodule",
+  "model": "gpt-6.1-sol",
+  "settings": {
+    "sites": [
+      "fmcib:layer2",
+      "vista:stage2"
+    ],
+    "reference_seed": 2025,
+    "near_mm": 4.0,
+    "features": {
+      "candidates_per_site": 4,
+      "nodule_per_site": 4,
+      "random_per_site": 3,
+      "enrichment_minimum": 3.0,
+      "minimum_active_confirmation": 30,
+      "shuffle_seed": 20261016,
+      "rule": "same feature rule as run 20261015_autointerp_pilot, giving the same 24 features"
+    },
+    "examples": {
+      "generation_high": 12,
+      "generation_low": 12,
+      "validation_high": 20,
+      "validation_low": 20,
+      "low_quantile": 0.2,
+      "match_on": [
+        "log_volume",
+        "ring_0_5mm_hu_mean",
+        "solid_fraction"
+      ],
+      "match_weights": {
+        "log_volume": 3.0,
+        "ring_0_5mm_hu_mean": 1.0,
+        "solid_fraction": 1.0
+      },
+      "rule": "as run 20261015_autointerp_pilot, but each low example is the unused low-value patient nearest to its high example in standardized log nodule volume (weight 3), 0-5 mm ring HU mean and solid fraction (weight 1 each). Equal weights left the high group 0.62 log units larger on average (selection of 2026-10-16 00:05, replaced)"
+    },
+    "render": {
+      "plane_pixels": 192,
+      "gap_pixels": 4,
+      "windows": {
+        "lung": [
+          -600,
+          1500
+        ],
+        "mediastinal": [
+          40,
+          400
+        ]
+      },
+      "scale_bar_mm": 10,
+      "overlay_alpha": 0.75,
+      "workers": 2,
+      "torch_threads": 2,
+      "input_runs": [
+        "20261015_autointerp_pilot"
+      ],
+      "rule": "same rendering as run 20261015_autointerp_pilot; CT inputs that run already prepared are read from it"
+    },
+    "specificity": {
+      "panel_per_site": 60,
+      "route": "direct",
+      "rule": "same panel rule as run 20261015_autointerp_pilot, applied to this run's validation patients"
+    },
+    "prompts": {
+      "layout": "The image is a CT region of {window_mm} mm centred on a target lung nodule. Columns: axial, coronal and sagittal planes through the nodule centre in radiological orientation (yellow letters mark patient right R, anterior A and superior S). Row 1: lung window (level -600, width 1500 HU). Row 2: mediastinal window (level 40, width 400 HU).{overlay_row} The white bar is 10 mm.",
+      "overlay_row": " Row 3: lung window with a coloured overlay showing where one image feature of a model responds; brighter yellow means a stronger response and no colour means no response.",
+      "describe": "You are helping a research study that examines what features learned by a sparse autoencoder on a CT model respond to. {layout}\nDescribe only what is visible, in plain radiological terms:\n- nodule: apparent size, shape, margin, internal density and texture (solid, part-solid, ground-glass, calcification, fat, cavitation, air bronchogram);\n- surroundings: tissue within about 10 mm of the nodule (lung parenchyma, vessels, airways, fissures, pleura, chest wall, emphysema, scarring) and how it relates to the nodule;\n- overlay_location: where the coloured overlay lies relative to the nodule and these structures, or 'none' if no overlay is visible;\n- overlay_content: what visible tissue lies under the strongest overlay, or 'none';\n- uncertainties: what cannot be determined from these planes.\nDo not give a diagnosis or a malignancy judgement.",
+      "summarize": "You are helping a research study that examines what features learned by a sparse autoencoder on a CT model respond to. Each example below is a CT region centred on a lung nodule, described independently by a reader who saw the plain CT and an overlay of one model feature. For this feature, 'high' examples are patients in whom the feature responds most strongly within 4 mm of the nodule; 'low' examples are patients with nodules of similar size, similar density immediately around the nodule and similar solidity in whom it responds weakly or not at all.\nFind the visible image pattern that distinguishes the high examples from the low examples. Write candidate_label as a short name and description as one to three sentences that a reader who sees only the plain CT (lung and mediastinal windows, no overlay) can check against an image. Use visible image terms, not diagnoses. List supporting_example_ids (high examples that show the pattern) and contradicting_example_ids (high examples that lack it and low examples that show it). If the groups do not differ consistently, set no_clear_pattern to true and explain why in uncertainties.\n\n{examples}",
+      "direct": "You are helping a research study that examines what features learned by a sparse autoencoder on a CT model respond to. The images below show CT regions centred on lung nodules from different patients. {layout}\nFor one model feature, images labelled H are patients in whom the feature responds most strongly within 4 mm of the nodule; images labelled L are patients with nodules of similar size, similar density immediately around the nodule and similar solidity in whom it responds weakly or not at all.\nFind the visible image pattern that distinguishes the H images from the L images. Write candidate_label as a short name and description as one to three sentences that a reader who sees only the plain CT (rows 1 and 2, no overlay) can check against an image. Use visible image terms, not diagnoses. List supporting_example_ids (H images that show the pattern) and contradicting_example_ids (H images that lack it and L images that show it). If the groups do not differ consistently, set no_clear_pattern to true and explain why in uncertainties.",
+      "score": "You are helping a research study. {layout}\nRate from 0 to 10 how well the following description applies to this nodule and its surroundings: 0 means it clearly does not apply, 10 means it clearly applies. Judge only what is visible. Give score as an integer and a one-sentence reason.\nDescription: {label}. {description}"
+    }
+  },
+  "reasoning": {
+    "describe": "low",
+    "summarize": "medium",
+    "direct": "medium",
+    "score": "low"
+  },
+  "calls": 3024,
+  "total_cost_usd": 8.77272,
+  "cost_by_stage": {
+    "describe": {
+      "cost_usd": 2.85327,
+      "input_tokens": 486720,
+      "output_tokens": 187983
+    },
+    "direct": {
+      "cost_usd": 0.721978,
+      "input_tokens": 263544,
+      "output_tokens": 19489
+    },
+    "score": {
+      "cost_usd": 4.73886,
+      "input_tokens": 1382560,
+      "output_tokens": 197374
+    },
+    "summarize": {
+      "cost_usd": 0.458612,
+      "input_tokens": 168231,
+      "output_tokens": 12215
+    }
+  },
+  "specificity": {
+    "labels": 18,
+    "targets_per_site": {
+      "fmcib:layer2": 11,
+      "vista:stage2": 11
+    },
+    "own_rank_1": 5,
+    "median_own_rank": 3.0,
+    "mean_own_spearman": 0.34088792749092844,
+    "mean_other_spearman": 0.09206107563724851
+  },
+  "matching_mean_abs_difference": {
+    "log_volume": 0.4903199511712764,
+    "ring_0_5mm_hu_mean": 87.28393729527791,
+    "solid_fraction": 0.10156919080615932
+  },
+  "configuration": "configs\\sae_autointerp_matched.json",
+  "configuration_sha256": "176a0d38ebcdd3d6f7db6c3a905aa3cd8fa9ac94c1c55786bc19b4b343c517d1",
+  "source_sha256": {
+    "sae_autointerp.py": "70d863296cf72c9141bde5ebaa28a2e64768be01b1d52a7ee4a89ed3f5fd7f7c",
+    "sae_autointerp_model.py": "35aa1f2e8499bd72d3d2f054942c470d0bd9e82f42385628701db0dce0f5fc14"
+  },
+  "exporter_sha256": "64c5bead5611c82e6ffcec3e6b8ded24885faaf2dfc7e6007051d8f80598aaed",
+  "python": "3.12.14",
+  "matplotlib": "3.11.2",
+  "created_at": "2026-10-16T07:43:20.740598+00:00",
+  "test_used": false
+}

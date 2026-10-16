@@ -1,5 +1,6 @@
 {
   "run_id": "20261016_autointerp_matched",
+  "viewer_label": "第二轮：对照匹配结节大小、周围密度与实性比例",
   "question": "whether descriptions become specific to individual SAE features when the low-activation contrast patients are matched to the high-activation patients in nodule size, density of the 0-5 mm ring around the nodule (attachment to pleura or soft tissue) and solid fraction, so that the coarse nodule type found in run 20261015_autointerp_pilot no longer separates the groups",
   "campaign": "20261014_sae_interpretation",
   "candidates_run": "20261015_feature_candidates_nodule",

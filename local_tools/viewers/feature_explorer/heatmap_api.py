@@ -144,9 +144,9 @@ def detail(run: str, feature: int):
         return interpretation_api.detail(run, feature)
 
 
-@router.get("/api/heatmaps/autointerp/{key}/{example}")
-def autointerp_image(key: str, example: str):
-    return Response(interpretation_api.autointerp_image(key, example), media_type="image/png")
+@router.get("/api/heatmaps/autointerp/{run_id}/{key}/{example}")
+def autointerp_image(run_id: str, key: str, example: str):
+    return Response(interpretation_api.autointerp_image(run_id, key, example), media_type="image/png")
 
 
 @router.get("/api/heatmaps/mask/nodule/{source}/{case}")

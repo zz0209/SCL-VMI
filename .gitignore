@@ -214,6 +214,17 @@
 !/results/20261015_feature_candidates_nodule/provenance.json
 !/results/20261015_feature_candidates_nodule/candidates.png
 !/results/20261015_feature_candidates_nodule/candidates.svg
+!/results/20261016_autointerp_matched/
+/results/20261016_autointerp_matched/*
+!/results/20261016_autointerp_matched/README.md
+!/results/20261016_autointerp_matched/validation.csv
+!/results/20261016_autointerp_matched/summary_by_role.csv
+!/results/20261016_autointerp_matched/specificity.csv
+!/results/20261016_autointerp_matched/provenance.json
+!/results/20261016_autointerp_matched/validation.png
+!/results/20261016_autointerp_matched/validation.svg
+!/results/20261016_autointerp_matched/specificity.png
+!/results/20261016_autointerp_matched/specificity.svg
 !/results/20261015_autointerp_pilot/
 /results/20261015_autointerp_pilot/*
 !/results/20261015_autointerp_pilot/README.md
