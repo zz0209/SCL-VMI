@@ -18,6 +18,7 @@
 !/configs/sae_campaign.json
 !/configs/sae_whole_viewer.json
 !/configs/sae_interpretation.json
+!/configs/sae_autointerp.json
 !/configs/environments/
 /configs/environments/*
 !/configs/environments/pipeline.json
@@ -60,6 +61,7 @@
 !/scripts/pipeline/prepare_campaign_viewer.ps1
 !/scripts/pipeline/export_sae_interpretation_results.py
 !/scripts/pipeline/export_sae_nodule_coverage.py
+!/scripts/pipeline/export_sae_autointerp.py
 !/scripts/pipeline/summarize_sae_interpretation.py
 !/scripts/sae_validation/
 /scripts/sae_validation/*
@@ -126,6 +128,8 @@
 !/src/sclvmi/sae_interp_followup.py
 !/src/sclvmi/sae_nodule_pool.py
 !/src/sclvmi/sae_interp_coverage.py
+!/src/sclvmi/sae_autointerp.py
+!/src/sclvmi/sae_autointerp_model.py
 !/scripts/pipeline/check_sae_campaign_defined_diagnostics.py
 
 !/tests/
@@ -209,6 +213,17 @@
 !/results/20261015_feature_candidates_nodule/provenance.json
 !/results/20261015_feature_candidates_nodule/candidates.png
 !/results/20261015_feature_candidates_nodule/candidates.svg
+!/results/20261015_autointerp_pilot/
+/results/20261015_autointerp_pilot/*
+!/results/20261015_autointerp_pilot/README.md
+!/results/20261015_autointerp_pilot/validation.csv
+!/results/20261015_autointerp_pilot/summary_by_role.csv
+!/results/20261015_autointerp_pilot/specificity.csv
+!/results/20261015_autointerp_pilot/provenance.json
+!/results/20261015_autointerp_pilot/validation.png
+!/results/20261015_autointerp_pilot/validation.svg
+!/results/20261015_autointerp_pilot/specificity.png
+!/results/20261015_autointerp_pilot/specificity.svg
 !/results/20261015_sae_nodule_coverage/
 /results/20261015_sae_nodule_coverage/*
 !/results/20261015_sae_nodule_coverage/README.md

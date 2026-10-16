@@ -70,7 +70,10 @@ nodule-region enrichment, size-adjusted malignancy association, image-variable
 R² and activation frequency. **Feature evidence** lists the matched feature in
 every other seed (open it directly), mean response by distance to the nodule
 surface, development AUROC, size-adjusted partial correlations in both patient
-groups, and percentiles relative to the random-weight encoder. Dictionary checks
+groups, and percentiles relative to the random-weight encoder. Features covered by
+the automatic interpretation run named in `configs/sae_autointerp.json` also show
+its labels, held-out validation AUROC, the measured-property baseline and the
+generation images (open each in a new tab). Dictionary checks
 report input positions, training-batch composition, training steps, FVU,
 matched-rank PCA FVU, stable features, variance explained by stable features,
 PW-MCC and fixed-classifier preservation.

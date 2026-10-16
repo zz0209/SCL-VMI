@@ -1,0 +1,65 @@
+{
+  "run_id": "20261015_autointerp_pilot",
+  "question": "whether a general vision-language model, given fixed CT examples, writes descriptions of SAE features that predict the feature's response on held-out patients beyond size-matched nodules, random-weight controls, shuffled groups and measured nodule properties",
+  "campaign": "20261014_sae_interpretation",
+  "candidates_run": "20261015_feature_candidates_nodule",
+  "sites": ["fmcib:layer2", "vista:stage2"],
+  "reference_seed": 2025,
+  "near_mm": 4.0,
+  "features": {
+    "candidates_per_site": 4,
+    "nodule_per_site": 4,
+    "random_per_site": 3,
+    "enrichment_minimum": 3.0,
+    "minimum_active_confirmation": 30,
+    "shuffle_seed": 20261016,
+    "rule": "candidates: confirmed trained-encoder features ordered by added development AUROC over log volume, one per correlated family; nodule: stable trained-encoder features with nodule enrichment >= 3 that are not confirmed candidates, taken in order of enrichment while cycling over the peak region (inside, 0-4 mm, 4-10 mm); random: stable random-weight features, confirmed first, then by nodule enrichment; shuffled (one per site): the first candidate's case values permuted within each split, images unchanged; every feature is active (case value > 0) in at least minimum_active_confirmation development patients"
+  },
+  "examples": {
+    "generation_high": 12,
+    "generation_low": 12,
+    "validation_high": 20,
+    "validation_low": 20,
+    "low_quantile": 0.2,
+    "rule": "case value = maximum feature activation over positions inside the nodule or within 4 mm of its surface (one record per patient, profile members). Generation uses training patients (discovery), validation uses development patients (confirmation). High = largest case values; low = for each high example in order, the unused patient with the nearest log nodule volume among those at or below the split's low_quantile of case values"
+  },
+  "render": {
+    "plane_pixels": 192,
+    "gap_pixels": 4,
+    "windows": {"lung": [-600, 1500], "mediastinal": [40, 400]},
+    "scale_bar_mm": 10,
+    "overlay_alpha": 0.75,
+    "workers": 2,
+    "torch_threads": 2,
+    "rule": "three orthogonal planes through the nodule mask centroid in radiological orientation with physical aspect; generation images add a lung-window row with the feature activation (trilinear on the canonical input grid, colour scale fixed per feature by the largest value over its generation examples); validation images show only the lung and mediastinal rows, identical for every feature"
+  },
+  "specificity": {
+    "panel_per_site": 60,
+    "route": "direct",
+    "rule": "per site, a fixed panel of development patients (ordered by a hash of the record identifier among all validation patients of that site) is scored against every non-shuffled label of the route; a specific label ranks the panel by its own feature's case value better than by the other features' values"
+  },
+  "model": {
+    "provider": "openai",
+    "name": "gpt-6.1-sol",
+    "choice": "newest model on the account with image input and structured outputs whose price fits the 50 USD cap; gpt-6-astra costs five times as much per token",
+    "price_per_million_usd": {"input": 2.0, "cached_input": 0.1, "output": 10.0},
+    "pricing_source": "https://developers.openai.com/api/docs/pricing, standard tier, read 2026-10-15",
+    "api_key_environment": "OPENAI_API_KEY",
+    "detail": "high",
+    "reasoning": {"describe": "low", "summarize": "medium", "direct": "medium", "score": "low"},
+    "max_output_tokens": {"describe": 3000, "summarize": 12000, "direct": 12000, "score": 2000},
+    "reserve_input_tokens": {"describe": 2500, "summarize": 30000, "direct": 30000, "score": 2000},
+    "concurrency": 16,
+    "max_retries": 6,
+    "timeout_seconds": 600,
+    "budget_usd": 50.0
+  },
+  "prompts": {
+    "layout": "The image is a CT region of {window_mm} mm centred on a target lung nodule. Columns: axial, coronal and sagittal planes through the nodule centre in radiological orientation (yellow letters mark patient right R, anterior A and superior S). Row 1: lung window (level -600, width 1500 HU). Row 2: mediastinal window (level 40, width 400 HU).{overlay_row} The white bar is 10 mm.",
+    "overlay_row": " Row 3: lung window with a coloured overlay showing where one image feature of a model responds; brighter yellow means a stronger response and no colour means no response.",
+    "describe": "You are helping a research study that examines what features learned by a sparse autoencoder on a CT model respond to. {layout}\nDescribe only what is visible, in plain radiological terms:\n- nodule: apparent size, shape, margin, internal density and texture (solid, part-solid, ground-glass, calcification, fat, cavitation, air bronchogram);\n- surroundings: tissue within about 10 mm of the nodule (lung parenchyma, vessels, airways, fissures, pleura, chest wall, emphysema, scarring) and how it relates to the nodule;\n- overlay_location: where the coloured overlay lies relative to the nodule and these structures, or 'none' if no overlay is visible;\n- overlay_content: what visible tissue lies under the strongest overlay, or 'none';\n- uncertainties: what cannot be determined from these planes.\nDo not give a diagnosis or a malignancy judgement.",
+    "summarize": "You are helping a research study that examines what features learned by a sparse autoencoder on a CT model respond to. Each example below is a CT region centred on a lung nodule, described independently by a reader who saw the plain CT and an overlay of one model feature. For this feature, 'high' examples are patients in whom the feature responds most strongly within 4 mm of the nodule; 'low' examples are patients with nodules of similar size in whom it responds weakly or not at all.\nFind the visible image pattern that distinguishes the high examples from the low examples. Write candidate_label as a short name and description as one to three sentences that a reader who sees only the plain CT (lung and mediastinal windows, no overlay) can check against an image. Use visible image terms, not diagnoses. List supporting_example_ids (high examples that show the pattern) and contradicting_example_ids (high examples that lack it and low examples that show it). If the groups do not differ consistently, set no_clear_pattern to true and explain why in uncertainties.\n\n{examples}",
+    "direct": "You are helping a research study that examines what features learned by a sparse autoencoder on a CT model respond to. The images below show CT regions centred on lung nodules from different patients. {layout}\nFor one model feature, images labelled H are patients in whom the feature responds most strongly within 4 mm of the nodule; images labelled L are patients with nodules of similar size in whom it responds weakly or not at all.\nFind the visible image pattern that distinguishes the H images from the L images. Write candidate_label as a short name and description as one to three sentences that a reader who sees only the plain CT (rows 1 and 2, no overlay) can check against an image. Use visible image terms, not diagnoses. List supporting_example_ids (H images that show the pattern) and contradicting_example_ids (H images that lack it and L images that show it). If the groups do not differ consistently, set no_clear_pattern to true and explain why in uncertainties.",
+    "score": "You are helping a research study. {layout}\nRate from 0 to 10 how well the following description applies to this nodule and its surroundings: 0 means it clearly does not apply, 10 means it clearly applies. Judge only what is visible. Give score as an integer and a one-sentence reason.\nDescription: {label}. {description}"
+  }
+}

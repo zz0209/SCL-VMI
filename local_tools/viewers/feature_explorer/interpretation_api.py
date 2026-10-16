@@ -31,6 +31,8 @@ WHOLE_ROOT = Path(context()[0]["runs"]) / WHOLE["run_id"] / "browser_cache"
 REUSED_ROOT = Path(context()[0]["runs"]) / WHOLE["reused_caches"]["run_id"] / "browser_cache"
 WHOLE_REGIONS = ["all", "lung", "liver", "other_tissue", "high_hu", "edge_air"]
 WHOLE_RANKINGS = ["id", "maximum", "reappearance", "lung_enrichment", "liver_enrichment", "outside_fraction", "high_hu_fraction"]
+AUTOINTERP = read_json(PROJECT_ROOT / "configs/sae_autointerp.json")
+AUTOINTERP_ROOT = Path(context()[0]["runs"]) / AUTOINTERP["run_id"]
 
 
 def index():
@@ -305,7 +307,38 @@ def detail(run, feature):
         "size_only_development_auroc": summary["size_only_development_auroc"], "summary_rule": summary["summary_rule"],
         "discovery_patients": summary["discovery_patients"], "confirmation_patients": summary["confirmation_patients"],
         "strongest_case": int(table["strongest"][feature]),
+        "autointerp": autointerp(run, feature),
     }
+
+
+def autointerp_features():
+    return {item["key"]: item for item in read_json(AUTOINTERP_ROOT / "features.json")["features"] if item["role"] != "shuffled"}
+
+
+def autointerp(run, feature):
+    # Only the pilot's features have results; every other feature has none.
+    results = AUTOINTERP_ROOT / "results" / "validation.csv"
+    if not results.exists():
+        return None
+    keys = [key for key, item in autointerp_features().items() if item["run_id"] == run and item["feature"] == feature]
+    if not keys:
+        return None
+    table = pd.read_csv(results).set_index("key").loc[[keys[0]]]
+    examples = pd.read_csv(AUTOINTERP_ROOT / "examples.csv")
+    generation = examples[(examples.key == keys[0]) & (examples.stage == "generation")]
+    routes = [{"route": row.route, "no_clear_pattern": bool(row.no_clear_pattern), "label": row.candidate_label, "description": row.description, "auroc": finite(row.auroc), "auroc_low": finite(row.auroc_low), "auroc_high": finite(row.auroc_high),
+               "spearman": finite(row.spearman), "mean_score_high": finite(row.mean_score_high), "mean_score_low": finite(row.mean_score_low)} for row in table.itertuples()]
+    return {"key": keys[0], "role": autointerp_features()[keys[0]]["role"], "model": AUTOINTERP["model"]["name"], "measurement_auroc": finite(table.measurement_auroc.iloc[0]), "routes": routes,
+            "examples": [{"id": row.example_id, "group": row.group} for row in generation.itertuples()], "validation": {"high": AUTOINTERP["examples"]["validation_high"], "low": AUTOINTERP["examples"]["validation_low"]}}
+
+
+def autointerp_image(key, example):
+    if key not in autointerp_features():
+        raise HTTPException(404, "Unknown automatic-interpretation feature")
+    path = AUTOINTERP_ROOT / "images_generation" / key / f"{example}.png"
+    if path.parent != AUTOINTERP_ROOT / "images_generation" / key or not path.exists():
+        raise HTTPException(404, "Unknown automatic-interpretation example")
+    return path.read_bytes()
 
 
 def metadata(run, case, feature, mode):

@@ -1,0 +1,9 @@
+role,route,features,labelled,passed,median_auroc,median_measurement_auroc
+candidate,describe_summarize,8,7,7,0.84875,0.95
+candidate,direct,8,8,8,0.890625,0.95
+nodule,describe_summarize,8,6,6,0.898125,0.91125
+nodule,direct,8,8,8,0.8306250000000001,0.91125
+random,describe_summarize,6,5,4,0.8075000000000001,0.7949999999999999
+random,direct,6,6,4,0.729375,0.7949999999999999
+shuffled,describe_summarize,2,0,0,,0.42125
+shuffled,direct,2,0,0,,0.42125

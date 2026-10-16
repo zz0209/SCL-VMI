@@ -40,7 +40,7 @@ function loading(message,error=false){
   el('viewer-loading').hidden=false;el('viewer-loading-text').textContent=text(message);document.querySelector('.viewer-grid').style.visibility='hidden';state.meta=null;state.rects={};
   for(const axis of [0,1,2]){const canvas=el(`canvas-${axis}`);canvas.getContext('2d').clearRect(0,0,canvas.width,canvas.height);el(`slice-${axis}`).disabled=true;el(`position-${axis}`).textContent='';}
   for(const id of ['peak','center','strongest','reset-scale'])el(id).disabled=true;
-  for(const id of ['map-stats','point-value','map-label','geometry-note','case-label','stability-summary','stability-table','region-bars','region-note','malignancy-values','malignancy-note','control-values','control-note','evidence-scope'])el(id).replaceChildren();
+  for(const id of ['map-stats','point-value','map-label','geometry-note','case-label','stability-summary','stability-table','region-bars','region-note','malignancy-values','malignancy-note','control-values','control-note','evidence-scope','autointerp-routes','autointerp-note','autointerp-examples'])el(id).replaceChildren();
   state.detail=null;
 }
 function report(error){if(error.name==='AbortError')return;el('loading').textContent='';el('error-message').textContent=error.message;el('error').hidden=false;loading('影像读取失败。可以重新读取，或选择另一份图像。',true);}
@@ -147,6 +147,23 @@ function showEvidence(){
     el('control-note').textContent=text('当前为随机权重 encoder 的对照字典。');
   }
   el('evidence-scope').textContent=`${text('统计使用每名患者一个结节记录')}：discovery ${detail.discovery_patients} · confirmation ${detail.confirmation_patients}。${text('这些是描述性统计，医学含义需要独立证据；独立测试集未使用。')}`;
+  showAutointerp(detail.autointerp,number);
+}
+function showAutointerp(auto,number){
+  el('autointerp-card').hidden=!auto;if(!auto)return;
+  const routeNames={describe_summarize:'逐例描述后归纳',direct:'直接从图像归纳'};
+  el('autointerp-routes').replaceChildren(...auto.routes.map(route=>{
+    const item=node('div',null,'autointerp-route');item.append(node('strong',text(routeNames[route.route])));
+    if(route.no_clear_pattern){item.append(node('p',text('模型认为高激活与低激活病例之间没有清楚的共同差异。')));return item;}
+    item.append(node('p',`${route.label}: ${route.description}`),node('small',`${text('验证 AUROC')} ${number(route.auroc)} [${number(route.auroc_low)}, ${number(route.auroc_high)}] · ${text('评分均值（高激活 / 低激活）')} ${number(route.mean_score_high)} / ${number(route.mean_score_low)}`));
+    return item;
+  }));
+  el('autointerp-note').textContent=text('模型 {model}。验证使用开发集中激活最高的 {high} 名患者与大小相近的 {low} 名低激活患者，评分只看原始 CT，不看激活；结节测量基线 AUROC {baseline}。描述由通用视觉模型生成，医学名称需要人工核验。下方为生成解释时使用的训练集病例图像。')
+    .replace('{model}',auto.model).replace('{high}',auto.validation.high).replace('{low}',auto.validation.low).replace('{baseline}',number(auto.measurement_auroc));
+  el('autointerp-examples').replaceChildren(...auto.examples.map(example=>{
+    const link=node('a',null,'autointerp-thumb');link.href=`/api/heatmaps/autointerp/${encodeURIComponent(auto.key)}/${encodeURIComponent(example.id)}`;link.target='_blank';link.rel='noopener';
+    const image=node('img');image.src=link.href;image.alt=example.id;image.loading='lazy';link.append(image,node('small',`${example.id} · ${text(example.group==='high'?'高激活':'低激活')}`));return link;
+  }));
 }
 async function loadSelection({catalog=false,locate=false,push=false,resetPoint=false}={}){
   catalog=catalog||!state.features.length;controller?.abort();controller=new AbortController();const signal=controller.signal,id=++state.request,started=performance.now();
