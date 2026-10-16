@@ -65,18 +65,19 @@ function controls(){
   el('mode').replaceChildren(...available.map(([value,label])=>{const option=node('option',text(label));option.value=value;return option;}));el('mode').value=state.mode;
   const encoderName=current.group==='control'?` · ${text('随机权重')}`:'';
   el('dictionary-stamp').textContent=`${names[current.model]} · ${siteName(current)}${encoderName} · seed ${current.seed}`;
-  el('dictionary-note').textContent=`${format(current.features)} features · k${current.k} · seed ${current.seed}. ${text('Feature 编号属于当前字典。')}`;
+  el('dictionary-note').textContent=`${format(current.features)} features · k${current.k} · seed ${current.seed}. ${text('Feature 编号属于当前字典。')}${current.nodule_interpretation?'':' '+text('此位置不用于结节解释。')}`;
   el('feature-title').textContent=`${names[current.model]} · ${siteName(current)}${encoderName} · Feature ${state.feature}`;el('feature-description').textContent=state.features.find(row=>row.id===state.feature)?.description||'';
   el('cases-title').textContent=text(interpretive()?'结节解释病例':'完整 CT 病例');
   el('cases-note').textContent=text(interpretive()?'D：128 名训练集患者（discovery）；C：128 名开发集患者（confirmation）':'每组第一例用于观察，第二例用于确认');
   el('dataset-note').textContent=interpretive()?'LUNA25 · training + development':'PETWB · training';el('source-note').textContent='20261014 · '+text(groupLabels[current.group]);
   el('scope-help').textContent=text(interpretive()?(current.site==='layer1_context'?'FMCIB layer1 使用以结节为中心的 84 mm 输入，只保留 35 体素感受野完全位于原始视野内的位置；感受野触及视野外的位置不显示响应。绿色轮廓为结节 mask。':'该字典使用模型部署时的输入窗口；窗口上下文会影响响应。绿色轮廓为结节 mask。'):'在完整 CT 上使用与训练相同大小的输入窗口：FMCIB layer1 完整上下文为 84 mm、每隔 48 mm，只保留感受野完全位于 CT 内的位置；FMCIB layer2 为 50 mm、每隔 32 mm；VISTA3D 为 72 mm、每隔 48 mm。相邻窗口的中央区域拼接成完整图，窗口上下文可能影响相邻区域的响应。');
   el('mask-control').hidden=!interpretive();
-  const quality=current.quality,rows=[['训练数据',text(current.site==='layer1_context'?'完整感受野位置':'部署输入窗口')],['训练步数',`${format(current.training_steps)} × 2,048`],['开发集 FVU',quality.fvu.toFixed(4)],['同系数 PCA 的 FVU',quality.pca_fvu.toFixed(4)],['稳定 Feature',`${format(quality.stable_features)} / ${format(quality.live_features)}`],['稳定 Feature 解释的方差',quality.stable_explained_variance.toFixed(4)],['decoder 配对相关（PW-MCC）',quality.pw_mcc.toFixed(4)]];
+  const pool=current.nodule_pool_fraction,mixture=pool?`${text('结节表面 10 mm 以内')} ${Math.round(pool*100)}% · ${text('均匀抽样')} ${Math.round((1-pool)*100)}%`:text('均匀抽样');
+  const quality=current.quality,rows=[['输入位置',text(current.site==='layer1_context'?'完整感受野位置':'部署输入窗口')],['训练批次组成',mixture],['训练步数',`${format(current.training_steps)} × 2,048`],['开发集 FVU',quality.fvu.toFixed(4)],['同系数 PCA 的 FVU',quality.pca_fvu.toFixed(4)],['稳定 Feature',`${format(quality.stable_features)} / ${format(quality.live_features)}`],['稳定 Feature 解释的方差',quality.stable_explained_variance.toFixed(4)],['decoder 配对相关（PW-MCC）',quality.pw_mcc.toFixed(4)]];
   if(current.downstream)rows.push(['分类概率 MAE',current.downstream.probability_mae.toFixed(5)],['重建后 AUROC',`${current.downstream.recovered_auroc.toFixed(4)} / ${current.downstream.original_auroc.toFixed(4)}`]);
   if(current.interior_downstream)rows.push(['只替换完整感受野位置的 MAE',current.interior_downstream.probability_mae.toFixed(5)]);
   el('quality-values').replaceChildren(...rows.flatMap(([label,value])=>[node('dt',text(label)),node('dd',value)]));
-  el('quality-scope').textContent=text(current.group==='control'?'随机权重 encoder 使用相同的结构、预处理、采样和 SAE 配置；它没有分类器，用于判断哪些 Feature 性质超过随机网络对 CT 灰度的响应。':'每个位置使用通过固定分类器检查的最小 k（k 越小，Feature 在不同 seed 中重现越多），expansion 4，训练 token 为初始网格的 4 倍。数值来自训练集与开发集；独立测试集未使用。');
+  el('quality-scope').textContent=text(current.group==='control'?'随机权重 encoder 使用相同的结构、预处理、采样和 SAE 配置；它没有分类器，用于判断哪些 Feature 性质超过随机网络对 CT 灰度的响应。':current.nodule_interpretation?'该位置按结节覆盖标准选择：训练批次的一部分来自结节内部、表面外 0–4 mm 和 4–10 mm 的位置（三段各占三分之一），其余为均匀抽样；8 个 seed 都通过固定分类器检查。数值来自训练集与开发集；独立测试集未使用。':'该位置保留均匀抽样训练的字典，不用于结节解释。数值来自训练集与开发集；独立测试集未使用。');
   el('dictionary-identity').textContent=`${current.run_id} · SHA-256 ${current.dictionary_sha256}`;
 }
 function featureMetric(row,key){

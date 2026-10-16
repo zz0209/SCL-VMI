@@ -28,6 +28,7 @@ ARRAYS = {
 RANKINGS = ["id", "maximum", "reappearance", "nodule_enrichment", "malignancy_partial", "image_r2", "frequency"]
 WHOLE = SETTINGS["whole_ct"]
 WHOLE_ROOT = Path(context()[0]["runs"]) / WHOLE["run_id"] / "browser_cache"
+REUSED_ROOT = Path(context()[0]["runs"]) / WHOLE["reused_caches"]["run_id"] / "browser_cache"
 WHOLE_REGIONS = ["all", "lung", "liver", "other_tissue", "high_hu", "edge_air"]
 WHOLE_RANKINGS = ["id", "maximum", "reappearance", "lung_enrichment", "liver_enrichment", "outside_fraction", "high_hu_fraction"]
 
@@ -41,12 +42,21 @@ def whole_planned(row):
     return row["seed"] in (WHOLE["trained_seeds"] if row["encoder"] == "trained" else WHOLE["random_seeds"])
 
 
+def pool_fraction(variant):
+    trainings = {item["name"]: item["training"] for item in SETTINGS["budget_diagnostic"]["variants"]}
+    return trainings.get(variant, {}).get("nodule_pool", {}).get("fraction", 0.0)
+
+
 def catalog_entries():
-    return [{**row, "scopes": ["nodule", "whole"] if whole_planned(row) else ["nodule"]} for row in index()["dictionaries"]]
+    chosen = SETTINGS["nodule_coverage"]["chosen"]
+    return [{**row, "scopes": ["nodule", "whole"] if whole_planned(row) else ["nodule"], "nodule_pool_fraction": pool_fraction(row["variant"]),
+             "nodule_interpretation": f"{row['model']}:{row['site']}" in chosen} for row in index()["dictionaries"]]
 
 
 def whole_path(run, case):
-    return WHOLE_ROOT / run / f"case_{case:02d}.h5"
+    spec = entry(run)
+    root = REUSED_ROOT if f"{spec['model']}:{spec['site']}" in WHOLE["reused_caches"]["sites"] else WHOLE_ROOT
+    return root / run / f"case_{case:02d}.h5"
 
 
 def whole_ready(run, case):

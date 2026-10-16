@@ -59,6 +59,7 @@ def analyze(root, jobs, config):
     reference = config["grid"]["reference_seed"]
     jobs = sorted(jobs, key=lambda job: (job["seed"] != reference, job["seed"]))
     seeds = [job["seed"] for job in jobs]
+    assert len(set(seeds)) == len(seeds), f"repeated seeds {seeds}"
     dictionaries = [SpatialDictionary(root / "runs" / job["run_id"] / "dictionary.pt") for job in jobs]
     matrix = root / jobs[0]["matrix_directory"] / jobs[0]["model"] / jobs[0]["site"]
     sample = development_sample(matrix, settings["development_tokens_per_patient"])

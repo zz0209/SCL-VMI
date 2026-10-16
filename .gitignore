@@ -59,6 +59,7 @@
 !/scripts/pipeline/select_sae_campaign_assets.py
 !/scripts/pipeline/prepare_campaign_viewer.ps1
 !/scripts/pipeline/export_sae_interpretation_results.py
+!/scripts/pipeline/export_sae_nodule_coverage.py
 !/scripts/pipeline/summarize_sae_interpretation.py
 !/scripts/sae_validation/
 /scripts/sae_validation/*
@@ -123,6 +124,8 @@
 !/src/sclvmi/sae_interp_profiles.py
 !/src/sclvmi/sae_interp_candidates.py
 !/src/sclvmi/sae_interp_followup.py
+!/src/sclvmi/sae_nodule_pool.py
+!/src/sclvmi/sae_interp_coverage.py
 !/scripts/pipeline/check_sae_campaign_defined_diagnostics.py
 
 !/tests/
@@ -195,6 +198,25 @@
 !/results/20261015_feature_candidates/provenance.json
 !/results/20261015_feature_candidates/candidates.png
 !/results/20261015_feature_candidates/candidates.svg
+!/results/20261015_feature_candidates_nodule/
+/results/20261015_feature_candidates_nodule/*
+!/results/20261015_feature_candidates_nodule/README.md
+!/results/20261015_feature_candidates_nodule/site_summary.csv
+!/results/20261015_feature_candidates_nodule/confirmed_trained.csv
+!/results/20261015_feature_candidates_nodule/confirmed_random.csv
+!/results/20261015_feature_candidates_nodule/all_references.csv
+!/results/20261015_feature_candidates_nodule/candidate_correlation_discovery.csv
+!/results/20261015_feature_candidates_nodule/provenance.json
+!/results/20261015_feature_candidates_nodule/candidates.png
+!/results/20261015_feature_candidates_nodule/candidates.svg
+!/results/20261015_sae_nodule_coverage/
+/results/20261015_sae_nodule_coverage/*
+!/results/20261015_sae_nodule_coverage/README.md
+!/results/20261015_sae_nodule_coverage/comparison.csv
+!/results/20261015_sae_nodule_coverage/production.csv
+!/results/20261015_sae_nodule_coverage/provenance.json
+!/results/20261015_sae_nodule_coverage/coverage.png
+!/results/20261015_sae_nodule_coverage/coverage.svg
 
 !/local_tools/
 /local_tools/*

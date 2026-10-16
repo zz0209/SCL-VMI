@@ -1,0 +1,121 @@
+{
+  "run_id": "20261015_feature_candidates_nodule",
+  "campaign": "20261014_sae_interpretation",
+  "settings": {
+    "run_id": "20261015_feature_candidates_nodule",
+    "previous_run_id": "20261015_feature_candidates",
+    "near_mm": 4.0,
+    "random_percentile": 95,
+    "false_discovery_rate": 0.05,
+    "morphology": [
+      "sphericity",
+      "hu_mean",
+      "hu_std",
+      "solid_fraction",
+      "ring_0_5mm_hu_mean"
+    ],
+    "references": [
+      "sphericity",
+      "hu_mean",
+      "hu_std",
+      "hu_p10",
+      "hu_p90",
+      "solid_fraction",
+      "ring_0_5mm_hu_mean",
+      "ring_5_10mm_hu_mean"
+    ],
+    "references_rule": "rank correlation with each reference measurement on discovery patients after removing the rank of log nodule volume from both; size_rho is the unadjusted rank correlation with log volume",
+    "family_correlation": 0.7,
+    "bootstrap": 2000,
+    "bootstrap_seed": 20261015,
+    "selection": "Discovery (training patients): stable features of the reference seed whose size-adjusted partial correlation exceeds the random-weight reference seed's 95th percentile of absolute values. Confirmation (development patients): same sign and Benjamini-Hochberg q below the false discovery rate within the discovery-selected set of each site and encoder; a feature without confirmation variance counts as p = 1."
+  },
+  "references_size_adjusted_partial": {
+    "sphericity": {
+      "discovery": 0.07013654313418752,
+      "confirmation": 0.05914606751097265
+    },
+    "hu_mean": {
+      "discovery": 0.005745666635064871,
+      "confirmation": 0.07950566825066954
+    },
+    "hu_std": {
+      "discovery": -0.03164482553866878,
+      "confirmation": -0.03745140304680046
+    },
+    "hu_p10": {
+      "discovery": 0.039700001934982396,
+      "confirmation": 0.09318500585259232
+    },
+    "hu_p90": {
+      "discovery": -0.016209380348651565,
+      "confirmation": 0.05336157554930024
+    },
+    "solid_fraction": {
+      "discovery": 0.014747120629796107,
+      "confirmation": 0.08020044694302005
+    },
+    "ring_0_5mm_hu_mean": {
+      "discovery": -0.10849997344616027,
+      "confirmation": -0.04057470785683708
+    },
+    "ring_5_10mm_hu_mean": {
+      "discovery": -0.15159787613352618,
+      "confirmation": -0.13709113442450616
+    }
+  },
+  "request": {
+    "run_id": "20261015_feature_candidates_nodule",
+    "campaign": "20261014_sae_interpretation",
+    "settings": {
+      "run_id": "20261015_feature_candidates_nodule",
+      "previous_run_id": "20261015_feature_candidates",
+      "near_mm": 4.0,
+      "random_percentile": 95,
+      "false_discovery_rate": 0.05,
+      "morphology": [
+        "sphericity",
+        "hu_mean",
+        "hu_std",
+        "solid_fraction",
+        "ring_0_5mm_hu_mean"
+      ],
+      "references": [
+        "sphericity",
+        "hu_mean",
+        "hu_std",
+        "hu_p10",
+        "hu_p90",
+        "solid_fraction",
+        "ring_0_5mm_hu_mean",
+        "ring_5_10mm_hu_mean"
+      ],
+      "references_rule": "rank correlation with each reference measurement on discovery patients after removing the rank of log nodule volume from both; size_rho is the unadjusted rank correlation with log volume",
+      "family_correlation": 0.7,
+      "bootstrap": 2000,
+      "bootstrap_seed": 20261015,
+      "selection": "Discovery (training patients): stable features of the reference seed whose size-adjusted partial correlation exceeds the random-weight reference seed's 95th percentile of absolute values. Confirmation (development patients): same sign and Benjamini-Hochberg q below the false discovery rate within the discovery-selected set of each site and encoder; a feature without confirmation variance counts as p = 1."
+    },
+    "stability": {
+      "decoder_cosine": 0.7,
+      "stable_minimum_reappearance": 6,
+      "unstable_maximum_reappearance": 1,
+      "development_tokens_per_patient": 64,
+      "subspace_energy": 0.9
+    },
+    "reference_seed": 2025,
+    "sites": [
+      "fmcib:layer2",
+      "vista:stage2"
+    ],
+    "members": 1686,
+    "discovery_patients": 1264,
+    "confirmation_patients": 422,
+    "smoke": 0,
+    "code_sha256": "c10a666ffae7a271afeba9e98b8577439b024751627ff50c03b39c20cc78f8ce",
+    "test_used": false
+  },
+  "followup_code_sha256": "c50ffaa51ba68c58123f432b8a50e46b61ea50787138cb68ebcd629ec2755a20",
+  "created_at": "2026-10-16T02:13:59.428339+00:00",
+  "test_used": false
+}

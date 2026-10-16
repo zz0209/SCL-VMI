@@ -56,9 +56,14 @@ patients (D, discovery) and 128 development patients (C, confirmation), one nodu
 record each, with malignancy label and maximum diameter in the case list. FMCIB
 layer1 uses an 84 mm nodule-centered input and displays only positions whose
 35-voxel receptive field lies inside the source field of view; the other sites use
-the deployed input windows. Each site uses the smallest k whose dictionary passes
-the fixed-classifier checks, expansion 4 and the longer training schedule listed
-in the dictionary checks. The default CT window is the lung window, and a green
+the deployed input windows. FMCIB layer2 (expansion 4, k8, three quarters of each
+training batch from positions within 10 mm of training nodules) and VISTA3D stage2
+(expansion 4, k16, half of each batch from those positions, four times longer
+training) serve nodule interpretation; their stable features cover the nodule
+region ([results](../../results/20261015_sae_nodule_coverage/README.md)). FMCIB
+layer1 and VISTA3D stage3 keep uniformly sampled training (smallest k passing the
+fixed-classifier checks, expansion 4) and are marked as not used for nodule
+interpretation. The default CT window is the lung window, and a green
 outline shows the nodule mask and can be hidden. The catalog marks each feature as stable, partially reappearing, unstable
 or inactive from decoder matching across seeds, and can rank by reappearance,
 nodule-region enrichment, size-adjusted malignancy association, image-variable
@@ -66,8 +71,9 @@ R² and activation frequency. **Feature evidence** lists the matched feature in
 every other seed (open it directly), mean response by distance to the nodule
 surface, development AUROC, size-adjusted partial correlations in both patient
 groups, and percentiles relative to the random-weight encoder. Dictionary checks
-report training steps, FVU, matched-rank PCA FVU, stable features, variance
-explained by stable features, PW-MCC and fixed-classifier preservation.
+report input positions, training-batch composition, training steps, FVU,
+matched-rank PCA FVU, stable features, variance explained by stable features,
+PW-MCC and fixed-classifier preservation.
 
 This scope requires, under the configured campaign directory, `viewer/index.json`,
 `viewer_members.csv`, `nodule_references.csv`, `viewer_inputs/<source>/*.h5`,
@@ -88,8 +94,11 @@ uses the four discovery scans and stays fixed across cases. The catalog keeps th
 cross-seed stability tags and can rank by lung and liver enrichment (discovery
 mean over the region divided by the mean over other soft tissue) and by the share
 of response in edge air and high-HU regions; Feature evidence and dictionary
-checks are the same as in the nodule scope. A dictionary becomes available once
-its eight browser files have arrived. The eight source scans are listed in
+checks are the same as in the nodule scope. FMCIB layer2 and VISTA3D stage2 browser
+files come from the run named in `whole_ct.run_id`; FMCIB layer1 and VISTA3D stage3
+files come from the earlier run named in `whole_ct.reused_caches`, whose
+dictionaries are unchanged. A dictionary becomes available once its eight browser
+files have arrived. The eight source scans are listed in
 `runs/20261009_whole_ct_exploration/source_audit.json`; the CT paths recorded
 there must remain accessible.
 
@@ -105,9 +114,8 @@ Whole-CT maps for the interpretation dictionaries use the `whole_ct` section of
 `configs/sae_interpretation.json` and are written under the run it names:
 
 ```powershell
-python local_tools/viewers/feature_explorer/interpretation_whole.py --stage maps --model fmcib --sites layer1_context --trained-seeds 2025 --random-seeds ""
-python local_tools/viewers/feature_explorer/interpretation_whole.py --stage maps --model fmcib --sites layer2 --trained-seeds 2025 --random-seeds ""
-python local_tools/viewers/feature_explorer/interpretation_whole.py --stage maps --model vista --sites stage2,stage3 --trained-seeds 2025 --random-seeds ""
+python local_tools/viewers/feature_explorer/interpretation_whole.py --stage maps --model fmcib --sites layer2
+python local_tools/viewers/feature_explorer/interpretation_whole.py --stage maps --model vista --sites stage2
 python local_tools/viewers/feature_explorer/interpretation_whole.py --stage caches --workers 6
 python local_tools/viewers/feature_explorer/check_interpretation_whole.py --model fmcib --cases 0,1
 ```

@@ -45,9 +45,11 @@ def independent_native(row, identifier):
 
 
 def check_whole(rows):
-    root = Path(context()[0]["runs"]) / SETTINGS["whole_ct"]["run_id"] / "browser_cache"
+    whole = SETTINGS["whole_ct"]
     checks = []
     for row in rows:
+        reused = f"{row['model']}:{row['site']}" in whole["reused_caches"]["sites"]
+        root = Path(context()[0]["runs"]) / (whole["reused_caches"]["run_id"] if reused else whole["run_id"]) / "browser_cache"
         if "whole" not in row["scopes"] or not all((root / row["run_id"] / f"case_{case:02d}.json").exists() for case in range(8)):
             continue
         catalog = get("/api/heatmaps/features", run=row["run_id"], scope="whole").json()

@@ -70,7 +70,12 @@ def select(root, config):
         best = max(eligible, key=lambda row: (row["stable_explained_variance"], row["stable_features"]))
         site_choice = production["sites"][f"{model}:{site}"]
         variant, expansion, k = site_choice["variant"], site_choice["expansion"], site_choice["k"]
-        assert k == min(row["k"] for row in eligible if row["expansion"] == expansion), f"{model}/{site} production k is not the smallest passing value"
+        # Sites chosen under the nodule-coverage sufficiency standard follow that decision; the others keep the smallest-passing-k rule.
+        nodule_choice = config["nodule_coverage"]["chosen"].get(f"{model}:{site}")
+        if nodule_choice:
+            assert nodule_choice == site_choice, f"{model}/{site} production differs from the nodule-coverage choice"
+        else:
+            assert k == min(row["k"] for row in eligible if row["expansion"] == expansion), f"{model}/{site} production k is not the smallest passing value"
         chosen = configuration_row(root, config, "trained", model, site, expansion, k, variant)
         control = configuration_row(root, config, "random", model, site, expansion, k, variant)
         assert chosen["stability_ready"] and control["stability_ready"], f"{model}/{site} production stability is incomplete"
@@ -81,7 +86,7 @@ def select(root, config):
             "stable_explained_variance": chosen["stable_explained_variance"], "stable_features": chosen["stable_features"], "live_features": chosen["live_features"], "probability_mae": chosen["probability_mae"],
             "control_stable_explained_variance": control["stable_explained_variance"], "control_stable_features": control["stable_features"], "control_live_features": control["live_features"],
             "trained": chosen, "control": control,
-            "basis": production["basis"],
+            "basis": config["nodule_coverage"]["sufficiency"] if nodule_choice else production["basis"],
         }
     return grid, budget_table(root, config), choices
 

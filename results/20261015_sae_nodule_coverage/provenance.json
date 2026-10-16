@@ -1,0 +1,110 @@
+{
+  "campaign": "20261014_sae_interpretation",
+  "nodule_coverage": {
+    "question": "whether training-token composition and training length make features of the nodule region reappear across seeds",
+    "pool_rule": "nodule-pool variants draw the configured fraction of every training batch (training.nodule_pool.fraction: 0.5 for nodule4x and nodule16x, 0.75 for nodule75) from positions of training records within 10 mm of the target nodule surface, split evenly over inside, 0-4 mm and 4-10 mm; the rest keeps the uniform training matrix; development matrices are unchanged",
+    "criterion": "at each site, variance explained by stable features at nodule positions (inside or within 4 mm of the surface, development patients) is at least the variance they explain at positions more than 10 mm from the surface, the reference seed passes the fixed-classifier checks, and stable nodule-related features exceed the random-weight control in the production set; the cheapest passing variant is chosen",
+    "regions": [
+      [
+        "nodule_0_4mm",
+        -1000000000.0,
+        4.0
+      ],
+      [
+        "near_4_10mm",
+        4.0,
+        10.0
+      ],
+      [
+        "far_over_10mm",
+        10.0,
+        1000000000.0
+      ]
+    ],
+    "enrichment_thresholds": [
+      2.0,
+      3.0
+    ],
+    "bootstrap": 2000,
+    "bootstrap_seed": 20261015,
+    "sufficiency": "user decision 2026-10-15 19:25 EDT (option A): a site is sufficient for nodule interpretation when, on the 8-seed production dictionaries, all seeds pass the fixed-classifier checks, stable nodule-specific features (nodule enrichment >= 3 on development patients) clearly exceed both the tokens4x dictionaries and the random-weight control, and stable-feature explained variance at the nodule region exceeds that of tokens4x; the nodule-versus-far coverage comparison is reported as a description",
+    "chosen": {
+      "fmcib:layer2": {
+        "variant": "nodule75",
+        "expansion": 4,
+        "k": 8
+      },
+      "vista:stage2": {
+        "variant": "nodule16x",
+        "expansion": 4,
+        "k": 16
+      }
+    },
+    "criterion_addition": "added after the first comparison results: the stable-feature explained variance at the nodule region must also not fall below that of the current tokens4x dictionaries, so that a smaller gap cannot come only from lower background coverage",
+    "layer2_compact_reason": "FMCIB layer2 stays below the background after nodule75 (-0.038, bootstrap interval -0.073 to -0.001) while stable features carry a fixed quarter of the nodule activation for every pool fraction; expansion 2 and k8 test whether a more compact dictionary stops nodule concepts from splitting into seed-specific features; the layer2 classifier MAE (0.0096) leaves room",
+    "stage3_e8_reason": "VISTA3D stage3 k32 nodule4x passes the classifier (MAE 0.0218) but keeps 76 stable features and 0.055 stable explained variance at the nodule; stage3 has little classifier headroom even uniformly (tokens4x MAE 0.0230-0.0249), so expansion 8 at k16 tests whether more capacity keeps the background reconstruction while adding nodule features; the stage3 nodule75 runs at k16 and k32 were withdrawn before training",
+    "stage3_k32_reason": "VISTA3D stage3 k16 with nodule-pool training exceeds the fixed-classifier probability MAE gate (nodule4x 0.0294, nodule16x 0.0290 at seed 2025), so by the smallest-passing-k rule stage3 is also trained at k32",
+    "nodule75_reason": "with half of each batch from the nodule pool the gap narrowed (layer2 -0.427 to -0.061, stage2 -0.084 to -0.009) without closing; nodule75 draws three quarters of each batch from the pool (one quarter per band), half of the batch within 4 mm of the surface",
+    "speculative_production": [
+      {
+        "variant": "nodule75",
+        "sites": [
+          "fmcib:layer2"
+        ],
+        "expansion": 4,
+        "k": 8
+      },
+      {
+        "variant": "nodule16x",
+        "sites": [
+          "vista:stage2"
+        ],
+        "expansion": 4,
+        "k": 16,
+        "random_host": "local"
+      }
+    ],
+    "remote_vista_variants": [
+      "nodule16x"
+    ],
+    "hosts": "FMCIB layer2 runs on Mayo; VISTA3D nodule16x comparison runs and random-weight production runs on Mayo, the remaining VISTA3D runs on the local GPU, so that both machines finish together"
+  },
+  "selection_sha256": "8b0a1a355c47f0b3efcfe57e961b543a0c19606cc0b3df33f9179159537b9723",
+  "viewer_index_sha256": "3d56c52edafbd20135656de776e146755fa69c2c76f2c7d4b0d98611a9e85a15",
+  "coverage_sha256": {
+    "stability_budget_trained_fmcib_layer2_e2_k16_nodule75.json": "e3d8f933caacdf97b7a1a6e1c9df8311ad046432633c30492c82e35e4be7ee11",
+    "stability_budget_trained_fmcib_layer2_e4_k16_nodule16x.json": "db56c3b7e16c380681b6b7c8f32540185f0cd191dc1cfcfe806552dee376bd92",
+    "stability_budget_trained_fmcib_layer2_e4_k16_nodule4x.json": "9dea54b264e0856d0078744f7b97c8c7ad8767043b193138782b182cdca742e4",
+    "stability_budget_trained_fmcib_layer2_e4_k16_nodule75.json": "e2aeb97de475047f4a8a3a97ae04f7060c198fb1d5b9a8dfdd8597369ad3864d",
+    "stability_budget_trained_fmcib_layer2_e4_k16_tokens16x.json": "8486ab8152fec1b102658d163b76a15b48f3a31788e04ada50d4f64906e4767c",
+    "stability_budget_trained_fmcib_layer2_e4_k16_tokens4x.json": "98caeb8aa76356ec49e9039a5a9cb65a0dcefc0e34f27a53015907de730d98df",
+    "stability_budget_trained_fmcib_layer2_e4_k8_nodule4x.json": "2c26178d25f3ba3ad7322ab2c2b130bb9f5db3e34a57421446a51b85ecea30c8",
+    "stability_budget_trained_fmcib_layer2_e4_k8_nodule75.json": "000f07c90c6a1968c4e1cc14843b0f534fbb3f16d69f7109cc2d3ee1b2d7cdea",
+    "stability_budget_trained_vista_stage2_e4_k16_nodule16x.json": "50879fbf6066fb83bc6acd891d8a8b02c32cd64a7790ecb8d837282290705a1d",
+    "stability_budget_trained_vista_stage2_e4_k16_nodule4x.json": "13e73ea7d18e32badff689fe64688fda7e6a5083e757ce53c60c9806815c6317",
+    "stability_budget_trained_vista_stage2_e4_k16_nodule75.json": "f2e8e20cbb3e031a06d92da2a3992439a1e7129911db46aa2ecc9064c8cedcdc",
+    "stability_budget_trained_vista_stage2_e4_k16_tokens16x.json": "3fb50cdf1e0bffdf53079c17ce02e6bf65c30f43d3c457307066654a35940095",
+    "stability_budget_trained_vista_stage2_e4_k16_tokens4x.json": "3e6dec1606ee6859e13b4d3c5067baab0d88e984759fb38f1d863df1ff4770ba",
+    "stability_budget_trained_vista_stage2_e4_k8_nodule4x.json": "726cdb58f885439973194cc7904254e0b03c7c1149dc87ed66c2574f543c1b4c",
+    "stability_budget_trained_vista_stage3_e4_k16_nodule16x.json": "de67fc7e8691620663b1c4427648e3b15119683477d19ee7af7e2c4282eb5a8e",
+    "stability_budget_trained_vista_stage3_e4_k16_nodule4x.json": "7f30046443607ce793cddcfd479604e46f9d995da95a2dba054d1b52f3e6ebf1",
+    "stability_budget_trained_vista_stage3_e4_k16_tokens16x.json": "06004e76b6ca967017df20e12d649c1af6bc06c178cad02a3e222ef8d83aa67c",
+    "stability_budget_trained_vista_stage3_e4_k16_tokens4x.json": "255fa7217b26cc54402436c70f9e2dd5c2749e3cb5dad10c7ec7150f74d3eca9",
+    "stability_budget_trained_vista_stage3_e4_k32_nodule4x.json": "4cc79f367425650a11e0122e94cd45774f29879718e5e7c3e6a9d71e46c1908b",
+    "stability_budget_trained_vista_stage3_e8_k16_nodule4x.json": "813ee544c0bce1a7817110c288fdd83c2c0f3b6fd5c99cabf2d1326938b50e3c",
+    "stability_random_fmcib_layer2_e4_k16_tokens4x.json": "1faa30fa49dec126d08d5265cb92d21899d02099078c14f508b14adb6ff46b95",
+    "stability_random_fmcib_layer2_e4_k8_nodule75.json": "1ec2e3e090b2f08fed8cd79b8b441cc1532460ce79c511460bb206534fefa3fb",
+    "stability_random_vista_stage2_e4_k16_nodule16x.json": "01cb91bf0e76f8fa0460a4bb3b97fde2c1a54207c5a847bf593443958250087b",
+    "stability_random_vista_stage2_e4_k16_tokens4x.json": "a89076ae5cd753fd6c230522bf9df7702b3b64bd6f3a071c2dc885f07a611b29",
+    "stability_trained_fmcib_layer2_e4_k16_tokens4x.json": "635bbf286bbe0fd80a4d755f396381d08d304bffd0a674ea87cbbcdcb483f646",
+    "stability_trained_fmcib_layer2_e4_k8_nodule75.json": "9b13faf1ba9074bb0af884f50cb77912bdda8c99d2d92cb73c161b2075a163f8",
+    "stability_trained_vista_stage2_e4_k16_nodule16x.json": "d44143bed71efae70f6be3c0e562088424b7fdf135f56430bb9f57b45aa84532",
+    "stability_trained_vista_stage2_e4_k16_tokens4x.json": "90f1a9b6f18588556a06a7ae6ba3cbc96e3e77c44b586ecf35493ad579b3cdd6"
+  },
+  "configuration_sha256": "45cc5c26544fd8aa1d3301916f097cdae4983a24f49a2f007b3aca0f7a86f679",
+  "source_sha256": "8a45f56de88fade593753312b9032ad4078c9ca4c7368da5800e2704a4905a9c",
+  "python": "3.12.14",
+  "matplotlib": "3.11.2",
+  "created_at": "2026-10-16T01:13:35.127916+00:00",
+  "test_used": false
+}

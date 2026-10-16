@@ -39,6 +39,7 @@ def jobs():
                     "priority": [priority, order.index((encoder, model, site))],
                 })
     diagnostic = config["budget_diagnostic"]
+    remote_vista = set(config["nodule_coverage"]["remote_vista_variants"])
     for index, variant in enumerate(diagnostic["variants"]):
         for model, site, expansion, k in variant["configurations"]:
             for seed in diagnostic["seeds"]:
@@ -47,6 +48,7 @@ def jobs():
                     "model": model, "site": site, "seed": seed, "k": k, "expansion": expansion, "encoder": "trained",
                     "matrix_directory": "matrices", "priority": [0, 10 + index],
                     "variant": variant["name"], "training": variant["training"],
+                    **({"host": "mayo"} if model == "vista" and variant["name"] in remote_vista else {}),
                 })
     production = config["production"]
     trainings = {variant["name"]: variant["training"] for variant in diagnostic["variants"]}
@@ -67,6 +69,22 @@ def jobs():
                     "variant": variant, "training": trainings[variant], "production": True,
                     "host": "local" if (model, site, encoder) in local else "mayo",
                 })
+    existing = {job["run_id"] for job in values}
+    for speculative in config["nodule_coverage"]["speculative_production"]:
+        for index, name in enumerate(speculative["sites"]):
+            model, site = name.split(":")
+            for encoder in ["trained", "random"]:
+                for seed in seeds:
+                    identifier = f"{run_id(config['campaign'], encoder, model, site, speculative['expansion'], speculative['k'], seed)}_{speculative['variant']}"
+                    if identifier in existing:
+                        continue
+                    values.append({
+                        "run_id": identifier, "model": model, "site": site, "seed": seed, "k": speculative["k"], "expansion": speculative["expansion"], "encoder": encoder,
+                        "matrix_directory": "matrices" if encoder == "trained" else "matrices_random",
+                        "priority": [0, (40 if encoder == "trained" else 50) + index],
+                        "variant": speculative["variant"], "training": trainings[speculative["variant"]], "production": True,
+                        **({"host": speculative["random_host"]} if encoder == "random" and "random_host" in speculative else {}),
+                    })
     return values
 
 
@@ -75,21 +93,38 @@ def queue_name(job):
     return f"{first}{job['priority'][0]:02d}{job['priority'][1]:02d}_{job['run_id']}.json"
 
 
+def job_files(directory):
+    found = {}
+    for path in sorted(directory.glob("*.json")):
+        job = read_json(path)
+        assert job["run_id"] not in found, f"{job['run_id']} has more than one job file in {directory}"
+        found[job["run_id"]] = job
+    return found
+
+
+def training_fields(job):
+    # Priority, host and production only decide claim order and placement; a run keeps its first job file.
+    return {key: value for key, value in job.items() if key not in {"priority", "host", "production"}}
+
+
 def write_jobs(root, models, variants_only=False, host=None):
+    written = job_files(Path(root) / "jobs")
+    withdrawn = job_files(Path(root) / "jobs_withdrawn")
     for job in jobs():
         if job["model"] not in models or (variants_only and "variant" not in job) or (host and job.get("host") != host):
             continue
-        path = Path(root) / "jobs" / queue_name(job)
-        if path.exists():
-            assert read_json(path) == job, path
+        if job["run_id"] in withdrawn:
+            continue
+        if job["run_id"] in written:
+            assert training_fields(written[job["run_id"]]) == training_fields(job), job["run_id"]
         else:
-            write_json(path, job)
+            write_json(Path(root) / "jobs" / queue_name(job), job)
 
 
 def foreign_processes(gpu):
     query = subprocess.run(["nvidia-smi", f"--id={gpu}", "--query-gpu=uuid,utilization.gpu,memory.used", "--format=csv,noheader,nounits"], capture_output=True, text=True, check=True)
     uuid, utilization, memory = [value.strip() for value in next(csv.reader(io.StringIO(query.stdout)))]
-    processes = subprocess.run(["nvidia-smi", "--query-compute-apps=gpu_uuid,pid", "--format=csv,noheader,nounits"], capture_output=True, text=True, check=True)
+    processes = subprocess.run(["nvidia-smi", "--query-compute-apps=gpu_uuid,pid,used_memory", "--format=csv,noheader,nounits"], capture_output=True, text=True, check=True)
     user = getpass.getuser()
     foreign = []
     for row in csv.reader(io.StringIO(processes.stdout)):
@@ -97,7 +132,7 @@ def foreign_processes(gpu):
             continue
         owner = subprocess.run(["ps", "-o", "user=", "-p", row[1].strip()], capture_output=True, text=True).stdout.strip()
         if owner != user:
-            foreign.append({"pid": int(row[1]), "user": owner})
+            foreign.append({"pid": int(row[1]), "user": owner, "memory_mib": int(row[2])})
     return foreign, {"utilization": float(utilization), "memory_used_mib": int(memory)}
 
 
@@ -129,7 +164,8 @@ def main():
                 time.sleep(5)
                 continue
             foreign, telemetry = ([], {}) if args.local else foreign_processes(args.gpu)
-            if foreign:
+            # Another user's idle CUDA context leaves the GPU usable; a job of theirs with real memory use does not.
+            if sum(item["memory_mib"] for item in foreign) > read_json(CONFIG_PATH)["control"]["foreign_memory_mib"]:
                 write_json(state_path, {**status, **telemetry, "state": "waiting_gpu", "foreign": foreign})
                 time.sleep(15)
                 continue
@@ -141,6 +177,8 @@ def main():
                     continue
                 pending += 1
                 if not (root / job["matrix_directory"] / job["model"] / job["site"] / "matrix.json").exists():
+                    continue
+                if job.get("training", {}).get("nodule_pool") and not (root / "nodule_pools" / job["encoder"] / job["model"] / job["site"] / "pool.json").exists():
                     continue
                 run.mkdir(parents=True, exist_ok=True)
                 lock = FileLock(str(run / "assignment.lock"), timeout=0)

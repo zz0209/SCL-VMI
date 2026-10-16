@@ -27,21 +27,45 @@
     "seeds": [2025, 2026, 2027, 2028],
     "variants": [
       {"name": "tokens4x", "training": {"steps": 48000}, "configurations": [["fmcib", "layer1_context", 4, 16], ["fmcib", "layer2", 4, 16], ["vista", "stage2", 4, 16], ["vista", "stage3", 4, 16]]},
-      {"name": "tokens16x", "training": {"steps": 192000}, "configurations": [["fmcib", "layer1_context", 4, 16]]}
+      {"name": "tokens16x", "training": {"steps": 192000}, "configurations": [["fmcib", "layer1_context", 4, 16], ["fmcib", "layer2", 4, 16], ["vista", "stage2", 4, 16], ["vista", "stage3", 4, 16]]},
+      {"name": "nodule4x", "training": {"steps": 48000, "nodule_pool": {"fraction": 0.5, "bands": ["inside", "margin_0_4mm", "near_4_10mm"]}}, "configurations": [["fmcib", "layer2", 4, 16], ["vista", "stage2", 4, 16], ["vista", "stage3", 4, 16], ["vista", "stage3", 4, 32], ["vista", "stage3", 8, 16], ["fmcib", "layer2", 4, 8], ["vista", "stage2", 4, 8]]},
+      {"name": "nodule16x", "training": {"steps": 192000, "nodule_pool": {"fraction": 0.5, "bands": ["inside", "margin_0_4mm", "near_4_10mm"]}}, "configurations": [["fmcib", "layer2", 4, 16], ["vista", "stage2", 4, 16], ["vista", "stage3", 4, 16]]},
+      {"name": "nodule75", "training": {"steps": 48000, "nodule_pool": {"fraction": 0.75, "bands": ["inside", "margin_0_4mm", "near_4_10mm"]}}, "configurations": [["fmcib", "layer2", 4, 16], ["vista", "stage2", 4, 16], ["vista", "stage3", 4, 16], ["vista", "stage3", 4, 32], ["fmcib", "layer2", 2, 16], ["fmcib", "layer2", 4, 8]]}
     ]
+  },
+  "nodule_coverage": {
+    "question": "whether training-token composition and training length make features of the nodule region reappear across seeds",
+    "pool_rule": "nodule-pool variants draw the configured fraction of every training batch (training.nodule_pool.fraction: 0.5 for nodule4x and nodule16x, 0.75 for nodule75) from positions of training records within 10 mm of the target nodule surface, split evenly over inside, 0-4 mm and 4-10 mm; the rest keeps the uniform training matrix; development matrices are unchanged",
+    "criterion": "at each site, variance explained by stable features at nodule positions (inside or within 4 mm of the surface, development patients) is at least the variance they explain at positions more than 10 mm from the surface, the reference seed passes the fixed-classifier checks, and stable nodule-related features exceed the random-weight control in the production set; the cheapest passing variant is chosen",
+    "regions": [["nodule_0_4mm", -1e9, 4.0], ["near_4_10mm", 4.0, 10.0], ["far_over_10mm", 10.0, 1e9]],
+    "enrichment_thresholds": [2.0, 3.0],
+    "bootstrap": 2000,
+    "bootstrap_seed": 20261015,
+    "sufficiency": "user decision 2026-10-15 19:25 EDT (option A): a site is sufficient for nodule interpretation when, on the 8-seed production dictionaries, all seeds pass the fixed-classifier checks, stable nodule-specific features (nodule enrichment >= 3 on development patients) clearly exceed both the tokens4x dictionaries and the random-weight control, and stable-feature explained variance at the nodule region exceeds that of tokens4x; the nodule-versus-far coverage comparison is reported as a description",
+    "chosen": {"fmcib:layer2": {"variant": "nodule75", "expansion": 4, "k": 8}, "vista:stage2": {"variant": "nodule16x", "expansion": 4, "k": 16}},
+    "criterion_addition": "added after the first comparison results: the stable-feature explained variance at the nodule region must also not fall below that of the current tokens4x dictionaries, so that a smaller gap cannot come only from lower background coverage",
+    "layer2_compact_reason": "FMCIB layer2 stays below the background after nodule75 (-0.038, bootstrap interval -0.073 to -0.001) while stable features carry a fixed quarter of the nodule activation for every pool fraction; expansion 2 and k8 test whether a more compact dictionary stops nodule concepts from splitting into seed-specific features; the layer2 classifier MAE (0.0096) leaves room",
+    "stage3_e8_reason": "VISTA3D stage3 k32 nodule4x passes the classifier (MAE 0.0218) but keeps 76 stable features and 0.055 stable explained variance at the nodule; stage3 has little classifier headroom even uniformly (tokens4x MAE 0.0230-0.0249), so expansion 8 at k16 tests whether more capacity keeps the background reconstruction while adding nodule features; the stage3 nodule75 runs at k16 and k32 were withdrawn before training",
+    "stage3_k32_reason": "VISTA3D stage3 k16 with nodule-pool training exceeds the fixed-classifier probability MAE gate (nodule4x 0.0294, nodule16x 0.0290 at seed 2025), so by the smallest-passing-k rule stage3 is also trained at k32",
+    "nodule75_reason": "with half of each batch from the nodule pool the gap narrowed (layer2 -0.427 to -0.061, stage2 -0.084 to -0.009) without closing; nodule75 draws three quarters of each batch from the pool (one quarter per band), half of the batch within 4 mm of the surface",
+    "speculative_production": [{"variant": "nodule75", "sites": ["fmcib:layer2"], "expansion": 4, "k": 8}, {"variant": "nodule16x", "sites": ["vista:stage2"], "expansion": 4, "k": 16, "random_host": "local"}],
+    "remote_vista_variants": ["nodule16x"],
+    "hosts": "FMCIB layer2 runs on Mayo; VISTA3D nodule16x comparison runs and random-weight production runs on Mayo, the remaining VISTA3D runs on the local GPU, so that both machines finish together"
   },
   "production": {
     "sites": {
-      "fmcib:layer2": {"variant": "tokens4x", "expansion": 4, "k": 16},
+      "fmcib:layer2": {"variant": "nodule75", "expansion": 4, "k": 8},
       "vista:stage3": {"variant": "tokens4x", "expansion": 4, "k": 16},
-      "vista:stage2": {"variant": "tokens4x", "expansion": 4, "k": 16},
+      "vista:stage2": {"variant": "nodule16x", "expansion": 4, "k": 16},
       "fmcib:layer1_context": {"variant": "tokens4x", "expansion": 4, "k": 32}
     },
     "local": [["vista", "stage2", "random"]],
     "basis": "k is the smallest grid value whose reference-seed dictionary passes the fixed-classifier checks; at every site cross-seed reappearance decreases as k increases. Expansion 4: expansion 8 changes the variance explained by stable features by -0.008 to +0.056 across sites without a consistent direction and doubles the features to inspect. Training length 4x from the budget diagnostic."
   },
   "whole_ct": {
-    "run_id": "20261015_interpretation_whole_ct",
+    "run_id": "20261015_interpretation_whole_ct_nodule",
+    "map_sites": ["fmcib:layer2", "vista:stage2"],
+    "reused_caches": {"run_id": "20261015_interpretation_whole_ct", "sites": ["fmcib:layer1_context", "vista:stage3"], "rule": "the viewer reads browser caches of the unchanged production dictionaries from the earlier whole-CT run"},
     "source_run": "20261009_whole_ct_exploration",
     "trained_seeds": [2025, 2026, 2027],
     "random_seeds": [2025],
@@ -57,7 +81,8 @@
     "scope": "Each dictionary is applied to its training-sized window on a regular whole-CT grid; maps keep the window's central native positions so neighbouring windows tile the scan. FMCIB layer1 complete-context maps keep positions whose 35-voxel receptive field lies inside the CT volume."
   },
   "candidates": {
-    "run_id": "20261015_feature_candidates",
+    "run_id": "20261015_feature_candidates_nodule",
+    "previous_run_id": "20261015_feature_candidates",
     "near_mm": 4.0,
     "random_percentile": 95,
     "false_discovery_rate": 0.05,
@@ -69,6 +94,6 @@
     "bootstrap_seed": 20261015,
     "selection": "Discovery (training patients): stable features of the reference seed whose size-adjusted partial correlation exceeds the random-weight reference seed's 95th percentile of absolute values. Confirmation (development patients): same sign and Benjamini-Hochberg q below the false discovery rate within the discovery-selected set of each site and encoder; a feature without confirmation variance counts as p = 1."
   },
-  "control": {"poll_seconds": 1, "remote_sync_seconds": 15},
+  "control": {"poll_seconds": 1, "remote_sync_seconds": 15, "foreign_memory_mib": 4096},
   "upstream": {"module": "third_party/batchtopk/sae.py", "commit": "b9aab1c6156381ae7ae2997e3490e7b99e195dde"}
 }

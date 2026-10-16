@@ -139,6 +139,12 @@ def fit_job(root, job, worker, stop_after=None):
     matrix = root / job.get("matrix_directory", "matrices") / job["model"] / job["site"]
     matrix_info = read_json(matrix / "matrix.json")
     request = training_identity(config, job, matrix_info)
+    pool_spec = request["training"].get("nodule_pool")
+    if pool_spec:
+        pool_path = root / "nodule_pools" / job["encoder"] / job["model"] / job["site"]
+        pool_info = read_json(pool_path / "pool.json")
+        assert pool_info["matrix_identity"] == matrix_info["identity"] and [band["name"] for band in pool_info["bands"]] == pool_spec["bands"], pool_path
+        request["nodule_pool_identity"] = pool_info["identity"]
     ensure_identity(destination / "request.json", request)
     if (destination / "result.json").exists():
         return read_json(destination / "result.json")
@@ -162,6 +168,7 @@ def fit_job(root, job, worker, stop_after=None):
     development = load_matrix(matrix / "development.npy", mean, scale)
     train_offsets = torch.tensor(np.load(matrix / "train_offsets.npy"), device="cuda", dtype=torch.int64)
     dev_offsets = torch.tensor(np.load(matrix / "development_offsets.npy"), device="cuda", dtype=torch.int64)
+    pools = [(load_matrix(pool_path / f"band_{name}.npy", mean, scale), torch.tensor(np.load(pool_path / f"band_{name}_offsets.npy"), device="cuda", dtype=torch.int64)) for name in pool_spec["bands"]] if pool_spec else []
     sae = make_sae(request, config)
     training = request["training"]
     optimizer = torch.optim.Adam(sae.parameters(), lr=training["learning_rate"], betas=tuple(training["betas"]))
@@ -187,6 +194,8 @@ def fit_job(root, job, worker, stop_after=None):
     total = training["steps"]
     checkpoint_step = start_step
     batch_size = min(training["batch_size"], len(train))
+    pooled = round(batch_size * pool_spec["fraction"]) if pool_spec else 0
+    shares = [pooled // len(pools) + int(index < pooled % len(pools)) for index in range(len(pools))]
     stopped = False
     for step in range(start_step + 1, total + 1):
         warmup = min(training["warmup_steps"], max(1, total // 10))
@@ -196,8 +205,9 @@ def fit_job(root, job, worker, stop_after=None):
             factor *= 0.1 + 0.9 * (total - step) / max(1, total - decay_start)
         for group in optimizer.param_groups:
             group["lr"] = training["learning_rate"] * factor
-        indices = patient_indices(train_offsets, batch_size, generator)
-        output = sae(train[indices])
+        # Nodule-pool training draws a fixed share of each batch evenly from the distance bands.
+        batch = torch.cat([train[patient_indices(train_offsets, batch_size - pooled, generator)]] + [values[patient_indices(offsets, share, generator)] for (values, offsets), share in zip(pools, shares)])
+        output = sae(batch)
         loss = output["loss"]
         assert torch.isfinite(loss), f"Non-finite loss at step {step}"
         loss.backward()
@@ -239,7 +249,7 @@ def fit_job(root, job, worker, stop_after=None):
             write_json(destination / "status.json", status)
             print("TRAIN", job["run_id"], step, total, status["steps_per_second"], flush=True)
             last_progress = time.monotonic()
-        del output, loss, indices
+        del output, loss, batch
         if stopped:
             return {"state": "paused", "step": step}
     best = torch.load(destination / "best.pt", map_location="cuda", weights_only=True)
@@ -257,7 +267,7 @@ def fit_job(root, job, worker, stop_after=None):
     write_json(destination / "status.json", {"state": "completed", "worker": worker, "step": total, "total": total, "updated_at": timestamp()})
     invocation.update({"completed_at": timestamp(), "result": "completed", "peak_gpu_bytes": torch.cuda.max_memory_allocated()})
     write_json(invocation_path, invocation)
-    del sae, optimizer, loaded, train, development
+    del sae, optimizer, loaded, train, development, pools
     gc.collect()
     torch.cuda.empty_cache()
     return result

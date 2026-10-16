@@ -16,11 +16,14 @@ from .sae_interp_profiles import profile_members
 
 
 CONFIG_PATH = ROOT / "configs/sae_interpretation.json"
-SITES = ["fmcib_layer1_context", "fmcib_layer2", "vista_stage2", "vista_stage3"]
 PUBLIC_COLUMNS = ["site", "feature", "family", "reappearance", "seed_agreement", "partial_discovery", "partial_confirmation", "q_confirmation",
                   "partial_morphology_confirmation", "p_morphology_confirmation", "size_only_auroc", "size_feature_auroc", "delta_auroc", "delta_auroc_low", "delta_auroc_high",
                   "development_auroc", "nodule_enrichment", "enrichment_percentile", "region_inside", "region_margin_0_4mm", "region_near_4_10mm", "region_far_over_10mm",
                   "size_rho", "top_reference", "top_reference_partial_rho", "image_r2", "frequency", "whole_lung_enrichment", "whole_liver_enrichment", "whole_high_hu_share", "whole_edge_air_share"]
+
+
+def run_sites(output):
+    return [site.replace(":", "_") for site in read_json(output / "request.json")["sites"]]
 
 
 def scores(columns, labels, train, development):
@@ -49,7 +52,7 @@ def followup(root, output, settings):
     measured = np.column_stack([size, references[settings["references"]].to_numpy()])
     base = scores([measured], labels, train, development)
     rows, columns = [], {}
-    for site in SITES:
+    for site in run_sites(output):
         candidates = pd.read_csv(output / site / "candidates.csv")
         with np.load(output / site / "summaries.npz") as saved:
             values = saved["trained"]
@@ -76,25 +79,25 @@ def followup(root, output, settings):
     return frame, correlation, single
 
 
-def figure(sites, candidates, frame, destination):
+def figure(sites, candidates, frame, destination, order):
     colors = {"trained": "#2a78d6", "random": "#eb6834"}
     ink, muted, surface, grid = "#0b0b0b", "#52514e", "#fcfcfb", "#e4e3df"
     names = {"fmcib_layer1_context": "FMCIB\nlayer1 context", "fmcib_layer2": "FMCIB\nlayer2", "vista_stage2": "VISTA3D\nstage2", "vista_stage3": "VISTA3D\nstage3"}
     short = {"fmcib_layer1_context": "FMCIB L1", "fmcib_layer2": "FMCIB L2", "vista_stage2": "VISTA3D S2", "vista_stage3": "VISTA3D S3"}
     plt.rcParams.update({"font.family": "DejaVu Sans", "font.size": 9, "axes.edgecolor": muted, "axes.labelcolor": ink, "xtick.color": muted, "ytick.color": muted, "text.color": ink})
     fig, (left, right) = plt.subplots(1, 2, figsize=(13, 6.2), facecolor=surface, gridspec_kw={"width_ratios": [1, 1.5]})
-    positions = np.arange(len(SITES))
+    positions = np.arange(len(order))
     for offset, encoder, label in [(-0.2, "trained", "trained encoder"), (0.2, "random", "random-weight encoder")]:
-        counts = [sites[site][encoder]["confirmed"] for site in SITES]
+        counts = [sites[site][encoder]["confirmed"] for site in order]
         left.bar(positions + offset, counts, width=0.38, color=colors[encoder], label=label, edgecolor=surface, linewidth=1)
         for position, count in zip(positions + offset, counts):
             left.text(position, count + 0.4, str(count), ha="center", va="bottom", fontsize=8, color=ink)
-    left.set_xticks(positions, [names[site] for site in SITES])
+    left.set_xticks(positions, [names[site] for site in order])
     left.set_ylabel("confirmed features (reference seed)")
     left.set_title("Stable features with size-adjusted malignancy association\nselected on training patients, confirmed on development patients", fontsize=9, loc="left")
     left.legend(frameon=False, loc="upper right")
     merged = frame.merge(candidates[["site", "feature", "delta_auroc", "delta_auroc_low", "delta_auroc_high"]], on=["site", "feature"], suffixes=("_references", "_volume"))
-    merged = merged.assign(order=merged.site.map(SITES.index)).sort_values(["order", "delta_auroc_volume"], ascending=[False, True]).reset_index(drop=True)
+    merged = merged.assign(order=merged.site.map(order.index)).sort_values(["order", "delta_auroc_volume"], ascending=[False, True]).reset_index(drop=True)
     rows = np.arange(len(merged))
     right.hlines(rows + 0.15, merged.delta_auroc_low_volume, merged.delta_auroc_high_volume, color=colors["trained"], linewidth=2)
     right.plot(merged.delta_auroc_volume, rows + 0.15, "o", color=colors["trained"], markersize=6, markeredgecolor=surface, markeredgewidth=1.5, label="added to log volume")
@@ -137,11 +140,12 @@ def main():
     if args.export:
         public = Path(args.export)
         public.mkdir(parents=True, exist_ok=True)
-        tables = {encoder: pd.concat([pd.read_csv(output / site / f"{encoder}_features.csv").assign(site=site) for site in SITES]) for encoder in ["trained", "random"]}
+        order = run_sites(output)
+        tables = {encoder: pd.concat([pd.read_csv(output / site / f"{encoder}_features.csv").assign(site=site) for site in order]) for encoder in ["trained", "random"]}
         tables["trained"][tables["trained"].confirmed][PUBLIC_COLUMNS].to_csv(public / "confirmed_trained.csv", index=False)
         tables["random"][tables["random"].confirmed][PUBLIC_COLUMNS].to_csv(public / "confirmed_random.csv", index=False)
         sites = {key.replace(":", "_"): value for key, value in read_json(output / "summary.json")["sites"].items()}
-        figure(sites, tables["trained"], frame, public)
+        figure(sites, tables["trained"], frame, public, order)
         pd.DataFrame([{"site": site, "encoder": encoder, "random_threshold": value["threshold"], **value[encoder]} for site, value in sites.items() for encoder in ["trained", "random"]]).to_csv(public / "site_summary.csv", index=False)
         frame.to_csv(public / "all_references.csv", index=False)
         correlation.round(4).to_csv(public / "candidate_correlation_discovery.csv")
