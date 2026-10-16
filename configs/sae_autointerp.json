@@ -21,7 +21,9 @@
     "validation_high": 20,
     "validation_low": 20,
     "low_quantile": 0.2,
-    "rule": "case value = maximum feature activation over positions inside the nodule or within 4 mm of its surface (one record per patient, profile members). Generation uses training patients (discovery), validation uses development patients (confirmation). High = largest case values; low = for each high example in order, the unused patient with the nearest log nodule volume among those at or below the split's low_quantile of case values"
+    "match_on": ["log_volume"],
+    "match_weights": {"log_volume": 1.0},
+    "rule": "case value = maximum feature activation over positions inside the nodule or within 4 mm of its surface (one record per patient, profile members). Generation uses training patients (discovery), validation uses development patients (confirmation). High = largest case values; low = for each high example in order, the unused patient nearest in the match_on variables (each standardized over all patients) among those at or below the split's low_quantile of case values"
   },
   "render": {
     "plane_pixels": 192,
@@ -31,6 +33,7 @@
     "overlay_alpha": 0.75,
     "workers": 2,
     "torch_threads": 2,
+    "input_runs": [],
     "rule": "three orthogonal planes through the nodule mask centroid in radiological orientation with physical aspect; generation images add a lung-window row with the feature activation (trilinear on the canonical input grid, colour scale fixed per feature by the largest value over its generation examples); validation images show only the lung and mediastinal rows, identical for every feature"
   },
   "specificity": {

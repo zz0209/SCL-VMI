@@ -29,8 +29,8 @@ GRID_AFFINES = {"fmcib:layer2": "layer2_grid_affine_ras", "vista:stage2": "stage
 REFERENCES = ["sphericity", "hu_mean", "hu_std", "hu_p10", "hu_p90", "solid_fraction", "ring_0_5mm_hu_mean", "ring_5_10mm_hu_mean"]
 
 
-def paths():
-    config = read_json(CONFIG_PATH)
+def paths(config_path):
+    config = read_json(config_path)
     storage = context()[0]
     runs = Path(storage["runs"])
     campaign = campaign_configuration()
@@ -101,17 +101,18 @@ def feature_values(config, candidates, feature, members):
     return values
 
 
-def pick_examples(values, members, split, high_count, low_count, quantile, prefix):
+def pick_examples(values, members, matching, split, high_count, low_count, quantile, prefix):
     rows = np.flatnonzero((members.split == split).to_numpy())
     order = sorted(rows, key=lambda row: (-values[row], stable_value(members.identifier[row])))
     high = order[:high_count]
     assert values[high].min() > 0, "fewer active patients than high examples"
+    assert np.isfinite(matching[high]).all(), "a high example lacks a matching variable"
     threshold = np.quantile(values[rows], quantile)
     taken = set(high)
-    pool = [row for row in rows if values[row] <= threshold and row not in taken]
+    pool = [row for row in rows if values[row] <= threshold and row not in taken and np.isfinite(matching[row]).all()]
     low = []
     for row in high[:low_count]:
-        nearest = min(pool, key=lambda candidate: (abs(members.log_volume[candidate] - members.log_volume[row]), stable_value(members.identifier[candidate])))
+        nearest = min(pool, key=lambda candidate: (float(np.square(matching[candidate] - matching[row]).sum()), stable_value(members.identifier[candidate])))
         pool.remove(nearest)
         low.append(nearest)
     records = [(f"{prefix}H{index + 1:02d}", "high", row) for index, row in enumerate(high)] + [(f"{prefix}L{index + 1:02d}", "low", row) for index, row in enumerate(low)]
@@ -119,23 +120,34 @@ def pick_examples(values, members, split, high_count, low_count, quantile, prefi
              "log_volume": float(members.log_volume[row])} for example, group, row in records], float(threshold)
 
 
-def select(config, root, candidates, output):
-    members, _ = case_frame(root)
+def matching_matrix(members, references, variables, weights):
+    # Low examples are matched to high ones in these variables, each standardized over all patients and then weighted.
+    table = pd.concat([members[["log_volume"]], references[[name for name in variables if name != "log_volume"]]], axis=1)[variables].to_numpy(dtype=np.float64)
+    return (table - np.nanmean(table, 0)) / np.nanstd(table, 0) * np.asarray([weights[name] for name in variables])
+
+
+def select(config, config_path, root, candidates, output):
+    members, references = case_frame(root)
     features = choose_features(config, candidates, members)
     rules = config["examples"]
+    matching = matching_matrix(members, references, rules["match_on"], rules["match_weights"])
     rows = []
     for feature in features:
         values = feature_values(config, candidates, feature, members)
-        generation, generation_threshold = pick_examples(values, members, "train", rules["generation_high"], rules["generation_low"], rules["low_quantile"], "")
-        validation, validation_threshold = pick_examples(values, members, "development", rules["validation_high"], rules["validation_low"], rules["low_quantile"], "V")
+        generation, generation_threshold = pick_examples(values, members, matching, "train", rules["generation_high"], rules["generation_low"], rules["low_quantile"], "")
+        validation, validation_threshold = pick_examples(values, members, matching, "development", rules["validation_high"], rules["validation_low"], rules["low_quantile"], "V")
         feature["low_thresholds"] = {"generation": generation_threshold, "validation": validation_threshold}
         rows += [{**item, "key": feature["key"], "stage": "generation"} for item in generation] + [{**item, "key": feature["key"], "stage": "validation"} for item in validation]
     examples = pd.DataFrame(rows)
-    matched = examples.assign(pair=examples.example_id.str[-2:]).pivot_table(index=["key", "stage", "pair"], columns="group", values="log_volume").dropna()
+    measured = references.set_index("identifier")
+    examples = examples.assign(**{name: examples.identifier.map(measured[name]) for name in rules["match_on"] if name != "log_volume"})
+    paired = examples.assign(pair=examples.example_id.str[-2:])
+    balance = {name: float((lambda table: (table.high - table.low).abs().mean())(paired.pivot_table(index=["key", "stage", "pair"], columns="group", values=name).dropna())) for name in rules["match_on"]}
     output.mkdir(parents=True, exist_ok=True)
     examples.to_csv(output / "examples.csv", index=False)
-    write_json(output / "features.json", {"features": features, "size_matching_mean_abs_log_volume": float((matched.high - matched.low).abs().mean()), "created_at": timestamp(), "test_used": False})
-    write_json(output / "request.json", {"config": config, "config_sha256": sha256(CONFIG_PATH), "code_sha256": sha256(Path(__file__)), "created_at": timestamp(), "test_used": False})
+    write_json(output / "features.json", {"features": features, "matching_mean_abs_difference": balance, "created_at": timestamp(), "test_used": False})
+    write_json(output / "request.json", {"config": config, "config_path": str(config_path.relative_to(ROOT)), "config_sha256": sha256(config_path), "code_sha256": sha256(Path(__file__)), "created_at": timestamp(), "test_used": False})
+    print("MATCHING", balance, flush=True)
     print("SELECTED", len(features), "features", len(examples), "examples", examples.identifier.nunique(), "patients", flush=True)
     for feature in features:
         print(" ", feature["key"], feature["role"], "enrichment", round(feature["nodule_enrichment"], 2), "active", feature["active_confirmation"], flush=True)
@@ -160,9 +172,12 @@ def measure(config, root, candidates, output):
     print("MEASURED", frame.key.nunique(), "features;", int(frame.measurement_score.isna().sum()), "validation examples without complete measurements; training patients used", int(train.sum()), flush=True)
 
 
-def input_path(root, output, source, identifier):
-    viewer = root / "viewer_inputs" / source / f"{identifier}.h5"
-    return viewer if viewer.exists() else output / "inputs" / source / f"{identifier}.h5"
+def input_path(root, output, source, identifier, shared):
+    # Viewer inputs first, then inputs prepared by the runs listed in input_runs, then this run's own.
+    for directory in [root / "viewer_inputs"] + [run / "inputs" for run in shared]:
+        if (directory / source / f"{identifier}.h5").exists():
+            return directory / source / f"{identifier}.h5"
+    return output / "inputs" / source / f"{identifier}.h5"
 
 
 def prepare_inputs(task):
@@ -287,8 +302,9 @@ def render(config, root, previous, output):
     features = {item["key"]: item for item in read_json(output / "features.json")["features"]}
     examples = pd.read_csv(output / "examples.csv", dtype={"PatientID": str})
     examples["source"] = examples.key.map(lambda key: SOURCES[features[key]["site"]])
+    shared = [output.parent / run for run in config["render"]["input_runs"]]
     needed = examples[["identifier", "source"]].drop_duplicates()
-    missing = needed[[not input_path(root, output, row.source, row.identifier).exists() for row in needed.itertuples()]]
+    missing = needed[[not input_path(root, output, row.source, row.identifier, shared).exists() for row in needed.itertuples()]]
     tasks = [(identifier, sorted(group.source), root, output, 1) for identifier, group in missing.groupby("identifier")]
     started = time.monotonic()
     print("INPUTS", len(needed), "needed,", len(tasks), "records to prepare", flush=True)
@@ -303,7 +319,7 @@ def render(config, root, previous, output):
     validation_dir.mkdir(parents=True, exist_ok=True)
     for row in needed.itertuples():
         destination = validation_dir / f"{row.source}_{row.identifier}.png"
-        hu, mask, affine = load_volume(input_path(root, output, row.source, row.identifier))
+        hu, mask, affine = load_volume(input_path(root, output, row.source, row.identifier, shared))
         spacing = nib.affines.voxel_sizes(affine)
         window_mm[row.source] = float(round(max(np.asarray(hu.shape) * spacing)))
         if not destination.exists():
@@ -314,7 +330,7 @@ def render(config, root, previous, output):
         source = SOURCES[feature["site"]]
         maps = {}
         for row in group.itertuples():
-            hu, mask, affine = load_volume(input_path(root, output, source, row.identifier))
+            hu, mask, affine = load_volume(input_path(root, output, source, row.identifier, shared))
             maps[row.example_id] = (hu, mask, affine, *feature_map(root, previous, feature, row.identifier, affine, hu.shape))
         vmax = max(float(item[3].max()) for item in maps.values())
         assert vmax > 0, key
@@ -339,10 +355,12 @@ def render(config, root, previous, output):
 def main():
     parser = argparse.ArgumentParser()
     parser.add_argument("--stage", choices=["select", "render", "measure"], required=True)
+    parser.add_argument("--config", type=Path, default=CONFIG_PATH)
     args = parser.parse_args()
-    config, root, previous, candidates, output = paths()
+    config_path = args.config.resolve()
+    config, root, previous, candidates, output = paths(config_path)
     if args.stage == "select":
-        select(config, root, candidates, output)
+        select(config, config_path, root, candidates, output)
     elif args.stage == "render":
         render(config, root, previous, output)
     else:

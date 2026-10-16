@@ -328,8 +328,9 @@ def main():
     parser.add_argument("--stage", choices=STAGES, required=True)
     parser.add_argument("--keys", default="", help="comma-separated feature keys")
     parser.add_argument("--limit", type=int, default=0, help="number of calls for a smoke run")
+    parser.add_argument("--config", type=Path, default=CONFIG_PATH)
     args = parser.parse_args()
-    config = read_json(CONFIG_PATH)
+    config = read_json(args.config)
     output = Path(context()[0]["runs"]) / config["run_id"]
     keys = [value for value in args.keys.split(",") if value]
     if args.stage == "analyze":

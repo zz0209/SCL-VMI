@@ -19,6 +19,7 @@
 !/configs/sae_whole_viewer.json
 !/configs/sae_interpretation.json
 !/configs/sae_autointerp.json
+!/configs/sae_autointerp_matched.json
 !/configs/environments/
 /configs/environments/*
 !/configs/environments/pipeline.json

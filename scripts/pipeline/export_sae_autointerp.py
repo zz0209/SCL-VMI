@@ -54,8 +54,9 @@ def specificity_figure(pairs, features, destination):
 def main():
     parser = argparse.ArgumentParser()
     parser.add_argument("--output", type=Path, required=True)
+    parser.add_argument("--config", type=Path, default=ROOT / "configs/sae_autointerp.json")
     args = parser.parse_args()
-    config = read_json(ROOT / "configs/sae_autointerp.json")
+    config = read_json(args.config)
     run = Path(context()[0]["runs"]) / config["run_id"]
     destination = args.output
     destination.mkdir(parents=True, exist_ok=False)
@@ -75,8 +76,8 @@ def main():
     write_json(destination / "provenance.json", {"run_id": config["run_id"], "campaign": config["campaign"], "candidates_run": config["candidates_run"], "model": config["model"]["name"],
                                                  "settings": {key: config[key] for key in ["sites", "reference_seed", "near_mm", "features", "examples", "render", "specificity", "prompts"]},
                                                  "reasoning": config["model"]["reasoning"], "calls": summary["calls"], "total_cost_usd": summary["total_cost_usd"], "cost_by_stage": summary["cost_by_stage"],
-                                                 "specificity": summary["specificity"], "size_matching_mean_abs_log_volume": read_json(run / "features.json")["size_matching_mean_abs_log_volume"],
-                                                 "configuration_sha256": sha256(ROOT / "configs/sae_autointerp.json"), "source_sha256": {name: sha256(ROOT / "src/sclvmi" / name) for name in ["sae_autointerp.py", "sae_autointerp_model.py"]},
+                                                 "specificity": summary["specificity"], "matching_mean_abs_difference": read_json(run / "features.json")["matching_mean_abs_difference"],
+                                                 "configuration": str(args.config), "configuration_sha256": sha256(args.config), "source_sha256": {name: sha256(ROOT / "src/sclvmi" / name) for name in ["sae_autointerp.py", "sae_autointerp_model.py"]},
                                                  "exporter_sha256": sha256(Path(__file__)), "python": platform.python_version(), "matplotlib": matplotlib.__version__, "created_at": timestamp(), "test_used": False})
     print("EXPORTED", destination, flush=True)
 
