@@ -1,0 +1,160 @@
+{
+  "run_id": "20261017_sae_radiomics",
+  "campaign": "20261014_sae_interpretation",
+  "candidate_run": "20261015_feature_candidates_nodule",
+  "members": "profile members of the campaign: one nodule record per patient, 1,264 training (discovery) and 422 development (confirmation) patients; the independent test set is unused",
+  "settings": {
+    "spacing_mm": 1.0,
+    "regions": {
+      "nodule": [
+        null,
+        0.0
+      ],
+      "margin_0_4mm": [
+        0.0,
+        4.0
+      ],
+      "near_4_10mm": [
+        4.0,
+        10.0
+      ]
+    },
+    "region_rule": "the target nodule component (connected component at the crop centre, or the nearest one) is resampled to 1 mm with nearest-neighbour interpolation; rings are voxels whose Euclidean distance to the nodule lies in (low, high] mm",
+    "pyradiomics": {
+      "binWidth": 25,
+      "interpolator": "sitkBSpline",
+      "label": 1,
+      "minimumROIDimensions": 2,
+      "minimumROISize": null,
+      "geometryTolerance": 0.0001,
+      "correctMask": true
+    },
+    "classes": {
+      "nodule": [
+        "shape",
+        "firstorder",
+        "glcm",
+        "glrlm",
+        "glszm",
+        "gldm",
+        "ngtdm"
+      ],
+      "margin_0_4mm": [
+        "firstorder",
+        "glcm",
+        "glrlm",
+        "glszm",
+        "gldm",
+        "ngtdm"
+      ],
+      "near_4_10mm": [
+        "firstorder",
+        "glcm",
+        "glrlm",
+        "glszm",
+        "gldm",
+        "ngtdm"
+      ]
+    },
+    "contact": {
+      "lung_hu": -500,
+      "lung_minimum_voxels": 10000,
+      "closing_mm": 5,
+      "soft_tissue_hu": -300,
+      "structure_minimum_voxels": 2000,
+      "air_hu": -950,
+      "contact_mm": 1.0,
+      "rule": "lung = 6-connected components below -500 HU of at least 10,000 voxels, closed with a 5 mm ball (edge-padded) and hole-filled together with the nodule, so vessels under 10 mm and the nodule belong to the lung; outside-lung tissue (chest wall, mediastinum, diaphragm) is the remainder of the crop. Lung-boundary distance = smallest distance from a nodule surface voxel to outside-lung tissue (to the crop border when the crop holds none); contact fraction = share of surface voxels within 1 mm of it. Soft structures = 26-connected components above -300 HU outside the nodule of at least 2,000 voxels (attached vessels, chest wall or mediastinum), measured the same way. Soft-tissue, air and outside-lung fractions are measured in both rings"
+    },
+    "sites": [
+      "fmcib:layer2",
+      "vista:stage2"
+    ],
+    "reference_seed": 2025,
+    "activation_statistics": [
+      "within_4mm_mean",
+      "near_4_10mm_mean",
+      "maximum_within_4mm"
+    ],
+    "activation_rule": "SAE activations at the deployed grid positions (about 7 mm apart for FMCIB layer2 and 6 mm for VISTA3D stage2); region means use positions whose signed distance to the nodule surface is <= 4 mm (the nodule region used to train the dictionaries) and in (4, 10] mm, both non-empty for every patient; the target of each feature is its mean activation in the region where its training-patient mean is largest. Separate nodule-interior and 0-4 mm means are not used because the interior holds no grid position for 493 (FMCIB) and 115 (VISTA3D) of 1,686 patients",
+    "analysis": {
+      "cluster_correlation": 0.9,
+      "cluster_rule": "radiomics features are grouped by average-linkage clustering on 1 - |Spearman| among training patients, cut at |Spearman| 0.9; each group is represented by the member with the highest mean |Spearman| to the others",
+      "maximum_selected": 5,
+      "minimum_gain": 0.01,
+      "selection_rule": "forward selection of group representatives on training patients: targets and predictors are mapped to normal scores (quantile transform fitted on training patients); at each step the representative giving the largest gain in training R2 is added, up to five or until the gain falls below 0.01",
+      "permutations": 5,
+      "null_rule": "the same procedure on targets permuted within training and within development patients, pooled over all features of a site and encoder; the 99th percentile of permuted development R2 is the null threshold",
+      "explained_r2": 0.5,
+      "cross_seed_agreement": 0.8,
+      "minimum_active_development": 30,
+      "classes_rule": "explained: development R2 >= max(0.5, null threshold) and cross-seed agreement >= 0.8; partial: development R2 >= null threshold otherwise; unexplained: development R2 below the null threshold with at least 30 active development patients; inactive: fewer active patients. Cross-seed agreement is the median, over the 7 other seeds, of the Pearson correlation between the training-patient Spearman profiles (feature against every radiomics feature) of the reference feature and its matched feature",
+      "size_variable": "nodule__shape_VoxelVolume"
+    },
+    "review": {
+      "effect_rank": 50,
+      "categories": [
+        "unexplained",
+        "partial"
+      ],
+      "rule": "features for human review: stable in seed 2025, malignancy association confirmed beyond nodule volume in run 20261015_feature_candidates_nodule, among the 50 largest mean absolute first-order contributions to the fixed classifier's logit on development patients, and not explained by radiomics (category unexplained or partial)"
+    },
+    "effects": {
+      "top": 50,
+      "batch_size": 8,
+      "rule": "first-order effect of removing a feature on the malignancy logit: minus the sum over positions of activation times the dot product of its decoder direction (in deployed units) with the gradient of the logit at that position, for every development patient; the top features by mean absolute effect are then removed exactly (code set to zero) and the probability change recomputed through the fixed classifier"
+    }
+  },
+  "radiomics_features": 306,
+  "radiomics_groups": 98,
+  "null_thresholds": {
+    "fmcib:layer2:trained": -2.1962880216541658e-06,
+    "fmcib:layer2:random": -1.0100283177384786e-07,
+    "vista:stage2:trained": -6.631190137884812e-07,
+    "vista:stage2:random": -3.707985940515357e-08
+  },
+  "review_counts": {
+    "fmcib:layer2": {
+      "stable": 1442,
+      "malignancy_confirmed": 36,
+      "top_effect": 50,
+      "review": 2
+    },
+    "vista:stage2": {
+      "stable": 207,
+      "malignancy_confirmed": 22,
+      "top_effect": 50,
+      "review": 6
+    }
+  },
+  "effects": {
+    "fmcib:layer2": {
+      "dictionary": "20261014_sae_interpretation_trained_fmcib_layer2_e4_k8_s2025_nodule75",
+      "patients": 422,
+      "stable_features": 1442,
+      "top": 50,
+      "max_probability_difference_torch_vs_classifier": 4.4930407572252307e-07,
+      "first_order_vs_exact_correlation": 0.9541562946776742
+    },
+    "vista:stage2": {
+      "dictionary": "20261014_sae_interpretation_trained_vista_stage2_e4_k16_s2025_nodule16x",
+      "patients": 422,
+      "stable_features": 207,
+      "top": 50,
+      "max_probability_difference_torch_vs_classifier": 0.0,
+      "first_order_vs_exact_correlation": 0.9816005591138957
+    }
+  },
+  "configuration_sha256": "def123109660985d79bac53bce966b076028e45f472e110248327aafd6162bb1",
+  "source_sha256": {
+    "sae_radiomics.py": "f9bf2566e59ec2f6ce5e3600b3e96197a2994f5b225afe770a54217ccc3aab37",
+    "nodule_context.py": "20d65b59c01eb8266db9a7785244189cfd20fabeb7f71d6a0e64661d461923d8",
+    "nodule_mask.py": "dc22496421908f48352f8a04f1a9cdfa283ed248799bd189ba3165b44c23ac04",
+    "sae_concepts.py": "cf95a4adb51fe568c862c68b66c35097644689110eb9db390ac133c7338f9bc3",
+    "sae_sites.py": "02b9223f4a5f4c3a0068e359ffee2acaa1786538172c67da78f4c4726530cdc2"
+  },
+  "exporter_sha256": "dbd061e12e8d77458f67355c9d93284cd31f7de0c83e19f1f1dc90854f05c83b",
+  "python": "3.12.14",
+  "created_at": "2026-10-17T09:10:28.246552+00:00",
+  "test_used": false
+}

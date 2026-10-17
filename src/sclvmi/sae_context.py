@@ -20,6 +20,7 @@ from tqdm import tqdm
 
 from .context import ROOT, context, read_json, sha256, timestamp, write_json
 from .models import load_encoder
+from .nodule_mask import target_component
 from .sae_campaign import digest
 from .sae_encoders import captured_sites, fmcib_prefix, random_encoder
 from .sae_geometry import fmcib_sampling_affine
@@ -68,17 +69,6 @@ def viewer_members(table):
     assert len(picked) == 128 and picked.PatientID.is_unique
     picked = picked.drop(columns="order").assign(viewer_split="discovery")
     return pd.concat([picked.sort_values("identifier"), chosen.sort_values("identifier")]).reset_index(drop=True)
-
-
-def target_component(mask):
-    labels, count = ndimage.label(mask > 0, structure=np.ones((3, 3, 3)))
-    assert count > 0, "Mask has no foreground"
-    center = tuple(np.asarray(mask.shape) // 2)
-    chosen = labels[center]
-    if chosen == 0:
-        points = np.argwhere(labels > 0)
-        chosen = labels[tuple(points[np.argmin(np.square(points - np.asarray(center)).sum(1))])]
-    return labels == chosen, count
 
 
 def sample_mask(native_mask, native_affine, input_affine, shape):

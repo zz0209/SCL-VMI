@@ -32,6 +32,8 @@ REUSED_ROOT = Path(context()[0]["runs"]) / WHOLE["reused_caches"]["run_id"] / "b
 WHOLE_REGIONS = ["all", "lung", "liver", "other_tissue", "high_hu", "edge_air"]
 WHOLE_RANKINGS = ["id", "maximum", "reappearance", "lung_enrichment", "liver_enrichment", "outside_fraction", "high_hu_fraction"]
 AUTOINTERP_RUNS = [read_json(PROJECT_ROOT / name) for name in ["configs/sae_autointerp.json", "configs/sae_autointerp_matched.json"]]
+RADIOMICS = read_json(PROJECT_ROOT / "configs/sae_radiomics.json")
+RADIOMICS_ROOT = Path(context()[0]["runs"]) / RADIOMICS["run_id"] / "analysis"
 
 
 def index():
@@ -307,7 +309,38 @@ def detail(run, feature):
         "discovery_patients": summary["discovery_patients"], "confirmation_patients": summary["confirmation_patients"],
         "strongest_case": int(table["strongest"][feature]),
         "autointerp": autointerp(run, feature),
+        "radiomics": radiomics(run, feature),
     }
+
+
+@lru_cache(maxsize=1)
+def radiomics_results():
+    explanations = pd.read_csv(RADIOMICS_ROOT / "explanations.csv").set_index(["site", "encoder", "feature"])
+    terms = {(row["site"], row["encoder"], row["feature"]): row for row in read_json(RADIOMICS_ROOT / "explanation_terms.json")}
+    effects = pd.read_csv(RADIOMICS_ROOT / "trained_features.csv").set_index(["site", "feature"])
+    return explanations, terms, effects, read_json(RADIOMICS_ROOT / "summary.json")
+
+
+def radiomics(run, feature):
+    # Only stable features of the reference seed at the two analysed sites have a radiomics comparison.
+    spec = entry(run)
+    site = f"{spec['model']}:{spec['site']}"
+    if site not in RADIOMICS["sites"] or spec["seed"] != RADIOMICS["reference_seed"] or not (RADIOMICS_ROOT / "review.json").exists():
+        return None
+    explanations, terms, effects, summary = radiomics_results()
+    key = (site, spec["encoder"], feature)
+    if key not in explanations.index:
+        return {"analysed": False}
+    row = explanations.loc[key]
+    result = {"analysed": True, "category": row.category, "development_r2": finite(row.development_r2), "train_r2": finite(row.train_r2), "null_threshold": round(float(row.null_threshold), 4) + 0.0,
+              "explained_r2": RADIOMICS["analysis"]["explained_r2"], "cross_seed_agreement": finite(row.cross_seed_agreement), "peak_region": row.peak_region, "active_development": int(row.active_development),
+              "radiomics_features": summary["radiomics_features"], "radiomics_groups": summary["radiomics_groups"], **{name: terms[key][name] for name in ["explanation", "top_raw", "top_size_adjusted"]}}
+    if spec["encoder"] == "trained":
+        effect = effects.loc[(site, feature)]
+        result["classifier"] = {"contribution_mean": finite(effect.contribution_mean), "contribution_mean_abs": finite(effect.contribution_mean_abs), "effect_rank": int(effect.effect_rank),
+                                "stable_features": int((effects.index.get_level_values(0) == site).sum()), "removal_logit_change_mean": finite(effect.removal_logit_change_mean),
+                                "malignancy_confirmed": bool(effect.malignancy_confirmed), "review": bool(effect.review)}
+    return result
 
 
 def autointerp_features(output):

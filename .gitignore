@@ -20,6 +20,7 @@
 !/configs/sae_interpretation.json
 !/configs/sae_autointerp.json
 !/configs/sae_autointerp_matched.json
+!/configs/sae_radiomics.json
 !/configs/environments/
 /configs/environments/*
 !/configs/environments/pipeline.json
@@ -63,6 +64,7 @@
 !/scripts/pipeline/export_sae_interpretation_results.py
 !/scripts/pipeline/export_sae_nodule_coverage.py
 !/scripts/pipeline/export_sae_autointerp.py
+!/scripts/pipeline/export_sae_radiomics.py
 !/scripts/pipeline/summarize_sae_interpretation.py
 !/scripts/sae_validation/
 /scripts/sae_validation/*
@@ -131,6 +133,10 @@
 !/src/sclvmi/sae_interp_coverage.py
 !/src/sclvmi/sae_autointerp.py
 !/src/sclvmi/sae_autointerp_model.py
+!/src/sclvmi/nodule_mask.py
+!/src/sclvmi/nodule_context.py
+!/src/sclvmi/sae_radiomics.py
+!/src/sclvmi/sae_concepts.py
 !/scripts/pipeline/check_sae_campaign_defined_diagnostics.py
 
 !/tests/
@@ -244,6 +250,19 @@
 !/results/20261015_sae_nodule_coverage/provenance.json
 !/results/20261015_sae_nodule_coverage/coverage.png
 !/results/20261015_sae_nodule_coverage/coverage.svg
+!/results/20261017_sae_radiomics/
+/results/20261017_sae_radiomics/*
+!/results/20261017_sae_radiomics/README.md
+!/results/20261017_sae_radiomics/categories.csv
+!/results/20261017_sae_radiomics/explanations.csv
+!/results/20261017_sae_radiomics/trained_features.csv
+!/results/20261017_sae_radiomics/review_list.csv
+!/results/20261017_sae_radiomics/radiomics_groups.csv
+!/results/20261017_sae_radiomics/provenance.json
+!/results/20261017_sae_radiomics/explained_variance.png
+!/results/20261017_sae_radiomics/explained_variance.svg
+!/results/20261017_sae_radiomics/review.png
+!/results/20261017_sae_radiomics/review.svg
 
 !/local_tools/
 /local_tools/*

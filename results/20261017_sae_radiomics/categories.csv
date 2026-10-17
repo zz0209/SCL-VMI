@@ -1,0 +1,5 @@
+site,encoder,explained,inactive,partial,unexplained
+fmcib:layer2,random,16,555,120,7
+fmcib:layer2,trained,1,1202,229,10
+vista:stage2,random,0,0,54,0
+vista:stage2,trained,3,47,157,0

@@ -40,7 +40,7 @@ function loading(message,error=false){
   el('viewer-loading').hidden=false;el('viewer-loading-text').textContent=text(message);document.querySelector('.viewer-grid').style.visibility='hidden';state.meta=null;state.rects={};
   for(const axis of [0,1,2]){const canvas=el(`canvas-${axis}`);canvas.getContext('2d').clearRect(0,0,canvas.width,canvas.height);el(`slice-${axis}`).disabled=true;el(`position-${axis}`).textContent='';}
   for(const id of ['peak','center','strongest','reset-scale'])el(id).disabled=true;
-  for(const id of ['map-stats','point-value','map-label','geometry-note','case-label','stability-summary','stability-table','region-bars','region-note','malignancy-values','malignancy-note','control-values','control-note','evidence-scope','autointerp-runs'])el(id).replaceChildren();
+  for(const id of ['map-stats','point-value','map-label','geometry-note','case-label','stability-summary','stability-table','region-bars','region-note','malignancy-values','malignancy-note','control-values','control-note','evidence-scope','autointerp-runs','radiomics-values','radiomics-terms','radiomics-note'])el(id).replaceChildren();
   state.detail=null;
 }
 function report(error){if(error.name==='AbortError')return;el('loading').textContent='';el('error-message').textContent=error.message;el('error').hidden=false;loading('影像读取失败。可以重新读取，或选择另一份图像。',true);}
@@ -147,7 +147,28 @@ function showEvidence(){
     el('control-note').textContent=text('当前为随机权重 encoder 的对照字典。');
   }
   el('evidence-scope').textContent=`${text('统计使用每名患者一个结节记录')}：discovery ${detail.discovery_patients} · confirmation ${detail.confirmation_patients}。${text('这些是描述性统计，医学含义需要独立证据；独立测试集未使用。')}`;
+  showRadiomics(detail.radiomics,number);
   showAutointerp(detail.autointerp,number);
+}
+function radiomicsName(name){
+  const [region,feature]=name.split('__'),regions={nodule:'结节',margin_0_4mm:'表面外 0–4 mm',near_4_10mm:'表面外 4–10 mm',contact:'位置与接触'};
+  return `${text(regions[region])} · ${feature}`;
+}
+function showRadiomics(result,number){
+  el('radiomics-card').hidden=!result;if(!result)return;
+  if(!result.analysed){el('radiomics-note').textContent=text('只分析参照 seed 2025 中的稳定 Feature；当前 Feature 不在分析范围内。');return;}
+  const categories={explained:'可由 radiomics 解释',partial:'部分可由 radiomics 解释',unexplained:'无法由 radiomics 解释',inactive:'开发集激活患者不足'};
+  const regions={within_4mm_mean:'结节表面 4 mm 以内平均',near_4_10mm_mean:'表面外 4–10 mm 平均'};
+  const rows=[['判定',text(categories[result.category])],['radiomics 组合的开发集 R²',number(result.development_r2)],['打乱对照的 99% 分位',number(result.null_threshold)],['跨 seed 一致性',number(result.cross_seed_agreement)],['分析的响应区域',text(regions[result.peak_region])],['开发集中有响应的患者',result.active_development]];
+  if(result.classifier){const effect=result.classifier,yes=value=>text(value?'是':'否');rows.push(['对固定分类器 logit 的平均贡献',number(effect.contribution_mean)],['贡献绝对值排名',`${effect.effect_rank} / ${effect.stable_features}`],['去除后 logit 的平均变化',number(effect.removal_logit_change_mean)],['控制大小后的恶性关联已确认',yes(effect.malignancy_confirmed)],['列入人工审阅清单',yes(effect.review)]);}
+  evidenceRows(el('radiomics-values'),rows);
+  const list=(title,items,value)=>{const block=node('div',null,'radiomics-terms');block.append(node('strong',text(title)));const entries=node('ul');entries.append(...items.map(item=>node('li',`${radiomicsName(item.name)} ${value(item)}`)));block.append(entries);return block;};
+  const blocks=[];
+  if(result.explanation.length)blocks.push(list('逐步选入的 radiomics 特征（训练集）',result.explanation,item=>item.sign>0?'(+)':'(−)'));
+  blocks.push(list('控制结节体积后相关最高的 radiomics 特征',result.top_size_adjusted,item=>`ρ ${number(item.rho)}`));
+  el('radiomics-terms').replaceChildren(...blocks);
+  el('radiomics-note').textContent=text('目标为每名患者在该区域的平均激活。{features} 个 radiomics 特征（PyRadiomics，1 mm 重采样）按 |Spearman| ≥ 0.9 合并为 {groups} 组，在训练集患者上逐步选入最多 5 组的代表特征，在开发集患者上计算 R²。可解释：R² ≥ {explained} 且超过打乱对照，并且与其他 seed 对应 Feature 的相关模式一致。贡献为一阶近似：激活 × decoder 方向与 logit 梯度的内积，正值推向恶性；去除变化为前 50 个 Feature 的精确计算。')
+    .replace('{features}',result.radiomics_features).replace('{groups}',result.radiomics_groups).replace('{explained}',number(result.explained_r2));
 }
 function showAutointerp(entries,number){
   el('autointerp-card').hidden=!entries.length;

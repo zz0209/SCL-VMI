@@ -110,8 +110,7 @@ class SpatialEncoder:
         captures["final"] = final
         return captures
 
-    @torch.inference_mode()
-    def continue_from(self, site, tensor):
+    def forward_from(self, site, tensor):
         tensor = tensor.to(self.device)
         if self.name == "vista":
             index = int(site.removeprefix("stage"))
@@ -125,6 +124,19 @@ class SpatialEncoder:
             for number in range(index + 1, 5):
                 tensor = getattr(self.model, f"layer{number}")(tensor)
         return tensor
+
+    @torch.inference_mode()
+    def continue_from(self, site, tensor):
+        return self.forward_from(site, tensor)
+
+    def logit(self, final):
+        if self.name == "fmcib":
+            scaler, logistic = self.head[0], self.head[-1]
+            vector = torch.nn.functional.adaptive_avg_pool3d(final, (2, 2, 2)).flatten(1)
+            mean, scale = (torch.as_tensor(value, dtype=final.dtype, device=final.device) for value in [scaler.mean_, scaler.scale_])
+            weight, bias = (torch.as_tensor(value, dtype=final.dtype, device=final.device) for value in [logistic.coef_[0], logistic.intercept_])
+            return (vector - mean) / scale @ weight + bias
+        return self.head(final.flatten(2).transpose(1, 2))
 
     @torch.inference_mode()
     def probability(self, final):
