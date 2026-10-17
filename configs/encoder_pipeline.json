@@ -1,0 +1,76 @@
+{
+  "suite": "20261017_encoder_pipeline",
+  "question": "how nnFoundation (CNN and ViT) and FlexiCT (3D teacher and the image tower of the 3D vision-language model) perform as frozen LUNA25 nodule classifiers under the project's established reference-field, local-field, descriptor and head standard, compared with the six existing encoders, the official LUNA25 I3D and the AutoMSC baseline",
+  "seed": 2025,
+  "models": {
+    "nnfoundation_cnn": {
+      "source": "nnfoundation_cnn",
+      "architecture": "ResEncL encoder (6 stages, 32-64-128-256-320-320 channels) built from the checkpoint adaptation plan with dynamic_network_architectures, encoder weights loaded strictly",
+      "normalization": "zscore",
+      "reference": {"shape": [64, 64, 64], "spacing_mm": [1.0, 1.0, 1.0]},
+      "local": {"shape": [64, 64, 64], "field_mm": 32},
+      "tokens": "last encoder stage (stride 32)",
+      "mid": "penultimate encoder stage (stride 16)",
+      "embedding": "spatial mean of the last stage, as in the official classification code"
+    },
+    "nnfoundation_cnn_native": {
+      "source": "nnfoundation_cnn",
+      "architecture": "same encoder as nnfoundation_cnn",
+      "normalization": "zscore",
+      "reference": {"field": "native", "stages": [-2, -1]},
+      "local": {"field": "native", "stages": [-3, -2]},
+      "input": "the provider crop at native spacing without resampling (128 x 128 x 64 voxels, median 0.66 x 0.66 x 2.0 mm, about 85 mm in plane), oriented to (S, P, L) and z-scored over the crop, as recommended for nnFoundation (z-score, no resampling)",
+      "reason": "with 64^3 inputs the last ResEncL stage has 2^3 positions, so its instance normalization works on 8 values per channel (6^3 for the recommended 192^3 patch); the native crop keeps 2 x 4 x 4 positions at the last stage and 4 x 8 x 8 at the penultimate one",
+      "tokens": "reference view: last stage (2 x 4 x 4); local view: penultimate stage (4 x 8 x 8) of the same input",
+      "mid": "reference view: penultimate stage; local view: stage 4 of 6 (8 x 16 x 16)",
+      "embedding": "spatial mean of the token stage"
+    },
+    "nnfoundation_vit": {
+      "source": "nnfoundation_vit",
+      "architecture": "PrimusX (EVA, 40 blocks, embedding 1056, 16 heads, 8^3 patches) built from the checkpoint adaptation plan; absolute position embedding resized trilinearly from the 24^3 pretraining grid to the input grid as in the official classification code",
+      "normalization": "zscore",
+      "reference": {"shape": [48, 48, 48], "spacing_mm": [1.3333333333333333, 1.3333333333333333, 1.3333333333333333]},
+      "local": {"shape": [48, 48, 48], "field_mm": 32},
+      "mid_block": 30,
+      "tokens": "final EVA output after the final norm",
+      "mid": "output of block 30 of 40 with the final norm applied",
+      "embedding": "mean of the final patch tokens, as in the official classification code"
+    },
+    "flexict_3d": {
+      "source": "flexict",
+      "checkpoint": "ct_3d_teacher.pth",
+      "architecture": "FlexiCT ViT backbone (16 blocks, embedding 864, 12 heads, 8^3 patches, 3D RoPE, 4 storage tokens), teacher weights loaded with the official loader",
+      "normalization": "clip_zscore",
+      "reference": {"shape": [48, 48, 48], "spacing_mm": [1.5, 1.5, 1.5]},
+      "local": {"shape": [48, 48, 48], "field_mm": 50},
+      "mid_block": 12,
+      "tokens": "final normalized patch tokens",
+      "mid": "output of block 12 of 16 with the final norm applied (official get_intermediate_layers)",
+      "embedding": "final normalized CLS token, the official image representation"
+    },
+    "flexict_vlm": {
+      "source": "flexict",
+      "checkpoint": "ct_3d_vlm.pth",
+      "architecture": "vision tower of FlexiCT-3D-VLM (same backbone as flexict_3d after report alignment); vision_model weights loaded strictly, text tower unused",
+      "normalization": "clip_zscore",
+      "reference": {"shape": [48, 48, 48], "spacing_mm": [1.5, 1.5, 1.5]},
+      "local": {"shape": [48, 48, 48], "field_mm": 50},
+      "mid_block": 12,
+      "tokens": "final normalized patch tokens",
+      "mid": "output of block 12 of 16 with the final norm applied (official get_intermediate_layers)",
+      "embedding": "final normalized CLS token"
+    }
+  },
+  "field_rule": "nodule-centred physical crop at the provider crop centre, resampled with linear interpolation in LPS world coordinates and arranged as (S, P, L) arrays like SimpleITK; padding -1024 HU. Reference fields: 64 mm for nnFoundation, 72 mm at the 1.5 mm FlexiCT pretraining spacing. Local fields keep the tensor shape: 32 mm for nnFoundation, 50 mm for FlexiCT (spacing within 1.5x of pretraining, as for VISTA3D)",
+  "normalization_rule": "zscore: (x - mean) / std over the input field without clipping (nnU-Net ZScoreNormalization used for nnFoundation pretraining); clip_zscore: clip to [-1000, 1000] HU, then z-score over the input field (FlexiCT preprocessing)",
+  "reference_heads": ["native_linear", "spatial_linear", "native_mlp", "mean", "max", "attention"],
+  "linear_arms": ["reference_meanmax", "local_meanmax", "local_multistage", "two_view"],
+  "local_head": "max",
+  "learning_rates": [0.0001, 0.0003],
+  "repeat_seeds": [2026, 2027],
+  "epochs": 60,
+  "selection": "development AUROC with log-loss tie break; neural learning rate chosen on seed 2025, neural rows compared by three-seed means, linear rows by their deterministic fit",
+  "test_policy": "reserved",
+  "encoder_policy": "frozen",
+  "precision": "float32, TF32 disabled"
+}

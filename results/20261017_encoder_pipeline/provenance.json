@@ -1,0 +1,261 @@
+{
+  "created_at": "2026-10-17T10:50:31.293236+00:00",
+  "source_sha256": "914108809dbbf08e57f5aa5cc58cc7509f1863994da41091c42cbb06a7fc2b27",
+  "specification_sha256": "a84d8d8aeff4e8794ab6e9c00c0e148b472aee9f5ed2ba81a7a02a365f9f799a",
+  "resamples": 2000,
+  "seed": 2025,
+  "test_used": false,
+  "aggregation": "mean of metrics across the selected configuration's seeds; configuration selection used development data",
+  "prediction_sha256": {
+    "fmcib": [
+      "c14b6c42d85459f4bb3c42145727b3c2f2466199f272a46fcb87a348e68e4038"
+    ],
+    "ctfm": [
+      "2b05860858a0d6c5bd004c5eb881b5f5585d8496b1a649fb17a45c50b0678789",
+      "93c711402ac2c226334659c05aea3a9f0a3f7348c3e1c8aae56c444c242e3167",
+      "550679b5f7d5cff5ea9a1df978464ea9ac9517af19591cc7e6061bef934cade9"
+    ],
+    "vista": [
+      "5a722e12a51e8abdc78374ed604633ce96fc51c7178b452caa7b95266db124a4",
+      "46e059f31d70dcd1e71414cdedeeeb6c5e83d400ce8469f209db742322994c7c",
+      "2cda50285c03e73868d8acec05303d2ef2ec470c1b0ee112eeff5e3ec5e3d194"
+    ],
+    "genesis": [
+      "5da5bdc0308f639a179f49e363dcc2f84af41a9c0f8ff523177604a4e79a799f",
+      "4fa1b7318b4317fe332c1d5c8fb7973756c7c180b09aeebed83c70fae935dfa5",
+      "7a8809688a7125fb0291fbf9ad4f05b73bc0db948c9798a1d9f33b545de5d408"
+    ],
+    "coralbay": [
+      "eed7770ed44dd11a88da3c041af5a3985ec1592d3d882feca961e17a01cda008"
+    ],
+    "tapct": [
+      "7557921c6aa9d7dd2803dd3630ed0aba62f4b753e6cb1cee2332de2966d50343"
+    ],
+    "nnfoundation_cnn": [
+      "0c53387d2b450a4a06d724f6a2b86988bf1d9870ce2f1f97e2d62d714ef5ae4b"
+    ],
+    "nnfoundation_cnn_native": [
+      "76b3df7e86a81b6697b57de12915b59a07817f288ad60285d46acf59796f3856"
+    ],
+    "nnfoundation_vit": [
+      "fb4a56df9d4e7f2669fe514e0fb1a721445fd59dd3e9ad73b8a9490629f3bde8",
+      "5c38e132b4b98e8a14b1dc960ef7b941695440973ae41ce9b89f8306d8539044",
+      "680364f3a72f4cc9e70b14ebea8863c37cfbe68a137e454b0fd8ebe71b00d6d2"
+    ],
+    "flexict_3d": [
+      "2b303053306a7155b1c0e31c0838b3cfaa8143fe4d3a86501bbc89ad4e7cfdac",
+      "52dd682c605f5b94f784740147a9ad0c1bb1bed643b1a0ffa4f0bc1d13c11589",
+      "0302771b33f499c6e392fedea70012b9ce82955a8a0a1113eb1bd03375e2f56a"
+    ],
+    "flexict_vlm": [
+      "0d1ef8730c10e361b209a968700aaaebd5ea6cef6ba9557bc5bc487807dcc8cc",
+      "53a16d8380696eb2610bfe853131e4cc95b14e86e2d0a10eae4b89a33fdfb27b",
+      "7b63737657556767c49ace5aa9662ee3820b6a2c72cfcc83dadfe4a33949f40c"
+    ],
+    "i3d": [
+      "59927d383f04b78f59f94afbc4858b7dd86f12f3c5601a407215c54506492ffd"
+    ]
+  },
+  "specification": {
+    "suite": "20261017_encoder_pipeline",
+    "question": "how nnFoundation (CNN and ViT) and FlexiCT (3D teacher and the image tower of the 3D vision-language model) perform as frozen LUNA25 nodule classifiers under the project's established reference-field, local-field, descriptor and head standard, compared with the six existing encoders, the official LUNA25 I3D and the AutoMSC baseline",
+    "seed": 2025,
+    "models": {
+      "nnfoundation_cnn": {
+        "source": "nnfoundation_cnn",
+        "architecture": "ResEncL encoder (6 stages, 32-64-128-256-320-320 channels) built from the checkpoint adaptation plan with dynamic_network_architectures, encoder weights loaded strictly",
+        "normalization": "zscore",
+        "reference": {
+          "shape": [
+            64,
+            64,
+            64
+          ],
+          "spacing_mm": [
+            1.0,
+            1.0,
+            1.0
+          ]
+        },
+        "local": {
+          "shape": [
+            64,
+            64,
+            64
+          ],
+          "field_mm": 32
+        },
+        "tokens": "last encoder stage (stride 32)",
+        "mid": "penultimate encoder stage (stride 16)",
+        "embedding": "spatial mean of the last stage, as in the official classification code"
+      },
+      "nnfoundation_cnn_native": {
+        "source": "nnfoundation_cnn",
+        "architecture": "same encoder as nnfoundation_cnn",
+        "normalization": "zscore",
+        "reference": {
+          "field": "native",
+          "stages": [
+            -2,
+            -1
+          ]
+        },
+        "local": {
+          "field": "native",
+          "stages": [
+            -3,
+            -2
+          ]
+        },
+        "input": "the provider crop at native spacing without resampling (128 x 128 x 64 voxels, median 0.66 x 0.66 x 2.0 mm, about 85 mm in plane), oriented to (S, P, L) and z-scored over the crop, as recommended for nnFoundation (z-score, no resampling)",
+        "reason": "with 64^3 inputs the last ResEncL stage has 2^3 positions, so its instance normalization works on 8 values per channel (6^3 for the recommended 192^3 patch); the native crop keeps 2 x 4 x 4 positions at the last stage and 4 x 8 x 8 at the penultimate one",
+        "tokens": "reference view: last stage (2 x 4 x 4); local view: penultimate stage (4 x 8 x 8) of the same input",
+        "mid": "reference view: penultimate stage; local view: stage 4 of 6 (8 x 16 x 16)",
+        "embedding": "spatial mean of the token stage"
+      },
+      "nnfoundation_vit": {
+        "source": "nnfoundation_vit",
+        "architecture": "PrimusX (EVA, 40 blocks, embedding 1056, 16 heads, 8^3 patches) built from the checkpoint adaptation plan; absolute position embedding resized trilinearly from the 24^3 pretraining grid to the input grid as in the official classification code",
+        "normalization": "zscore",
+        "reference": {
+          "shape": [
+            48,
+            48,
+            48
+          ],
+          "spacing_mm": [
+            1.3333333333333333,
+            1.3333333333333333,
+            1.3333333333333333
+          ]
+        },
+        "local": {
+          "shape": [
+            48,
+            48,
+            48
+          ],
+          "field_mm": 32
+        },
+        "mid_block": 30,
+        "tokens": "final EVA output after the final norm",
+        "mid": "output of block 30 of 40 with the final norm applied",
+        "embedding": "mean of the final patch tokens, as in the official classification code"
+      },
+      "flexict_3d": {
+        "source": "flexict",
+        "checkpoint": "ct_3d_teacher.pth",
+        "architecture": "FlexiCT ViT backbone (16 blocks, embedding 864, 12 heads, 8^3 patches, 3D RoPE, 4 storage tokens), teacher weights loaded with the official loader",
+        "normalization": "clip_zscore",
+        "reference": {
+          "shape": [
+            48,
+            48,
+            48
+          ],
+          "spacing_mm": [
+            1.5,
+            1.5,
+            1.5
+          ]
+        },
+        "local": {
+          "shape": [
+            48,
+            48,
+            48
+          ],
+          "field_mm": 50
+        },
+        "mid_block": 12,
+        "tokens": "final normalized patch tokens",
+        "mid": "output of block 12 of 16 with the final norm applied (official get_intermediate_layers)",
+        "embedding": "final normalized CLS token, the official image representation"
+      },
+      "flexict_vlm": {
+        "source": "flexict",
+        "checkpoint": "ct_3d_vlm.pth",
+        "architecture": "vision tower of FlexiCT-3D-VLM (same backbone as flexict_3d after report alignment); vision_model weights loaded strictly, text tower unused",
+        "normalization": "clip_zscore",
+        "reference": {
+          "shape": [
+            48,
+            48,
+            48
+          ],
+          "spacing_mm": [
+            1.5,
+            1.5,
+            1.5
+          ]
+        },
+        "local": {
+          "shape": [
+            48,
+            48,
+            48
+          ],
+          "field_mm": 50
+        },
+        "mid_block": 12,
+        "tokens": "final normalized patch tokens",
+        "mid": "output of block 12 of 16 with the final norm applied (official get_intermediate_layers)",
+        "embedding": "final normalized CLS token"
+      }
+    },
+    "field_rule": "nodule-centred physical crop at the provider crop centre, resampled with linear interpolation in LPS world coordinates and arranged as (S, P, L) arrays like SimpleITK; padding -1024 HU. Reference fields: 64 mm for nnFoundation, 72 mm at the 1.5 mm FlexiCT pretraining spacing. Local fields keep the tensor shape: 32 mm for nnFoundation, 50 mm for FlexiCT (spacing within 1.5x of pretraining, as for VISTA3D)",
+    "normalization_rule": "zscore: (x - mean) / std over the input field without clipping (nnU-Net ZScoreNormalization used for nnFoundation pretraining); clip_zscore: clip to [-1000, 1000] HU, then z-score over the input field (FlexiCT preprocessing)",
+    "reference_heads": [
+      "native_linear",
+      "spatial_linear",
+      "native_mlp",
+      "mean",
+      "max",
+      "attention"
+    ],
+    "linear_arms": [
+      "reference_meanmax",
+      "local_meanmax",
+      "local_multistage",
+      "two_view"
+    ],
+    "local_head": "max",
+    "learning_rates": [
+      0.0001,
+      0.0003
+    ],
+    "repeat_seeds": [
+      2026,
+      2027
+    ],
+    "epochs": 60,
+    "selection": "development AUROC with log-loss tie break; neural learning rate chosen on seed 2025, neural rows compared by three-seed means, linear rows by their deterministic fit",
+    "test_policy": "reserved",
+    "encoder_policy": "frozen",
+    "precision": "float32, TF32 disabled"
+  },
+  "model_sources": {
+    "nnfoundation_cnn": {
+      "repo_id": "MIC-DKFZ/nnFoundationCNN",
+      "revision": "f443c09319988e833b3d9589bf95909e4443d7b2",
+      "license": "CC-BY-SA-4.0 weights; nnssl and nnU-Net Apache-2.0 code",
+      "paper": "arXiv:2609.26924"
+    },
+    "nnfoundation_vit": {
+      "repo_id": "MIC-DKFZ/nnFoundationViT",
+      "revision": "c691f2115140458ec64017712eb8ebbc8dde6ae4",
+      "license": "CC-BY-SA-4.0 weights; nnssl and nnU-Net Apache-2.0 code",
+      "paper": "arXiv:2609.26924"
+    },
+    "flexict": {
+      "code": "https://github.com/ricklisz/FlexiCT",
+      "revision": "fd74ac06a31813fe02805674e96f811e9b2a5c43",
+      "google_drive": {
+        "ct_3d_teacher.pth": "1Y599UnO4ab-vJCVhn5eOI8fECoHVWRyv",
+        "ct_3d_vlm.pth": "1VXKbaIaViTXq26k8FfcscC5wxh7VxKrm"
+      },
+      "license": "MIT code; CC-BY-NC-ND-4.0 checkpoints (research use, no redistribution of derived weights)",
+      "paper": "arXiv:2605.21906"
+    }
+  }
+}

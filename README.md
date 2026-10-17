@@ -2,7 +2,7 @@
 
 **Sparse Concept Learning in Volumetric Medical Imaging**
 
-This repository implements lung nodule malignancy classification on the LUNA25 subset of FLARE-AutoMSC. Six pretrained encoders are evaluated with frozen weights. The code exposes their representations for subsequent concept-learning experiments.
+This repository implements lung nodule malignancy classification on the LUNA25 subset of FLARE-AutoMSC. Ten pretrained encoders are evaluated with frozen weights. The code exposes their representations for subsequent concept-learning experiments.
 
 ## Development results
 
@@ -17,6 +17,12 @@ Each input is centered on the provider's nodule crop. The training partition con
 | CoralBay | 32 mm | Adjacent-stage descriptors with linear classification | 0.8606 | 0.4675 |
 | TAP-CT | 32 mm | Window CLS and patch summaries with linear classification | 0.8768 | 0.5046 |
 | Official LUNA25 I3D, trained locally | 50 mm | Upstream classifier | 0.8938 | 0.5293 |
+| FlexiCT-3D | 50 mm | Projected max pooling | 0.8966 | 0.4966 |
+| FlexiCT-3D-VLM image encoder | 50 mm | Projected max pooling | 0.8945 | 0.5208 |
+| nnFoundation ViT | 32 mm | Projected max pooling | 0.8897 | 0.5263 |
+| nnFoundation CNN | native crop | Three-stage mean+max with linear classification | 0.7656 | 0.2636 |
+
+The last four rows come from the [nnFoundation and FlexiCT comparison](results/20261017_encoder_pipeline/README.md), which applies the same reference-field, local-field, descriptor and head procedure to the new encoders. The masked-autoencoding nnFoundation CNN stays far lower with every frozen input and head tried; its paper evaluates classification with full fine-tuning.
 
 Development data is used for configuration selection. Neural-head results average three runs with consecutive seeds from 2025 through 2027. Linear heads use deterministic fits. Saved neural predictors use seed 2025. All selected pipelines use a single field of view. TAP-CT processes that field through 12-slice windows.
 
@@ -77,6 +83,7 @@ storage configuration.
 | Additional model dependencies | [prepare_frozen_heads.ps1](scripts/pipeline/prepare_frozen_heads.ps1) |
 | Frozen-head comparison | [fit_frozen_heads.py](scripts/pipeline/fit_frozen_heads.py) |
 | Local-field comparison | [prepare_materials.py](scripts/pipeline/prepare_materials.py) |
+| nnFoundation and FlexiCT pipelines | [inputs and features](src/sclvmi/encoder_features.py), [heads](src/sclvmi/encoder_pipeline.py), [selection and comparison](scripts/pipeline/compare_encoders.py); configuration [encoder_pipeline.json](configs/encoder_pipeline.json) |
 | Image and feature inference | [material_predict.py](src/sclvmi/material_predict.py) |
 | Spatial SAE training and inference | [sae.py](src/sclvmi/sae.py), [sae_predict.py](src/sclvmi/sae_predict.py) |
 | Multi-layer SAE comparison | [Input preparation](src/sclvmi/sae_campaign_data.py), [resumable training](src/sclvmi/sae_campaign_train.py), [fixed-classifier evaluation](src/sclvmi/sae_campaign_evaluate.py), [candidate selection](src/sclvmi/sae_campaign_compare.py), [PCA and seed diagnostics](src/sclvmi/sae_campaign_diagnostics.py) |

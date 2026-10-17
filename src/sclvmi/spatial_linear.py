@@ -10,7 +10,7 @@ from .frozen_features import MODELS, SUITE
 from .frozen_heads import fit_linear, load_features
 
 
-GRIDS = {"fmcib": (2,2,2), "ctfm": (2,4,4), "vista": (3,3,3), "genesis": (8,8,4), "coralbay": (2,2,2)}
+GRIDS = {"fmcib": (2,2,2), "ctfm": (2,4,4), "vista": (3,3,3), "genesis": (8,8,4), "coralbay": (2,2,2), "nnfoundation_cnn": (2,2,2), "nnfoundation_cnn_native": (2,4,4),"nnfoundation_vit": (6,6,6), "flexict_3d": (6,6,6), "flexict_vlm": (6,6,6)}
 
 
 def spatial_vector(tokens, name):

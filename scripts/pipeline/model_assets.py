@@ -25,19 +25,50 @@ REPOSITORIES = {
     "genesis": "MrGiovanni/ModelsGenesis",
     "vista": "nvidia/NV-Segment-CT",
     "automsc": "FLARE-MedFM/FLARE-AutoMSC-Val-Baseline",
+    "nnfoundation_cnn": "MIC-DKFZ/nnFoundationCNN",
+    "nnfoundation_vit": "MIC-DKFZ/nnFoundationViT",
 }
+
+
+def flexict(destination):
+    import gdown
+
+    source = SOURCES["flexict"]
+    directory = destination / "flexict" / source["revision"]
+    directory.mkdir(parents=True, exist_ok=True)
+    downloaded = []
+    for name, identifier in source["google_drive"].items():
+        path = directory / name
+        if not path.exists():
+            temporary = path.with_suffix(".part")
+            gdown.download(id=identifier, output=str(temporary), quiet=False, resume=True)
+            temporary.rename(path)
+        with path.open("rb") as handle:
+            downloaded.append({"path": name, "google_drive_id": identifier, "bytes": path.stat().st_size, "sha256": hashlib.file_digest(handle, "sha256").hexdigest()})
+    code = ROOT / "third_party/flexict"
+    if not code.exists():
+        subprocess.run(["git", "clone", source["code"], str(code)], check=True)
+    subprocess.run(["git", "-C", str(code), "checkout", "--detach", source["revision"]], check=True)
+    commit = subprocess.run(["git", "-C", str(code), "rev-parse", "HEAD"], capture_output=True, text=True, check=True).stdout.strip()
+    assert commit == source["revision"], commit
+    return {"code": source["code"], "code_revision": commit, "code_directory": str(code), "directory": str(directory), "downloaded": downloaded, "license": source["license"]}
 
 
 def main():
     parser = argparse.ArgumentParser()
     parser.add_argument("action", choices=["inspect", "download"])
-    parser.add_argument("--model", choices=[*REPOSITORIES, "fmcib"])
+    parser.add_argument("--model", choices=[*REPOSITORIES, "fmcib", "flexict"])
     args = parser.parse_args()
     destination = Path(STORAGE["checkpoints"]) / "published"
     destination.mkdir(parents=True, exist_ok=True)
-    names = [args.model] if args.model else [*REPOSITORIES, "fmcib"]
+    names = [args.model] if args.model else [*REPOSITORIES, "fmcib", "flexict"]
     for name in names:
-        if name == "fmcib":
+        if name == "flexict":
+            if args.action == "inspect":
+                print(json.dumps({name: SOURCES[name]}, indent=2), flush=True)
+                continue
+            manifest = flexict(destination)
+        elif name == "fmcib":
             source = SOURCES[name]
             url = source["url"]
             if args.action == "inspect":
@@ -72,6 +103,8 @@ def main():
                 "genesis": ["Genesis_Chest_CT.pt", "README.md", "LICENSE*"],
                 "vista": ["vista3d_pretrained_model/model.pt", "vista3d_pretrained_model/config.json", "README.md", "LICENSE*"],
                 "automsc": ["automsc_baseline.tar.gz", "README.md", "LICENSE*"],
+                "nnfoundation_cnn": ["checkpoint_final.pth", "adaptation_plan.json", "README.md"],
+                "nnfoundation_vit": ["checkpoint_final.pth", "adaptation_plan.json", "README.md"],
             }[name]
             directory = destination / name / info.sha
             download_directory = Path("\\\\?\\" + str(directory.resolve())) if os.name == "nt" else directory

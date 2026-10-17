@@ -21,6 +21,7 @@
 !/configs/sae_autointerp.json
 !/configs/sae_autointerp_matched.json
 !/configs/sae_radiomics.json
+!/configs/encoder_pipeline.json
 !/configs/environments/
 /configs/environments/*
 !/configs/environments/pipeline.json
@@ -65,6 +66,7 @@
 !/scripts/pipeline/export_sae_nodule_coverage.py
 !/scripts/pipeline/export_sae_autointerp.py
 !/scripts/pipeline/export_sae_radiomics.py
+!/scripts/pipeline/compare_encoders.py
 !/scripts/pipeline/summarize_sae_interpretation.py
 !/scripts/sae_validation/
 /scripts/sae_validation/*
@@ -137,6 +139,8 @@
 !/src/sclvmi/nodule_context.py
 !/src/sclvmi/sae_radiomics.py
 !/src/sclvmi/sae_concepts.py
+!/src/sclvmi/encoder_features.py
+!/src/sclvmi/encoder_pipeline.py
 !/scripts/pipeline/check_sae_campaign_defined_diagnostics.py
 
 !/tests/
@@ -263,6 +267,15 @@
 !/results/20261017_sae_radiomics/explained_variance.svg
 !/results/20261017_sae_radiomics/review.png
 !/results/20261017_sae_radiomics/review.svg
+!/results/20261017_encoder_pipeline/
+/results/20261017_encoder_pipeline/*
+!/results/20261017_encoder_pipeline/README.md
+!/results/20261017_encoder_pipeline/comparison.csv
+!/results/20261017_encoder_pipeline/paired_differences.csv
+!/results/20261017_encoder_pipeline/candidates.csv
+!/results/20261017_encoder_pipeline/provenance.json
+!/results/20261017_encoder_pipeline/comparison.png
+!/results/20261017_encoder_pipeline/comparison.svg
 
 !/local_tools/
 /local_tools/*
