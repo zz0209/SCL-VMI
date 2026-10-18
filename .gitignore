@@ -69,6 +69,7 @@
 !/scripts/pipeline/export_sae_autointerp.py
 !/scripts/pipeline/export_sae_radiomics.py
 !/scripts/pipeline/compare_encoders.py
+!/scripts/pipeline/compare_automsc.py
 !/scripts/pipeline/summarize_sae_interpretation.py
 !/scripts/sae_validation/
 /scripts/sae_validation/*
@@ -284,6 +285,22 @@
 !/results/20261017_encoder_pipeline/layers_fields_main.svg
 !/results/20261017_encoder_pipeline/layers_fields_extension.png
 !/results/20261017_encoder_pipeline/layers_fields_extension.svg
+!/results/20261017_automsc_development/
+/results/20261017_automsc_development/*
+!/results/20261017_automsc_development/README.md
+!/results/20261017_automsc_development/comparison.csv
+!/results/20261017_automsc_development/paired_differences.csv
+!/results/20261017_automsc_development/provenance.json
+!/results/20261017_automsc_development/comparison.png
+!/results/20261017_automsc_development/comparison.svg
+!/results/20261018_all_pipeline_development/
+/results/20261018_all_pipeline_development/*
+!/results/20261018_all_pipeline_development/README.md
+!/results/20261018_all_pipeline_development/comparison.csv
+!/results/20261018_all_pipeline_development/paired_differences.csv
+!/results/20261018_all_pipeline_development/provenance.json
+!/results/20261018_all_pipeline_development/comparison.png
+!/results/20261018_all_pipeline_development/comparison.svg
 
 !/local_tools/
 /local_tools/*

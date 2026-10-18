@@ -1,5 +1,7 @@
 # LUNA25 development results · 2026-09-26
 
+- [Eight-pipeline comparison with completed AutoMSC](../20261017_automsc_development/README.md)
+- [Twelve-pipeline comparison including nnFoundation and FlexiCT](../20261018_all_pipeline_development/README.md)
 - [Selected aggregate results](selected.csv)
 - [Candidate aggregate results](ablation.csv)
 - [Pipeline and candidate comparison](comparison.png)

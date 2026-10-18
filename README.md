@@ -2,7 +2,7 @@
 
 **Sparse Concept Learning in Volumetric Medical Imaging**
 
-This repository implements lung nodule malignancy classification on the LUNA25 subset of FLARE-AutoMSC. Ten pretrained encoders are evaluated with frozen weights. The code exposes their representations for subsequent concept-learning experiments.
+This repository implements lung nodule malignancy classification on the LUNA25 subset of FLARE-AutoMSC. Ten pretrained encoders are evaluated with frozen weights, alongside the trained official LUNA25 I3D and AutoMSC baselines. The code exposes their representations for subsequent concept-learning experiments.
 
 ## Development results
 
@@ -21,13 +21,16 @@ Each input is centered on the provider's nodule crop. The training partition con
 | FlexiCT-3D-VLM image encoder | 40 mm | Projected max pooling on block 10 of 16 | 0.9129 | 0.5437 |
 | nnFoundation ViT | 32 mm | Projected max pooling | 0.8897 | 0.5263 |
 | nnFoundation CNN | native crop | Three-stage mean+max with linear classification | 0.7656 | 0.2636 |
+| AutoMSC | Provider crop with official preprocessing | Official joint classification and segmentation model | 0.8797 | 0.5108 |
 
-The last four rows come from the [nnFoundation and FlexiCT comparison](results/20261017_encoder_pipeline/README.md).
+The nnFoundation and FlexiCT rows come from the [encoder comparison](results/20261017_encoder_pipeline/README.md).
 - **Procedure:** the same reference-field, local-field, descriptor and head procedure as for the existing encoders.
 - **FlexiCT:** an added comparison of fields (32–64 mm) and layers (blocks 4–16) found block 10 with 32–40 mm fields best. With the final block and the standard procedure, FlexiCT gave 0.8966 and 0.8945. The FlexiCT rows involve more development-based selection than the others.
 - **nnFoundation CNN:** the masked-autoencoding CNN stays far lower with every frozen input and head tried; its paper evaluates classification with full fine-tuning.
 
 Development data is used for configuration selection. Neural-head results average three runs with consecutive seeds from 2025 through 2027. Linear heads use deterministic fits. Saved neural predictors use seed 2025. All selected pipelines use a single field of view. TAP-CT processes that field through 12-slice windows.
+
+AutoMSC completed its official 1,000-epoch recipe with classification labels and segmentation masks; its result and the I3D result each use one seed. AutoMSC AUROC is 0.8797 [0.8254, 0.9216]. Its paired AUROC difference against VISTA3D is −0.0143 [−0.0661, +0.0312]. The [twelve-pipeline comparison](results/20261018_all_pipeline_development/README.md) provides all metrics and 2,000 paired patient-bootstrap intervals; the [eight-pipeline comparison](results/20261017_automsc_development/README.md) retains the original six encoders and two official baselines.
 
 Direct development assets: [selected metrics](results/20260926_frozen_fm_development/selected.csv), [candidate metrics](results/20260926_frozen_fm_development/ablation.csv), [pipeline comparison](results/20260926_frozen_fm_development/comparison.png), [ROC/PR/calibration](results/20260926_frozen_fm_development/diagnostics.png), and [VISTA3D pooling comparison](results/20260926_frozen_fm_development/pooling_comparison.png). The [result index](results/20260926_frozen_fm_development/README.md) records the evaluation scope.
 
@@ -92,6 +95,7 @@ storage configuration.
 | Multi-layer SAE comparison | [Input preparation](src/sclvmi/sae_campaign_data.py), [resumable training](src/sclvmi/sae_campaign_train.py), [fixed-classifier evaluation](src/sclvmi/sae_campaign_evaluate.py), [candidate selection](src/sclvmi/sae_campaign_compare.py), [PCA and seed diagnostics](src/sclvmi/sae_campaign_diagnostics.py) |
 | Interpretation dictionaries | [inputs and random-weight encoders](src/sclvmi/sae_context.py), [cross-seed stability](src/sclvmi/sae_interp_stability.py), [fixed-classifier checks](src/sclvmi/sae_interp_evaluate.py), [feature statistics](src/sclvmi/sae_interp_profiles.py), [selection](src/sclvmi/sae_interp_select.py), [nodule-region pools](src/sclvmi/sae_nodule_pool.py) and [coverage](src/sclvmi/sae_interp_coverage.py), [feature candidates](src/sclvmi/sae_interp_candidates.py) and [their follow-up](src/sclvmi/sae_interp_followup.py), [automatic interpretation](src/sclvmi/sae_autointerp.py) with [model calls and validation](src/sclvmi/sae_autointerp_model.py), [radiomics](src/sclvmi/sae_radiomics.py) with [lung-boundary contact](src/sclvmi/nodule_context.py) and [concept comparison, classifier effects and review list](src/sclvmi/sae_concepts.py), [whole-CT maps](local_tools/viewers/feature_explorer/interpretation_whole.py) |
 | Official baseline adapters | [luna25.py](src/sclvmi/luna25.py), [automsc.py](src/sclvmi/automsc.py) |
+| AutoMSC and combined development comparison | [compare_automsc.py](scripts/pipeline/compare_automsc.py) |
 | Dataset and heatmap viewers | [Viewer setup and local asset requirements](local_tools/viewers/viewer.md) |
 
 The tested environment uses Python 3.12 with PyTorch 2.8.0 and CUDA 12.8 on Windows. Dependencies are specified in [pipeline.json](configs/environments/pipeline.json). Storage initialization creates the local path configuration. Dataset acquisition requires an approved Hugging Face account. Model revisions and license information are recorded in [model_sources.json](configs/model_sources.json).

@@ -1,5 +1,7 @@
 # nnFoundation and FlexiCT as frozen LUNA25 encoders
 
+The [twelve-pipeline comparison](../20261018_all_pipeline_development/README.md) includes the completed AutoMSC baseline and preserves the selected encoder configurations below.
+
 Suite `20261017_encoder_pipeline` evaluates nnFoundation (CNN and ViT; arXiv:2609.26924) and FlexiCT (the 3D self-supervised teacher and the image encoder of its 3D vision-language model; arXiv:2605.21906) as frozen encoders under the same procedure as the six existing encoders, and compares them with those encoders and the locally trained official LUNA25 I3D.
 
 ![Development comparison](comparison.png)

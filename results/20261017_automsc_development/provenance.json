@@ -1,0 +1,41 @@
+{
+  "created_at": "2026-10-18T11:33:04.848702+00:00",
+  "source_hash": "f8b8e28e432d8a2684adad07119486f2d3960e5b54cd0f63c2dd4cca9a8f855e",
+  "resamples": 2000,
+  "seed": 2025,
+  "test_used": false,
+  "aggregation": "Mean of metrics across existing seeds; no averaging of prediction probabilities",
+  "prediction_sha256": {
+    "fmcib": [
+      "c14b6c42d85459f4bb3c42145727b3c2f2466199f272a46fcb87a348e68e4038"
+    ],
+    "ctfm": [
+      "2b05860858a0d6c5bd004c5eb881b5f5585d8496b1a649fb17a45c50b0678789",
+      "93c711402ac2c226334659c05aea3a9f0a3f7348c3e1c8aae56c444c242e3167",
+      "550679b5f7d5cff5ea9a1df978464ea9ac9517af19591cc7e6061bef934cade9"
+    ],
+    "vista": [
+      "5a722e12a51e8abdc78374ed604633ce96fc51c7178b452caa7b95266db124a4",
+      "46e059f31d70dcd1e71414cdedeeeb6c5e83d400ce8469f209db742322994c7c",
+      "2cda50285c03e73868d8acec05303d2ef2ec470c1b0ee112eeff5e3ec5e3d194"
+    ],
+    "genesis": [
+      "5da5bdc0308f639a179f49e363dcc2f84af41a9c0f8ff523177604a4e79a799f",
+      "4fa1b7318b4317fe332c1d5c8fb7973756c7c180b09aeebed83c70fae935dfa5",
+      "7a8809688a7125fb0291fbf9ad4f05b73bc0db948c9798a1d9f33b545de5d408"
+    ],
+    "coralbay": [
+      "eed7770ed44dd11a88da3c041af5a3985ec1592d3d882feca961e17a01cda008"
+    ],
+    "tapct": [
+      "7557921c6aa9d7dd2803dd3630ed0aba62f4b753e6cb1cee2332de2966d50343"
+    ],
+    "i3d": [
+      "59927d383f04b78f59f94afbc4858b7dd86f12f3c5601a407215c54506492ffd"
+    ],
+    "automsc": [
+      "57ae181de9cd4e21f58cc645ab7838f862947ac76decfb482c7539f2078665d6"
+    ]
+  },
+  "automsc_checkpoint_sha256": "1538287f9538f32a766c9a1dde32e9a106aaa9224f3e2a62fa20e35543a06af8"
+}
