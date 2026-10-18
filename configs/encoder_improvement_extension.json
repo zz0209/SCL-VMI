@@ -1,0 +1,23 @@
+{
+  "suite": "20261017_flexict_improvement_extension",
+  "question": "the best FlexiCT candidates of suite 20261017_flexict_improvement lie at the smallest field (40 mm) and the earliest block (10) of that grid; this extension tests a smaller field and earlier blocks before FlexiCT enters the SAE exploration",
+  "baseline_suite": "20261017_encoder_pipeline",
+  "models": ["flexict_3d", "flexict_vlm"],
+  "fields": {
+    "f32": {"field_mm": 32, "shape": [48, 48, 48]},
+    "f40": {"field_mm": 40, "shape": [48, 48, 48]}
+  },
+  "blocks": [4, 6, 8, 10, 12],
+  "two_field": null,
+  "field_rule": "provider-centred physical crop, 48^3 tensor (patch 8, 6^3 tokens), spacing = field / 48 (0.67 and 0.83 mm), HU clipped to [-1000, 1000] and z-scored over the field, as in the baseline suite",
+  "layer_rule": "patch tokens after block b of 16 with the final norm applied (official get_intermediate_layers)",
+  "head": "max",
+  "learning_rates": [0.0001, 0.0003],
+  "seed": 2025,
+  "repeat_seeds": [2026, 2027],
+  "epochs": 60,
+  "selection": "as in 20261017_flexict_improvement; the final choice per model is the higher three-seed mean AUROC of the two suites' selected candidates, and it replaces the baseline selection only if higher than the baseline",
+  "test_policy": "reserved",
+  "encoder_policy": "frozen",
+  "precision": "float32, TF32 disabled"
+}

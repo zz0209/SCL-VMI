@@ -16,14 +16,15 @@ Suite `20261017_encoder_pipeline` evaluates nnFoundation (CNN and ViT; arXiv:260
   - Reference field: embedding linear, spatial linear, embedding MLP, and mean, max and attention heads.
   - Local field: four mean+max linear descriptors and a max head.
   - Neural heads choose the learning rate on seed 2025 and repeat it with seeds 2026 and 2027.
+- **FlexiCT layer and field comparison:** a max head on the patch tokens of blocks 4–16 (of 16) with 32, 40, 50 and 64 mm fields (48^3 tensors), plus the two fields of the standard procedure combined. Each candidate uses seed 2025 at two learning rates; the best is repeated with seeds 2026 and 2027 and replaces the standard selection when its three-seed mean is higher. See [main grid](layers_fields_main.png) and [extension](layers_fields_extension.png).
 - **Selection and comparison:** selection by development AUROC with a log-loss tie break. Intervals use 2,000 paired patient-bootstrap draws. Configuration selection used development data.
 
 ## Results
 
 | Encoder | Pipeline | Seeds | AUROC [95% interval] | AP |
 |---|---|---:|---|---:|
-| FlexiCT-3D | local field, max head | 3 | 0.8966 [0.860, 0.929] | 0.4966 |
-| FlexiCT-3D-VLM image encoder | local field, max head | 3 | 0.8945 [0.858, 0.928] | 0.5208 |
+| FlexiCT-3D | 32 mm field, block 10 of 16, max head | 3 | 0.9191 [0.888, 0.945] | 0.5727 |
+| FlexiCT-3D-VLM image encoder | 40 mm field, block 10 of 16, max head | 3 | 0.9129 [0.882, 0.940] | 0.5437 |
 | VISTA3D | reference field, max head | 3 | 0.8940 [0.857, 0.927] | 0.5380 |
 | Official LUNA25 I3D | official model | 1 | 0.8938 [0.856, 0.928] | 0.5293 |
 | nnFoundation ViT | local field, max head | 3 | 0.8897 [0.850, 0.925] | 0.5263 |
@@ -43,12 +44,17 @@ Suite `20261017_encoder_pipeline` evaluates nnFoundation (CNN and ViT; arXiv:260
 | nnFoundation CNN, native crop minus Official LUNA25 I3D | -0.1282 [-0.199, -0.069] |
 | nnFoundation ViT minus VISTA3D | -0.0043 [-0.032, +0.024] |
 | nnFoundation ViT minus Official LUNA25 I3D | -0.0042 [-0.029, +0.022] |
-| FlexiCT-3D minus VISTA3D | +0.0026 [-0.019, +0.025] |
-| FlexiCT-3D minus Official LUNA25 I3D | +0.0028 [-0.025, +0.033] |
-| FlexiCT-3D-VLM image encoder minus VISTA3D | +0.0005 [-0.021, +0.022] |
-| FlexiCT-3D-VLM image encoder minus Official LUNA25 I3D | +0.0006 [-0.030, +0.033] |
+| FlexiCT-3D minus VISTA3D | +0.0252 [+0.002, +0.050] |
+| FlexiCT-3D minus Official LUNA25 I3D | +0.0253 [+0.003, +0.048] |
+| FlexiCT-3D-VLM image encoder minus VISTA3D | +0.0189 [-0.001, +0.040] |
+| FlexiCT-3D-VLM image encoder minus Official LUNA25 I3D | +0.0191 [-0.004, +0.043] |
 
-- **FlexiCT and nnFoundation ViT:** both FlexiCT encoders and the nnFoundation ViT reach the level of the strongest existing frozen pipeline (VISTA3D) and of the official I3D; all paired AUROC differences have intervals that include zero.
+- **FlexiCT:**
+  - Under the standard procedure both FlexiCT encoders matched VISTA3D (50 mm local field, final block: 0.8966 and 0.8945).
+  - Earlier blocks and smaller fields work better. Block 10 of 16 is the peak for both encoders at 32 and 40 mm; blocks 4 and 6 and fields of 50–64 mm are lower.
+  - FlexiCT-3D with a 32 mm field and the vision-language image encoder with a 40 mm field reach three-seed means of 0.919 and 0.913.
+  - The paired differences against VISTA3D are listed above. The development patients that give these intervals also chose among 21 field and layer candidates per encoder (42 fits), so the advantages are optimistic.
+- **nnFoundation ViT:** matches VISTA3D and the official I3D.
 - **nnFoundation CNN:** its frozen features stay far lower with every input and head tried, including the native-resolution crop.
   - The nnFoundation paper reports that the masked-autoencoding CNN can underperform when encoder features are not adapted to the task; its classification experiments use full fine-tuning.
   - With 64^3 inputs the last ResEncL stage has 2^3 positions for its instance normalization.
@@ -57,5 +63,6 @@ Suite `20261017_encoder_pipeline` evaluates nnFoundation (CNN and ViT; arXiv:260
 
 - `comparison.csv`: selected pipelines with patient-bootstrap intervals.
 - `paired_differences.csv`: paired AUROC differences against VISTA3D and the official I3D.
-- `candidates.csv`: every candidate pipeline of the new encoders.
+- `candidates.csv`: every candidate pipeline of the new encoders, including the FlexiCT field and layer candidates (`view` names the suite and candidate).
+- `layers_fields_main.png`, `layers_fields_extension.png`: seed-2025 development AUROC of the FlexiCT field and layer candidates.
 - `provenance.json`: prediction hashes and settings.

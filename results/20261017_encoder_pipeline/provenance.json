@@ -1,6 +1,6 @@
 {
-  "created_at": "2026-10-17T10:50:31.293236+00:00",
-  "source_sha256": "914108809dbbf08e57f5aa5cc58cc7509f1863994da41091c42cbb06a7fc2b27",
+  "created_at": "2026-10-18T01:01:04.693761+00:00",
+  "source_sha256": "bde36e758d3c37a2ede58eefc177d63751682f495db20761871a0a124ea3f292",
   "specification_sha256": "a84d8d8aeff4e8794ab6e9c00c0e148b472aee9f5ed2ba81a7a02a365f9f799a",
   "resamples": 2000,
   "seed": 2025,
@@ -43,14 +43,14 @@
       "680364f3a72f4cc9e70b14ebea8863c37cfbe68a137e454b0fd8ebe71b00d6d2"
     ],
     "flexict_3d": [
-      "2b303053306a7155b1c0e31c0838b3cfaa8143fe4d3a86501bbc89ad4e7cfdac",
-      "52dd682c605f5b94f784740147a9ad0c1bb1bed643b1a0ffa4f0bc1d13c11589",
-      "0302771b33f499c6e392fedea70012b9ce82955a8a0a1113eb1bd03375e2f56a"
+      "8a633f7494e2c4a8bf1cf05165895b8dd531918055d6c59c14911ea098954563",
+      "ceb4b429493bd10e478a50e96aea811c0c24f3ae626dd899bf33f95d60dede1f",
+      "7754684fa8f4b886696e9e5c86de691f9f61b8028bcf97d3e2af3537c73cd44b"
     ],
     "flexict_vlm": [
-      "0d1ef8730c10e361b209a968700aaaebd5ea6cef6ba9557bc5bc487807dcc8cc",
-      "53a16d8380696eb2610bfe853131e4cc95b14e86e2d0a10eae4b89a33fdfb27b",
-      "7b63737657556767c49ace5aa9662ee3820b6a2c72cfcc83dadfe4a33949f40c"
+      "c327455287f1add9001f631ccf0104a54d4983fb100cc00c262f55da24faa415",
+      "bd9a73a3bdc5a43cc3a34c9b799e3cf6d1cbd364ac3977ef4ab06173f3342202",
+      "fd35d3f7cd4b3df3a9c894b47c70d49030c72379f11c8a79b192f86133826aec"
     ],
     "i3d": [
       "59927d383f04b78f59f94afbc4858b7dd86f12f3c5601a407215c54506492ffd"
@@ -234,6 +234,122 @@
     "encoder_policy": "frozen",
     "precision": "float32, TF32 disabled"
   },
+  "layer_comparisons": [
+    {
+      "suite": "20261017_flexict_improvement",
+      "question": "which frozen FlexiCT layer and field of view give the best LUNA25 development discrimination with the project's max head, before FlexiCT enters the SAE exploration",
+      "baseline_suite": "20261017_encoder_pipeline",
+      "models": [
+        "flexict_3d",
+        "flexict_vlm"
+      ],
+      "fields": {
+        "f40": {
+          "field_mm": 40,
+          "shape": [
+            48,
+            48,
+            48
+          ]
+        },
+        "f50": {
+          "field_mm": 50,
+          "shape": [
+            48,
+            48,
+            48
+          ]
+        },
+        "f64": {
+          "field_mm": 64,
+          "shape": [
+            48,
+            48,
+            48
+          ]
+        }
+      },
+      "blocks": [
+        10,
+        12,
+        14,
+        16
+      ],
+      "two_field": {
+        "block": 16,
+        "rule": "max head over the concatenated final-layer tokens of the 72 mm reference view and the 50 mm local view of the baseline suite (216 + 216 tokens)"
+      },
+      "field_rule": "provider-centred physical crop, 48^3 tensor (patch 8, 6^3 tokens), spacing = field / 48 (0.83, 1.04 and 1.33 mm), HU clipped to [-1000, 1000] and z-scored over the field, as in the baseline suite",
+      "layer_rule": "patch tokens after block b of 16 with the final norm applied (official get_intermediate_layers)",
+      "head": "max",
+      "learning_rates": [
+        0.0001,
+        0.0003
+      ],
+      "seed": 2025,
+      "repeat_seeds": [
+        2026,
+        2027
+      ],
+      "epochs": 60,
+      "selection": "each candidate (field, block) is fitted with seed 2025 at both learning rates and scored by its better development AUROC (log-loss tie break); the best candidate is repeated with seeds 2026 and 2027 and replaces the baseline selection only if its three-seed mean AUROC is higher",
+      "test_policy": "reserved",
+      "encoder_policy": "frozen",
+      "precision": "float32, TF32 disabled"
+    },
+    {
+      "suite": "20261017_flexict_improvement_extension",
+      "question": "the best FlexiCT candidates of suite 20261017_flexict_improvement lie at the smallest field (40 mm) and the earliest block (10) of that grid; this extension tests a smaller field and earlier blocks before FlexiCT enters the SAE exploration",
+      "baseline_suite": "20261017_encoder_pipeline",
+      "models": [
+        "flexict_3d",
+        "flexict_vlm"
+      ],
+      "fields": {
+        "f32": {
+          "field_mm": 32,
+          "shape": [
+            48,
+            48,
+            48
+          ]
+        },
+        "f40": {
+          "field_mm": 40,
+          "shape": [
+            48,
+            48,
+            48
+          ]
+        }
+      },
+      "blocks": [
+        4,
+        6,
+        8,
+        10,
+        12
+      ],
+      "two_field": null,
+      "field_rule": "provider-centred physical crop, 48^3 tensor (patch 8, 6^3 tokens), spacing = field / 48 (0.67 and 0.83 mm), HU clipped to [-1000, 1000] and z-scored over the field, as in the baseline suite",
+      "layer_rule": "patch tokens after block b of 16 with the final norm applied (official get_intermediate_layers)",
+      "head": "max",
+      "learning_rates": [
+        0.0001,
+        0.0003
+      ],
+      "seed": 2025,
+      "repeat_seeds": [
+        2026,
+        2027
+      ],
+      "epochs": 60,
+      "selection": "as in 20261017_flexict_improvement; the final choice per model is the higher three-seed mean AUROC of the two suites' selected candidates, and it replaces the baseline selection only if higher than the baseline",
+      "test_policy": "reserved",
+      "encoder_policy": "frozen",
+      "precision": "float32, TF32 disabled"
+    }
+  ],
   "model_sources": {
     "nnfoundation_cnn": {
       "repo_id": "MIC-DKFZ/nnFoundationCNN",

@@ -17,12 +17,15 @@ Each input is centered on the provider's nodule crop. The training partition con
 | CoralBay | 32 mm | Adjacent-stage descriptors with linear classification | 0.8606 | 0.4675 |
 | TAP-CT | 32 mm | Window CLS and patch summaries with linear classification | 0.8768 | 0.5046 |
 | Official LUNA25 I3D, trained locally | 50 mm | Upstream classifier | 0.8938 | 0.5293 |
-| FlexiCT-3D | 50 mm | Projected max pooling | 0.8966 | 0.4966 |
-| FlexiCT-3D-VLM image encoder | 50 mm | Projected max pooling | 0.8945 | 0.5208 |
+| FlexiCT-3D | 32 mm | Projected max pooling on block 10 of 16 | 0.9191 | 0.5727 |
+| FlexiCT-3D-VLM image encoder | 40 mm | Projected max pooling on block 10 of 16 | 0.9129 | 0.5437 |
 | nnFoundation ViT | 32 mm | Projected max pooling | 0.8897 | 0.5263 |
 | nnFoundation CNN | native crop | Three-stage mean+max with linear classification | 0.7656 | 0.2636 |
 
-The last four rows come from the [nnFoundation and FlexiCT comparison](results/20261017_encoder_pipeline/README.md), which applies the same reference-field, local-field, descriptor and head procedure to the new encoders. The masked-autoencoding nnFoundation CNN stays far lower with every frozen input and head tried; its paper evaluates classification with full fine-tuning.
+The last four rows come from the [nnFoundation and FlexiCT comparison](results/20261017_encoder_pipeline/README.md).
+- **Procedure:** the same reference-field, local-field, descriptor and head procedure as for the existing encoders.
+- **FlexiCT:** an added comparison of fields (32–64 mm) and layers (blocks 4–16) found block 10 with 32–40 mm fields best. With the final block and the standard procedure, FlexiCT gave 0.8966 and 0.8945. The FlexiCT rows involve more development-based selection than the others.
+- **nnFoundation CNN:** the masked-autoencoding CNN stays far lower with every frozen input and head tried; its paper evaluates classification with full fine-tuning.
 
 Development data is used for configuration selection. Neural-head results average three runs with consecutive seeds from 2025 through 2027. Linear heads use deterministic fits. Saved neural predictors use seed 2025. All selected pipelines use a single field of view. TAP-CT processes that field through 12-slice windows.
 

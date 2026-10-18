@@ -29,10 +29,34 @@ HEADS = {"native_linear": "embedding linear", "spatial_linear": "spatial linear"
          "reference_meanmax": "mean+max linear", "local_meanmax": "mean+max linear", "local_multistage": "two-stage mean+max linear", "two_view": "two-field mean+max linear"}
 
 
-def pipeline_label(name, kind, arm):
+LAYER_SUITES = ["20261017_flexict_improvement", "20261017_flexict_improvement_extension"]
+
+
+def pipeline_label(name, source):
+    if "label" in source:
+        field, block = source["label"].split("_b")
+        return f"{field.removeprefix('f')} mm field, block {int(block)} of 16, max head"
+    kind, arm = source["kind"], source["result"]["arm"]
     field = {"reference": "reference field", "local": "local field", "local_max": "local field"}.get(kind) or {"reference": "reference field", "local": "local field", "two views": "two fields"}[LINEAR_VIEWS[arm]]
     head = "mean+max linear" if name in FIELD_NAMES and arm == "two_view" else HEADS[arm]
     return f"{FIELD_NAMES.get(name, {}).get(field, field)}, {head}"
+
+
+def layer_families(name):
+    # Selected (field, block) candidates of the FlexiCT layer and field comparisons, repeated over three seeds.
+    families, rows = [], []
+    for suite in LAYER_SUITES:
+        heads = Path(context()[0]["runs"]) / suite / "heads" / name
+        if not (heads / "selection.json").exists():
+            continue
+        for row in pd.read_csv(heads / "candidates.csv").itertuples():
+            rows.append({"model": name, "head": "max", "view": f"{suite}:{row.candidate}", "run_id": Path(row.run).name, "seed": row.seed, "lr": row.lr, **{metric: getattr(row, metric) for metric in METRICS}})
+        selection = read_json(heads / "selection.json")
+        members = [(Path(run), read_json(Path(run) / "result.json")) for run in selection["runs"]]
+        assert len(members) == 3, selection
+        families.append({"family": members, "arm": "max", "label": selection["best"], "suite": suite, "metrics": {metric: float(np.mean([result["metrics"][metric] for _, result in members])) for metric in METRICS},
+                         "auroc_sd": float(np.std([result["metrics"]["auroc"] for _, result in members]))})
+    return families, rows
 
 
 def describe(run):
@@ -55,11 +79,13 @@ def select(name):
             continue
         scores = {metric: float(np.mean([result["metrics"][metric] for _, result in members])) for metric in METRICS}
         choices.append({"family": members, "arm": arm, "metrics": scores, "auroc_sd": float(np.std([result["metrics"]["auroc"] for _, result in members]))})
-    best = max(choices, key=lambda choice: (choice["metrics"]["auroc"], -choice["metrics"]["log_loss"]))
+    layered, layer_rows = layer_families(name)
+    best = max(choices + layered, key=lambda choice: (choice["metrics"]["auroc"], -choice["metrics"]["log_loss"]))
     run, result = best["family"][0]
-    selected = {"run": str(run), "kind": describe(run)[1], "result": result, "repeat_runs": [str(member) for member, _ in best["family"]], "aggregate_metrics": best["metrics"], "auroc_sd": best["auroc_sd"],
-                "selection_reason": "Highest mean development AUROC", "prediction_sha256": sha256(run / "development_predictions.csv")}
-    return selected, pd.DataFrame(rows)
+    selected = {"run": str(run), "kind": "layer" if "label" in best else describe(run)[1], "result": result, "repeat_runs": [str(member) for member, _ in best["family"]], "aggregate_metrics": best["metrics"],
+                "auroc_sd": best["auroc_sd"], "selection_reason": "Highest mean development AUROC", "prediction_sha256": sha256(run / "development_predictions.csv"),
+                **({"label": best["label"], "suite": best["suite"]} if "label" in best else {})}
+    return selected, pd.DataFrame(rows + layer_rows)
 
 
 def predictions(paths):
@@ -109,7 +135,7 @@ def main(public=None):
     for index, name in enumerate(names):
         scores = [read_json(path.parent / "result.json")["metrics"] for path in paths[name]] if name in EXISTING or name in NEW else [metrics(truth, p) for p in probabilities[name]]
         source = selected[name] if name in selected else existing.get(name)
-        row = {"model": labels[name], "key": name, "group": "new" if name in NEW else "existing" if name in EXISTING else "reference", "pipeline": pipeline_label(name, source["kind"], source["result"]["arm"]) if source else "official model", "seed_count": len(scores),
+        row = {"model": labels[name], "key": name, "group": "new" if name in NEW else "existing" if name in EXISTING else "reference", "pipeline": pipeline_label(name, source) if source else "official model", "seed_count": len(scores),
                **{metric: float(np.mean([score[metric] for score in scores])) for metric in METRICS}}
         for position, metric in enumerate(["auroc", "average_precision"]):
             row[metric + "_ci_low"], row[metric + "_ci_high"] = np.quantile(draws[:, index, position], [0.025, 0.975])
@@ -152,6 +178,7 @@ Suite `20261017_encoder_pipeline` evaluates nnFoundation (CNN and ViT; arXiv:260
   - Reference field: embedding linear, spatial linear, embedding MLP, and mean, max and attention heads.
   - Local field: four mean+max linear descriptors and a max head.
   - Neural heads choose the learning rate on seed 2025 and repeat it with seeds 2026 and 2027.
+- **FlexiCT layer and field comparison:** a max head on the patch tokens of blocks 4–16 (of 16) with 32, 40, 50 and 64 mm fields (48^3 tensors), plus the two fields of the standard procedure combined. Each candidate uses seed 2025 at two learning rates; the best is repeated with seeds 2026 and 2027 and replaces the standard selection when its three-seed mean is higher. See [main grid](layers_fields_main.png) and [extension](layers_fields_extension.png).
 - **Selection and comparison:** selection by development AUROC with a log-loss tie break. Intervals use 2,000 paired patient-bootstrap draws. Configuration selection used development data.
 
 ## Results
@@ -160,7 +187,12 @@ Suite `20261017_encoder_pipeline` evaluates nnFoundation (CNN and ViT; arXiv:260
 
 {differences}
 
-- **FlexiCT and nnFoundation ViT:** both FlexiCT encoders and the nnFoundation ViT reach the level of the strongest existing frozen pipeline (VISTA3D) and of the official I3D; all paired AUROC differences have intervals that include zero.
+- **FlexiCT:**
+  - Under the standard procedure both FlexiCT encoders matched VISTA3D (50 mm local field, final block: 0.8966 and 0.8945).
+  - Earlier blocks and smaller fields work better. Block 10 of 16 is the peak for both encoders at 32 and 40 mm; blocks 4 and 6 and fields of 50–64 mm are lower.
+  - FlexiCT-3D with a 32 mm field and the vision-language image encoder with a 40 mm field reach three-seed means of 0.919 and 0.913.
+  - The paired differences against VISTA3D are listed above. The development patients that give these intervals also chose among 21 field and layer candidates per encoder (42 fits), so the advantages are optimistic.
+- **nnFoundation ViT:** matches VISTA3D and the official I3D.
 - **nnFoundation CNN:** its frozen features stay far lower with every input and head tried, including the native-resolution crop.
   - The nnFoundation paper reports that the masked-autoencoding CNN can underperform when encoder features are not adapted to the task; its classification experiments use full fine-tuning.
   - With 64^3 inputs the last ResEncL stage has 2^3 positions for its instance normalization.
@@ -169,7 +201,8 @@ Suite `20261017_encoder_pipeline` evaluates nnFoundation (CNN and ViT; arXiv:260
 
 - `comparison.csv`: selected pipelines with patient-bootstrap intervals.
 - `paired_differences.csv`: paired AUROC differences against VISTA3D and the official I3D.
-- `candidates.csv`: every candidate pipeline of the new encoders.
+- `candidates.csv`: every candidate pipeline of the new encoders, including the FlexiCT field and layer candidates (`view` names the suite and candidate).
+- `layers_fields_main.png`, `layers_fields_extension.png`: seed-2025 development AUROC of the FlexiCT field and layer candidates.
 - `provenance.json`: prediction hashes and settings.
 """
 
@@ -178,6 +211,9 @@ def publish(output, destination, table, provenance):
     destination.mkdir(parents=True, exist_ok=False)
     for name in ["comparison.csv", "paired_differences.csv", "candidates.csv", "comparison.png", "comparison.svg"]:
         shutil.copyfile(output / name, destination / name)
+    for suite, label in zip(LAYER_SUITES, ["main", "extension"]):
+        for suffix in ["png", "svg"]:
+            shutil.copyfile(Path(context()[0]["runs"]) / suite / "report" / f"layers_fields.{suffix}", destination / f"layers_fields_{label}.{suffix}")
     rows = ["| Encoder | Pipeline | Seeds | AUROC [95% interval] | AP |", "|---|---|---:|---|---:|"]
     rows += [f"| {row.model} | {row.pipeline} | {row.seed_count} | {row.auroc:.4f} [{row.auroc_ci_low:.3f}, {row.auroc_ci_high:.3f}] | {row.average_precision:.4f} |" for row in table.sort_values("auroc", ascending=False).itertuples()]
     differences = pd.read_csv(output / "paired_differences.csv")
@@ -185,7 +221,8 @@ def publish(output, destination, table, provenance):
     (destination / "README.md").write_text(PUBLIC_README.replace("{table}", "\n".join(rows)).replace("{differences}", "\n".join(lines)), encoding="utf-8")
     write_json(destination / "provenance.json", {**{key: value for key, value in provenance.items() if key != "predictions"},
                                                  "prediction_sha256": {name: [item["sha256"] for item in group] for name, group in provenance["predictions"].items()},
-                                                 "specification": read_json(ROOT / "configs/encoder_pipeline.json"), "model_sources": {name: read_json(ROOT / "configs/model_sources.json")[name] for name in ["nnfoundation_cnn", "nnfoundation_vit", "flexict"]}})
+                                                 "specification": read_json(ROOT / "configs/encoder_pipeline.json"),
+                                                 "layer_comparisons": [read_json(ROOT / "configs" / name) for name in ["encoder_improvement.json", "encoder_improvement_extension.json"]], "model_sources": {name: read_json(ROOT / "configs/model_sources.json")[name] for name in ["nnfoundation_cnn", "nnfoundation_vit", "flexict"]}})
 
 
 def figure(table, output):

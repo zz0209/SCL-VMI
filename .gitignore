@@ -22,6 +22,8 @@
 !/configs/sae_autointerp_matched.json
 !/configs/sae_radiomics.json
 !/configs/encoder_pipeline.json
+!/configs/encoder_improvement.json
+!/configs/encoder_improvement_extension.json
 !/configs/environments/
 /configs/environments/*
 !/configs/environments/pipeline.json
@@ -141,6 +143,8 @@
 !/src/sclvmi/sae_concepts.py
 !/src/sclvmi/encoder_features.py
 !/src/sclvmi/encoder_pipeline.py
+!/src/sclvmi/encoder_layers.py
+!/src/sclvmi/encoder_improvement.py
 !/scripts/pipeline/check_sae_campaign_defined_diagnostics.py
 
 !/tests/
@@ -276,6 +280,10 @@
 !/results/20261017_encoder_pipeline/provenance.json
 !/results/20261017_encoder_pipeline/comparison.png
 !/results/20261017_encoder_pipeline/comparison.svg
+!/results/20261017_encoder_pipeline/layers_fields_main.png
+!/results/20261017_encoder_pipeline/layers_fields_main.svg
+!/results/20261017_encoder_pipeline/layers_fields_extension.png
+!/results/20261017_encoder_pipeline/layers_fields_extension.svg
 
 !/local_tools/
 /local_tools/*

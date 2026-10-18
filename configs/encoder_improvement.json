@@ -1,0 +1,24 @@
+{
+  "suite": "20261017_flexict_improvement",
+  "question": "which frozen FlexiCT layer and field of view give the best LUNA25 development discrimination with the project's max head, before FlexiCT enters the SAE exploration",
+  "baseline_suite": "20261017_encoder_pipeline",
+  "models": ["flexict_3d", "flexict_vlm"],
+  "fields": {
+    "f40": {"field_mm": 40, "shape": [48, 48, 48]},
+    "f50": {"field_mm": 50, "shape": [48, 48, 48]},
+    "f64": {"field_mm": 64, "shape": [48, 48, 48]}
+  },
+  "blocks": [10, 12, 14, 16],
+  "two_field": {"block": 16, "rule": "max head over the concatenated final-layer tokens of the 72 mm reference view and the 50 mm local view of the baseline suite (216 + 216 tokens)"},
+  "field_rule": "provider-centred physical crop, 48^3 tensor (patch 8, 6^3 tokens), spacing = field / 48 (0.83, 1.04 and 1.33 mm), HU clipped to [-1000, 1000] and z-scored over the field, as in the baseline suite",
+  "layer_rule": "patch tokens after block b of 16 with the final norm applied (official get_intermediate_layers)",
+  "head": "max",
+  "learning_rates": [0.0001, 0.0003],
+  "seed": 2025,
+  "repeat_seeds": [2026, 2027],
+  "epochs": 60,
+  "selection": "each candidate (field, block) is fitted with seed 2025 at both learning rates and scored by its better development AUROC (log-loss tie break); the best candidate is repeated with seeds 2026 and 2027 and replaces the baseline selection only if its three-seed mean AUROC is higher",
+  "test_policy": "reserved",
+  "encoder_policy": "frozen",
+  "precision": "float32, TF32 disabled"
+}
