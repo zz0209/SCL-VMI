@@ -1,0 +1,39 @@
+{
+  "suite": "20261019_flexict_luna25",
+  "question": "how well frozen FlexiCT separates malignant LUNA25 nodules when it is given the official whole CTs, and how much of any gain comes from context beyond the 128 x 128 x 64 provider crop",
+  "baseline_suites": ["20261017_flexict_improvement", "20261017_flexict_improvement_extension"],
+  "data": {
+    "images": "official LUNA25 whole CTs (Zenodo 14223624 v1.0.0, luna25_root/images/luna25_images/{SeriesInstanceUID}.mha)",
+    "annotations": "official LUNA25 annotation CSV (Zenodo 14673658 v1.0.0); identifier = {PatientID}_{LesionID}_{StudyDate}",
+    "inclusion": "the 6,132 FLARE-AutoMSC LUNA25 identifiers, reproducing the AutoMSC cleaning (16 location exclusions, 9 without revised instance labels, 6 absent from its source set)",
+    "split": "project manifest: FLARE patient-grouped folds, test fold 0 reserved, development fold 1, train folds 2-4",
+    "provider_crop_corruption": "where a FLARE provider crop differs from the official scan (run 20261019_luna25_crop_check), the inputs come from the official scan",
+    "centre": "official coordinate converted to the scan voxel index with SimpleITK TransformPhysicalPointToIndex (halves rounded up), as in luna25-baseline-public preprocessing/extract_nodules.py; the centre of the provider crop (run 20261019_luna25_crop_check)"
+  },
+  "crop_check_run": "20261019_luna25_crop_check",
+  "views": {
+    "f32": {"kind": "field", "field_mm": 32, "shape": [48, 48, 48], "readout": "all", "note": "provider-crop field of the selected FlexiCT-3D classifier, rebuilt from the whole CT"},
+    "f40": {"kind": "field", "field_mm": 40, "shape": [48, 48, 48], "readout": "all", "note": "provider-crop field of the selected FlexiCT-3D-VLM classifier, rebuilt from the whole CT"},
+    "c80": {"kind": "field", "field_mm": 80, "shape": [96, 96, 96], "readout": "central", "readout_tokens": 6, "note": "f40 spacing and readout region inside an 80 mm field that extends past the provider crop in plane"},
+    "w15": {"kind": "whole", "spacing_mm": 1.5, "window": [160, 160, 160], "margin_mm": 24, "readout": "nearest", "readout_tokens": 4, "note": "official image-text dataset spacing; 240 mm window"},
+    "w20": {"kind": "whole", "spacing_mm": 2.0, "window": [160, 160, 160], "margin_mm": 24, "readout": "nearest", "readout_tokens": 3, "note": "official CT-RATE evaluation spacing; 320 mm window"}
+  },
+  "field_rule": "physical crop around the centre with linear interpolation and -1024 outside the scan, sampled from the rebuilt provider crop for f32 and f40 (identical to the baseline suites) and from the whole CT for c80, stored as int16 (the resampled int16 scan values, lossless); HU clipped to [-1000, 1000] and z-scored over the field",
+  "whole_rule": "official CT3D_CLIP preprocessing and CT-RATE evaluation crop: SimpleITK linear resampling to isotropic spacing with the scan origin, direction and pixel type, HU clipped to [-1000, 1000], z-score over the resampled volume, padding with its minimum to at least 160 voxels per axis, MONAI 160^3 centre crop; this official window gives every nodule its class token and mean patch token; readout tokens come from the official window unless the nodule lies within margin_mm of its border, in which case a window moved only as far as needed is encoded for the readout",
+  "readout_rule": "all: every patch token; central: the central readout_tokens^3 patch tokens (40 mm for c80); nearest: the readout_tokens^3 patch tokens whose centres are nearest the nodule; the class token and the mean patch token of each forward pass (the official window for whole-CT views) are stored, which give the VLM image embedding through its projection",
+  "models": ["flexict_3d", "flexict_vlm"],
+  "blocks": [6, 8, 10, 12, 14, 16],
+  "layer_rule": "patch and class tokens after block b of 16 with the final norm applied (official get_intermediate_layers)",
+  "fusion": "after the single-view grid: tokens of the better of f32 and f40, the readout tokens of the better of w15 and w20 and that view's class token, each at its selected block, in one bag",
+  "head": "max",
+  "learning_rates": [0.0001, 0.0003],
+  "seed": 2025,
+  "repeat_seeds": [2026, 2027],
+  "epochs": 60,
+  "selection": "highest seed-2025 development AUROC (log loss breaks ties) over views, blocks, learning rates and the fusion candidate; the selected candidate is repeated with two more seeds; the context gain compares the best context candidate (c80, w15, w20 or fusion) with the best provider-crop candidate (f32 or f40) of the same model by patient-level paired bootstrap of three-seed mean probabilities",
+  "test_policy": "reserved; test-fold inputs are prepared and uploaded in separate test_batch files and are not encoded until the final evaluation",
+  "encoder_policy": "frozen",
+  "precision": "float32, TF32 disabled",
+  "batch_cases": 256,
+  "remote_directory": "flexict-luna25-20261019"
+}

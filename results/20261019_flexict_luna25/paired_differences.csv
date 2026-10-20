@@ -1,0 +1,13 @@
+pipeline,roles,minus,auroc_difference,ci_low,ci_high
+"FlexiCT-3D, official LUNA25 CTs: 32 mm field, block 10 of 16, max head","best, best_crop","FlexiCT-3D, provider crops (selected baseline)",0.002353337964501212,-0.002562019032559301,0.007594824859200098
+"FlexiCT-3D, official LUNA25 CTs: 32 mm field, block 10 of 16, max head","best, best_crop",VISTA3D,0.027510143264168008,0.004212723865753634,0.05238522502934723
+"FlexiCT-3D, official LUNA25 CTs: 32 mm field, block 10 of 16, max head","best, best_crop",official LUNA25 I3D,0.02765612572613696,0.004329408553123679,0.0519250530588114
+"FlexiCT-3D, official LUNA25 CTs: 80 mm field, central 40 mm, block 10 of 16, max head",best_context,"FlexiCT-3D, provider crops (selected baseline)",-0.0007727002728361576,-0.01968084151737079,0.017465462310484785
+"FlexiCT-3D, official LUNA25 CTs: 80 mm field, central 40 mm, block 10 of 16, max head",best_context,VISTA3D,0.024384105026830638,0.002196611327509901,0.047273851443646694
+"FlexiCT-3D, official LUNA25 CTs: 80 mm field, central 40 mm, block 10 of 16, max head",best_context,official LUNA25 I3D,0.02453008748879959,-0.005639475450340115,0.05713457767439706
+"FlexiCT-3D-VLM image encoder, official LUNA25 CTs: 40 mm field, block 8 of 16, max head","best, best_crop","FlexiCT-3D-VLM image encoder, provider crops (selected baseline)",0.004140364654122153,-0.005607412067267636,0.01383793471230306
+"FlexiCT-3D-VLM image encoder, official LUNA25 CTs: 40 mm field, block 8 of 16, max head","best, best_crop",VISTA3D,0.02305516123511231,0.00461240106095272,0.042869501950942475
+"FlexiCT-3D-VLM image encoder, official LUNA25 CTs: 40 mm field, block 8 of 16, max head","best, best_crop",official LUNA25 I3D,0.02320114369708126,0.00260779995874203,0.045910197505295576
+"FlexiCT-3D-VLM image encoder, official LUNA25 CTs: 80 mm field, central 40 mm, block 10 of 16, max head",best_context,"FlexiCT-3D-VLM image encoder, provider crops (selected baseline)",0.0017643742386259653,-0.012198418252924411,0.015799511509408313
+"FlexiCT-3D-VLM image encoder, official LUNA25 CTs: 80 mm field, central 40 mm, block 10 of 16, max head",best_context,VISTA3D,0.02067917081961612,-0.001815240516478292,0.04328045059215226
+"FlexiCT-3D-VLM image encoder, official LUNA25 CTs: 80 mm field, central 40 mm, block 10 of 16, max head",best_context,official LUNA25 I3D,0.020825153281585074,-0.009141368080302375,0.052319702371735444

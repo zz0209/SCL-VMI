@@ -27,6 +27,10 @@ The nnFoundation and FlexiCT rows come from the [encoder comparison](results/202
 - **Procedure:** the same reference-field, local-field, descriptor and head procedure as for the existing encoders.
 - **FlexiCT:** an added comparison of fields (32–64 mm) and layers (blocks 4–16) found block 10 with 32–40 mm fields best. With the final block and the standard procedure, FlexiCT gave 0.8966 and 0.8945. The FlexiCT rows involve more development-based selection than the others.
 - **nnFoundation CNN:** the masked-autoencoding CNN stays far lower with every frozen input and head tried; its paper evaluates classification with full fine-tuning.
+- **FlexiCT on the official LUNA25 whole CTs:** [rebuilt from the original scans](results/20261019_flexict_luna25/README.md).
+  - The FLARE crops are native-voxel blocks of those scans. Two of the crops are corrupted, neither in the development fold.
+  - The rebuilt pipelines reproduce the rows above: 0.9215 and 0.9170.
+  - Wider context does not raise AUROC: an 80 mm field, whole-CT tokens in FlexiCT's official 1.5 mm and 2.0 mm input form, and their fusion with the crop field were all tested.
 
 Development data is used for configuration selection. Neural-head results average three runs with consecutive seeds from 2025 through 2027. Linear heads use deterministic fits. Saved neural predictors use seed 2025. All selected pipelines use a single field of view. TAP-CT processes that field through 12-slice windows.
 
@@ -105,6 +109,7 @@ storage configuration.
 | Frozen-head comparison | [fit_frozen_heads.py](scripts/pipeline/fit_frozen_heads.py) |
 | Local-field comparison | [prepare_materials.py](scripts/pipeline/prepare_materials.py) |
 | nnFoundation and FlexiCT pipelines | [inputs and features](src/sclvmi/encoder_features.py), [heads](src/sclvmi/encoder_pipeline.py), [selection and comparison](scripts/pipeline/compare_encoders.py); configuration [encoder_pipeline.json](configs/encoder_pipeline.json) |
+| FlexiCT on official LUNA25 CTs | [inputs, features, heads and report](src/sclvmi/flexict_luna25.py), [comparison](scripts/pipeline/compare_flexict_luna25.py); configuration [flexict_luna25.json](configs/flexict_luna25.json) |
 | Image and feature inference | [material_predict.py](src/sclvmi/material_predict.py) |
 | Spatial SAE training and inference | [sae.py](src/sclvmi/sae.py), [sae_predict.py](src/sclvmi/sae_predict.py) |
 | Multi-layer SAE comparison | [Input preparation](src/sclvmi/sae_campaign_data.py), [resumable training](src/sclvmi/sae_campaign_train.py), [fixed-classifier evaluation](src/sclvmi/sae_campaign_evaluate.py), [candidate selection](src/sclvmi/sae_campaign_compare.py), [PCA and seed diagnostics](src/sclvmi/sae_campaign_diagnostics.py) |

@@ -26,6 +26,7 @@
 !/configs/encoder_improvement_extension.json
 !/configs/sae_lidc.json
 !/configs/sae_lidc_followup.json
+!/configs/flexict_luna25.json
 !/configs/environments/
 /configs/environments/*
 !/configs/environments/pipeline.json
@@ -75,6 +76,7 @@
 !/scripts/pipeline/export_sae_lidc.py
 !/scripts/pipeline/export_sae_lidc_followup.py
 !/scripts/pipeline/compare_encoders.py
+!/scripts/pipeline/compare_flexict_luna25.py
 !/scripts/pipeline/compare_automsc.py
 !/scripts/pipeline/summarize_sae_interpretation.py
 !/scripts/sae_validation/
@@ -154,6 +156,7 @@
 !/src/sclvmi/encoder_improvement.py
 !/src/sclvmi/sae_lidc.py
 !/src/sclvmi/sae_lidc_followup.py
+!/src/sclvmi/flexict_luna25.py
 !/scripts/pipeline/check_sae_campaign_defined_diagnostics.py
 
 !/tests/
@@ -337,6 +340,18 @@
 !/results/20261020_sae_lidc_followup/resolution.svg
 !/results/20261020_sae_lidc_followup/probe.png
 !/results/20261020_sae_lidc_followup/probe.svg
+!/results/20261019_flexict_luna25/
+/results/20261019_flexict_luna25/*
+!/results/20261019_flexict_luna25/README.md
+!/results/20261019_flexict_luna25/comparison.csv
+!/results/20261019_flexict_luna25/paired_differences.csv
+!/results/20261019_flexict_luna25/candidates.csv
+!/results/20261019_flexict_luna25/reproduction.csv
+!/results/20261019_flexict_luna25/provenance.json
+!/results/20261019_flexict_luna25/comparison.png
+!/results/20261019_flexict_luna25/comparison.svg
+!/results/20261019_flexict_luna25/views_blocks.png
+!/results/20261019_flexict_luna25/views_blocks.svg
 
 !/local_tools/
 /local_tools/*
