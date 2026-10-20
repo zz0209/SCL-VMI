@@ -68,6 +68,16 @@ A [radiomics comparison](results/20261017_sae_radiomics/README.md) relates the s
 - **Features that drive the classifiers:** classifier contribution is concentrated in FMCIB layer2 3015 and VISTA3D stage2 202 (mean logit change on removal −0.40 and −0.18). Both encode nodule size together with being surrounded by aerated lung rather than abutting chest wall or mediastinum; radiomics describes about half of their variance.
 - **Review list:** eight features with a confirmed malignancy association, a top-50 classifier contribution and an incomplete radiomics description are listed for physician review in the heatmap viewer.
 
+A [radiologist-rating comparison on LIDC-IDRI](results/20261019_sae_lidc/README.md) applies both dictionaries, unchanged, to 582 independent nodules (one per patient, 3–4 readers each; crops cut with the LUNA25 rule). The rules were fixed before any LIDC activation was computed.
+- **Clear features:** 7 at FMCIB layer2 and 10 at VISTA3D stage2 each have:
+  - a size-adjusted association with a rating that holds on held-out patients, beyond the random-weight features and in at least 7 of 8 dictionary seeds;
+  - a top-50 classifier contribution.
+
+  Example: VISTA3D stage2 182 rises with spiculation, lobulation and malignancy and falls with margin sharpness.
+- **Against the random-weight control:** VISTA3D stage2 confirms about three times as many associations per analysed feature as its random-weight control (0.54 against 0.17); FMCIB layer2 does not clearly exceed its control (0.33 against 0.26).
+- **Strength:** the best features match the agreement of one radiologist with the others for subtlety and malignancy, and reach 50–80 % of it for margin, spiculation, texture and calcification.
+- **Review list on LIDC:** the four LUNA25 lung-contact descriptions of the review list hold on LIDC with the same sign.
+
 ### Feature observation materials
 
 The separate `20261008` FMCIB layer1/k64 dictionary has [feature-level research checks](results/20261008_sae_feature_validation/README.md): 128 patient-distinct CT inputs, three SAE seeds, translation and position controls, and patient-balanced correspondence. Thirteen features pass the numerical screens; nine provide repeated broad image-content descriptions as research starting points. The [feature catalog](results/20261008_sae_feature_validation/reviewed_features.csv) retains each description and its qualifications. These are conditional development-set observations from one AI image reviewer; clinical identity and feature-specific causal effects remain untested. The private `20261008_feature_validation/fmcib/research_materials.json` contains fixed weights and CT evidence paths. Its [dictionary study](results/20261008_spatial_sae/README.md) records the associated earlier training results.
@@ -84,7 +94,7 @@ storage configuration.
 | Component | Source |
 |---|---|
 | Storage initialization | [initialize_storage.py](scripts/data/initialize_storage.py) |
-| Dataset acquisition | [download_flare.py](scripts/data/download_flare.py) |
+| Dataset acquisition | [download_flare.py](scripts/data/download_flare.py), [download_lidc.py](scripts/data/download_lidc.py); [LUNA25 crop check against the official scans](scripts/data/compare_luna25_crops.py) |
 | Environment setup | [bootstrap_sources.ps1](scripts/pipeline/bootstrap_sources.ps1), [setup_environment.ps1](scripts/pipeline/setup_environment.ps1), [finish_environment.ps1](scripts/pipeline/finish_environment.ps1) |
 | Additional model dependencies | [prepare_frozen_heads.ps1](scripts/pipeline/prepare_frozen_heads.ps1) |
 | Frozen-head comparison | [fit_frozen_heads.py](scripts/pipeline/fit_frozen_heads.py) |
@@ -93,7 +103,7 @@ storage configuration.
 | Image and feature inference | [material_predict.py](src/sclvmi/material_predict.py) |
 | Spatial SAE training and inference | [sae.py](src/sclvmi/sae.py), [sae_predict.py](src/sclvmi/sae_predict.py) |
 | Multi-layer SAE comparison | [Input preparation](src/sclvmi/sae_campaign_data.py), [resumable training](src/sclvmi/sae_campaign_train.py), [fixed-classifier evaluation](src/sclvmi/sae_campaign_evaluate.py), [candidate selection](src/sclvmi/sae_campaign_compare.py), [PCA and seed diagnostics](src/sclvmi/sae_campaign_diagnostics.py) |
-| Interpretation dictionaries | [inputs and random-weight encoders](src/sclvmi/sae_context.py), [cross-seed stability](src/sclvmi/sae_interp_stability.py), [fixed-classifier checks](src/sclvmi/sae_interp_evaluate.py), [feature statistics](src/sclvmi/sae_interp_profiles.py), [selection](src/sclvmi/sae_interp_select.py), [nodule-region pools](src/sclvmi/sae_nodule_pool.py) and [coverage](src/sclvmi/sae_interp_coverage.py), [feature candidates](src/sclvmi/sae_interp_candidates.py) and [their follow-up](src/sclvmi/sae_interp_followup.py), [automatic interpretation](src/sclvmi/sae_autointerp.py) with [model calls and validation](src/sclvmi/sae_autointerp_model.py), [radiomics](src/sclvmi/sae_radiomics.py) with [lung-boundary contact](src/sclvmi/nodule_context.py) and [concept comparison, classifier effects and review list](src/sclvmi/sae_concepts.py), [whole-CT maps](local_tools/viewers/feature_explorer/interpretation_whole.py) |
+| Interpretation dictionaries | [inputs and random-weight encoders](src/sclvmi/sae_context.py), [cross-seed stability](src/sclvmi/sae_interp_stability.py), [fixed-classifier checks](src/sclvmi/sae_interp_evaluate.py), [feature statistics](src/sclvmi/sae_interp_profiles.py), [selection](src/sclvmi/sae_interp_select.py), [nodule-region pools](src/sclvmi/sae_nodule_pool.py) and [coverage](src/sclvmi/sae_interp_coverage.py), [feature candidates](src/sclvmi/sae_interp_candidates.py) and [their follow-up](src/sclvmi/sae_interp_followup.py), [automatic interpretation](src/sclvmi/sae_autointerp.py) with [model calls and validation](src/sclvmi/sae_autointerp_model.py), [radiomics](src/sclvmi/sae_radiomics.py) with [lung-boundary contact](src/sclvmi/nodule_context.py) and [concept comparison, classifier effects and review list](src/sclvmi/sae_concepts.py), [LIDC radiologist-rating comparison](src/sclvmi/sae_lidc.py) with [configuration](configs/sae_lidc.json), [whole-CT maps](local_tools/viewers/feature_explorer/interpretation_whole.py) |
 | Official baseline adapters | [luna25.py](src/sclvmi/luna25.py), [automsc.py](src/sclvmi/automsc.py) |
 | AutoMSC and combined development comparison | [compare_automsc.py](scripts/pipeline/compare_automsc.py) |
 | Dataset and heatmap viewers | [Viewer setup and local asset requirements](local_tools/viewers/viewer.md) |

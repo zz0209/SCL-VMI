@@ -16,6 +16,7 @@ from sklearn.preprocessing import QuantileTransformer
 
 from .context import ROOT, context, read_json, sha256, timestamp, write_json
 from .sae import SpatialDictionary
+from .sae_interp_candidates import correlate, residual_ranks
 from .sae_sites import SpatialEncoder
 
 
@@ -172,12 +173,6 @@ def spearman_matrix(left, right):
     return left.T @ right / len(left)
 
 
-def residual(values, covariate):
-    design = np.column_stack([np.ones(len(values)), ranks(covariate)])
-    ranked = ranks(values)
-    return ranked - design @ np.linalg.lstsq(design, ranked, rcond=None)[0]
-
-
 def clusters(radiomics, threshold):
     correlation = np.nan_to_num(np.abs(spearman_matrix(radiomics, radiomics)))
     np.fill_diagonal(correlation, 1)
@@ -268,7 +263,8 @@ def analyze(config, root, output):
             nulls[f"{name}:{encoder}"] = {"threshold": threshold, "values": null.tolist()}
             targets = np.stack([values[:, index, peak[index]] for index in range(len(features))], 1)
             raw = spearman_matrix(targets[train], values_radiomics[train])
-            adjusted = spearman_matrix(residual(targets[train], size[train]), residual(values_radiomics[train], size[train]))
+            # Partial Spearman: Pearson correlation of the rank residuals (no re-ranking of the residuals).
+            adjusted = correlate(residual_ranks(targets[train], size[train, None]), residual_ranks(values_radiomics[train], size[train, None]))
             agreement = np.full(len(features), np.nan)
             if encoder == "trained":
                 profiles = [spearman_matrix(arrays["matched"][index][:, :, :2][np.arange(len(frame))[:, None], np.arange(len(features))[None, :], peak[None, :]][train], values_radiomics[train]) for index in range(len(arrays["matched_seeds"]))]

@@ -4,6 +4,8 @@
   "storage_root": "/path/to/scl-vmi-storage",
   "project_storage": "/path/to/scl-vmi-storage/projects/SCL-VMI",
   "dataset_root": "/path/to/scl-vmi-storage/datasets/FLARE-MedFM/FLARE-AutoMSC",
+  "lidc_root": "/path/to/scl-vmi-storage/datasets/LIDC-IDRI",
+  "luna25_root": "/path/to/scl-vmi-storage/datasets/LUNA25",
   "hf_home": "/path/to/scl-vmi-storage/cache/huggingface",
   "hf_hub_cache": "/path/to/scl-vmi-storage/cache/huggingface/hub",
   "hf_xet_cache": "/path/to/scl-vmi-storage/cache/huggingface/xet",

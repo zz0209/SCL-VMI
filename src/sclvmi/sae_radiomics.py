@@ -11,13 +11,8 @@ import SimpleITK as sitk
 from radiomics import featureextractor
 from scipy import ndimage
 
-from .nodule_context import contact
+from .nodule_context import contact, resample
 from .nodule_mask import target_component
-
-
-def resample(image, spacing, interpolator, default):
-    size = [int(round(count * step / spacing)) for count, step in zip(image.GetSize(), image.GetSpacing())]
-    return sitk.Resample(image, size, sitk.Transform(), interpolator, image.GetOrigin(), (spacing,) * 3, image.GetDirection(), default, image.GetPixelID())
 
 
 def as_image(array, reference):

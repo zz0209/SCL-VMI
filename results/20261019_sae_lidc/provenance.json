@@ -1,0 +1,267 @@
+{
+  "run_id": "20261019_sae_lidc",
+  "settings": {
+    "question": "which stable SAE features of the FMCIB layer2 (nodule75) and VISTA3D stage2 (nodule16x) nodule-interpretation dictionaries follow radiologist-rated nodule characteristics on an independent dataset (LIDC-IDRI), beyond nodule size and beyond the random-weight-encoder features, and how close they come to the agreement between radiologists",
+    "written_before_results": "2026-10-19; no LIDC activation or association had been computed when this file was written",
+    "sites": [
+      "fmcib:layer2",
+      "vista:stage2"
+    ],
+    "reference_seed": 2025,
+    "nodules": {
+      "annotations": "pylidc bundled annotation database, GitHub commit 2cb87f19d4a3f99d527c35a8daad43578419cc1b (release 0.2.3 with the Python 3.12 / NumPy 2 fixes)",
+      "maximum_slice_thickness_mm": 2.5,
+      "minimum_readers": 3,
+      "maximum_readers": 4,
+      "consensus_level": 0.5,
+      "slice_spacing_tolerance": 0.01,
+      "scan_rule": "scans with pylidc slice thickness <= 2.5 mm; slices are read from the verified LIDC download, duplicate slice positions keep the lower InstanceNumber and slices are sorted by position (the pylidc rule); a scan is excluded, with the reason recorded, when its sorted slice positions differ from the pylidc database by more than 0.01 mm, when any slice gap differs from the median gap by more than 1 %, or when the image orientation is not axial [1, 0, 0, 0, 1, 0] with a constant in-plane origin",
+      "nodule_rule": "annotations are grouped with pylidc Scan.cluster_annotations (default tolerance); a nodule enters when 3 or 4 readers annotated it; its mask is the pylidc consensus at level 0.5 and its centre the consensus-mask centroid",
+      "per_patient": "one nodule per patient for inference: the nodule with the most readers, then the largest consensus volume, then the lowest scan and cluster index",
+      "cluster_failures": [
+        66,
+        100,
+        140,
+        205,
+        252,
+        334,
+        342,
+        408,
+        613,
+        713,
+        790,
+        792,
+        840
+      ],
+      "cluster_failure_rule": "pylidc scan ids whose annotations cannot be grouped into nodules of at most four annotations with the default clustering (tolerance reduced below 0.1 mm; pylidc ClusterError, 'must be grouped manually'); found on 2026-10-19 by repeating the pylidc clustering steps for all 897 eligible scans, before any activation was computed; these scans are excluded"
+    },
+    "crop": {
+      "shape": [
+        128,
+        128,
+        64
+      ],
+      "pad_hu": -1024,
+      "rule": "128 x 128 x 64 native voxels around the consensus centroid rounded to the nearest voxel, no resampling, voxels outside the scan set to -1024 HU; the same rule as the FLARE-AutoMSC LUNA25 crops checked in run 20261019_luna25_crop_check. Stored as NIfTI with an RAS affine; the consensus mask is cropped the same way"
+    },
+    "ratings": {
+      "ordinal": [
+        "subtlety",
+        "sphericity",
+        "margin",
+        "lobulation",
+        "spiculation",
+        "texture",
+        "malignancy"
+      ],
+      "calcification": "fraction of readers who rated any calcification pattern (LIDC categories 1-5; 6 is absent)",
+      "aggregation": "median over the readers of the nodule for ordinal ratings",
+      "excluded": {
+        "internalStructure": "nominal categories (soft tissue, fluid, fat, air) without an order"
+      }
+    },
+    "contact": {
+      "spacing_mm": 1.0,
+      "settings_from": "configs/sae_radiomics.json contact block, applied to the LIDC crop and consensus mask resampled to 1 mm (B-spline image, nearest-neighbour mask)",
+      "measures": [
+        "lung_boundary_contact_fraction",
+        "lung_boundary_distance_mm",
+        "margin_0_4mm_soft_fraction",
+        "near_4_10mm_soft_fraction",
+        "margin_0_4mm_outside_lung_fraction",
+        "near_4_10mm_outside_lung_fraction"
+      ]
+    },
+    "split": {
+      "halves": [
+        "discovery",
+        "confirmation"
+      ],
+      "rule": "included patients ordered by SHA-256 of 'lidc-half:' + PatientID; the first half (rounded down) is discovery, the rest confirmation"
+    },
+    "activation": {
+      "statistics": [
+        "within_4mm_mean",
+        "near_4_10mm_mean",
+        "maximum_within_4mm"
+      ],
+      "target": "for each feature, the region mean (within 4 mm or 4-10 mm of the nodule surface) chosen on LUNA25 training patients in run 20261017_sae_radiomics (peak_region); nothing is chosen on LIDC",
+      "computation": "LIDC crops pass through the same deployed inputs, frozen encoders, random-weight encoders (seed 20261014) and grid distance maps as the LUNA25 interpretation campaign (sae_context.prepare_record); the path is verified by recomputing LUNA25 records and comparing with the cached campaign arrays",
+      "empty_region": "a nodule whose region holds no grid position gets no value for that region and is left out of the analyses of that site"
+    },
+    "association": {
+      "statistic": "partial Spearman correlation: Pearson correlation between the ranks of the feature target and of the rating, each residualised on the rank of log consensus volume (the residuals are not ranked again); p-value from the t distribution with n - 3 degrees of freedom",
+      "minimum_active": 30,
+      "active_rule": "a feature is analysed when at least 30 nodules of each half have a target above 0",
+      "discovery": "per site and rating, trained stable features whose |partial rho| on discovery patients exceeds the 95th percentile of |partial rho| of the random-weight stable features",
+      "confirmation": "same sign on confirmation patients and Benjamini-Hochberg q < 0.05 within the discovery-selected feature-rating pairs of each site and encoder",
+      "random_control": "the random-weight stable features go through the same discovery threshold and confirmation; the share of confirmed pairs per analysed feature is compared between trained and random encoders",
+      "cross_seed": "a confirmed pair replicates in another seed when that seed's matched feature has the same sign and p < 0.05 on confirmation patients; replication in at least 6 of the 7 other seeds is required",
+      "bootstrap": 2000,
+      "bootstrap_seed": 20261019
+    },
+    "ceiling": {
+      "rule": "for every included nodule one reader is drawn at random and compared with the median of the other readers (Spearman, raw and residualised on log consensus volume, over all included nodules); repeated 200 times with seed 20261019 and averaged. For calcification the drawn reader's 0/1 call is compared with the fraction among the others",
+      "repeats": 200,
+      "seed": 20261019
+    },
+    "classifier_effect": {
+      "effect_rank": 50,
+      "rule": "rank by mean absolute first-order contribution to the fixed classifier's logit on LUNA25 development patients, from run 20261017_sae_radiomics"
+    },
+    "clear_feature": "a stable reference-seed feature of the trained encoder with at least one confirmed rating association, cross-seed replication of that association, at least 30 active nodules in each half and classifier effect rank <= 50",
+    "prespecified": {
+      "features": {
+        "fmcib:layer2": [
+          3015,
+          1219
+        ],
+        "vista:stage2": [
+          202,
+          636,
+          307,
+          336,
+          392,
+          646
+        ]
+      },
+      "rule": "the eight features of the radiomics review list are tested on all included nodules (both halves) against every rating and contact measure with the partial Spearman correlation above; Holm correction over all features and measures",
+      "hypotheses": {
+        "fmcib:layer2:3015": {
+          "measure": "near_4_10mm_soft_fraction",
+          "sign": -1,
+          "luna25_size_adjusted_rho": -0.7
+        },
+        "vista:stage2:202": {
+          "measure": "margin_0_4mm_outside_lung_fraction",
+          "sign": -1,
+          "luna25_size_adjusted_rho": -0.46
+        },
+        "vista:stage2:307": {
+          "measure": "near_4_10mm_outside_lung_fraction",
+          "sign": -1,
+          "luna25_size_adjusted_rho": -0.5
+        },
+        "vista:stage2:392": {
+          "measure": "near_4_10mm_outside_lung_fraction",
+          "sign": -1,
+          "luna25_size_adjusted_rho": -0.48
+        }
+      },
+      "without_hypothesis": "FMCIB 1219 and VISTA3D 636, 336 and 646 have their strongest LUNA25 size-adjusted correlates among texture and intensity features that are not computed on LIDC; they are tested against ratings and contact measures without a stated direction"
+    }
+  },
+  "nodules": {
+    "scans": 897,
+    "scans_with_eligible_nodules": 595,
+    "scans_excluded": 26,
+    "exclusion_reasons": {
+      "annotations cannot be clustered by pylidc": 13,
+      "orientation is not axial": 11,
+      "irregular slice gaps": 2
+    },
+    "nodules": 1141,
+    "patients": 582,
+    "members": 582,
+    "halves": {
+      "discovery": 291,
+      "confirmation": 291
+    },
+    "readers_per_member": {
+      "4": 462,
+      "3": 120
+    }
+  },
+  "sites": {
+    "fmcib:layer2": {
+      "nodules": 582,
+      "excluded_empty_region": 0,
+      "halves": {
+        "discovery": 291,
+        "confirmation": 291
+      },
+      "stable": {
+        "trained": 1442,
+        "random": 698
+      },
+      "active": {
+        "trained": 159,
+        "random": 105
+      },
+      "selected_pairs": {
+        "random": 48,
+        "trained": 91
+      },
+      "confirmed_pairs": {
+        "random": 27,
+        "trained": 53
+      },
+      "confirmed_pairs_per_active_feature": {
+        "trained": 0.3333333333333333,
+        "random": 0.2571428571428571
+      },
+      "clear_features": [
+        241,
+        507,
+        1135,
+        1139,
+        1219,
+        3015,
+        3507
+      ]
+    },
+    "vista:stage2": {
+      "nodules": 582,
+      "excluded_empty_region": 0,
+      "halves": {
+        "discovery": 291,
+        "confirmation": 291
+      },
+      "stable": {
+        "trained": 207,
+        "random": 54
+      },
+      "active": {
+        "trained": 140,
+        "random": 52
+      },
+      "selected_pairs": {
+        "random": 24,
+        "trained": 122
+      },
+      "confirmed_pairs": {
+        "random": 9,
+        "trained": 76
+      },
+      "confirmed_pairs_per_active_feature": {
+        "trained": 0.5428571428571428,
+        "random": 0.17307692307692307
+      },
+      "clear_features": [
+        21,
+        114,
+        147,
+        182,
+        202,
+        307,
+        392,
+        551,
+        636,
+        743
+      ]
+    }
+  },
+  "configuration_sha256": "e5c12427bdef1f20dcccde14b79090919b2557390bada0de4f312fcde8756f78",
+  "source_sha256": {
+    "sae_lidc.py": "072dc543be3a83cc1b40d9b962277125190dc2bbfce03283a4206c3dccf429e0",
+    "sae_context.py": "d8f14db7c73728aaec6c1ca45760d6e96efaf84bc95a0ec4a16c37ef33a7abc8",
+    "sae_concepts.py": "cf95a4adb51fe568c862c68b66c35097644689110eb9db390ac133c7338f9bc3",
+    "sae_interp_candidates.py": "c10a666ffae7a271afeba9e98b8577439b024751627ff50c03b39c20cc78f8ce",
+    "nodule_context.py": "14314d7b0ed4cf46c74701f458d4ab6f36f7fda9184a10a0975824f27b274038",
+    "nodule_mask.py": "dc22496421908f48352f8a04f1a9cdfa283ed248799bd189ba3165b44c23ac04"
+  },
+  "exporter_sha256": "4a34fa7fe75150fa1787e2224e3343d2d3dec6ed28e4cdb683d8423800e8a61b",
+  "python": "3.12.14",
+  "created_at": "2026-10-20T02:31:12.323035+00:00",
+  "test_used": false
+}

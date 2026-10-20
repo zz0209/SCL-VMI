@@ -24,6 +24,7 @@
 !/configs/encoder_pipeline.json
 !/configs/encoder_improvement.json
 !/configs/encoder_improvement_extension.json
+!/configs/sae_lidc.json
 !/configs/environments/
 /configs/environments/*
 !/configs/environments/pipeline.json
@@ -37,6 +38,8 @@
 !/scripts/data/initialize_storage.py
 !/scripts/data/probe_hub.py
 !/scripts/data/test_download_integrity.py
+!/scripts/data/download_lidc.py
+!/scripts/data/compare_luna25_crops.py
 !/scripts/pipeline/
 /scripts/pipeline/*
 !/scripts/pipeline/bootstrap_sources.ps1
@@ -68,6 +71,7 @@
 !/scripts/pipeline/export_sae_nodule_coverage.py
 !/scripts/pipeline/export_sae_autointerp.py
 !/scripts/pipeline/export_sae_radiomics.py
+!/scripts/pipeline/export_sae_lidc.py
 !/scripts/pipeline/compare_encoders.py
 !/scripts/pipeline/compare_automsc.py
 !/scripts/pipeline/summarize_sae_interpretation.py
@@ -146,6 +150,7 @@
 !/src/sclvmi/encoder_pipeline.py
 !/src/sclvmi/encoder_layers.py
 !/src/sclvmi/encoder_improvement.py
+!/src/sclvmi/sae_lidc.py
 !/scripts/pipeline/check_sae_campaign_defined_diagnostics.py
 
 !/tests/
@@ -301,6 +306,21 @@
 !/results/20261018_all_pipeline_development/provenance.json
 !/results/20261018_all_pipeline_development/comparison.png
 !/results/20261018_all_pipeline_development/comparison.svg
+!/results/20261019_sae_lidc/
+/results/20261019_sae_lidc/*
+!/results/20261019_sae_lidc/README.md
+!/results/20261019_sae_lidc/site_summary.csv
+!/results/20261019_sae_lidc/rating_summary.csv
+!/results/20261019_sae_lidc/associations.csv
+!/results/20261019_sae_lidc/clear_features.csv
+!/results/20261019_sae_lidc/clear_summary.csv
+!/results/20261019_sae_lidc/prespecified.csv
+!/results/20261019_sae_lidc/ceiling.csv
+!/results/20261019_sae_lidc/provenance.json
+!/results/20261019_sae_lidc/ratings.png
+!/results/20261019_sae_lidc/ratings.svg
+!/results/20261019_sae_lidc/prespecified.png
+!/results/20261019_sae_lidc/prespecified.svg
 
 !/local_tools/
 /local_tools/*

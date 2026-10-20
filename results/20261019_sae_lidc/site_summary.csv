@@ -1,0 +1,5 @@
+site,encoder,nodules,stable_features,analysed_features,selected_pairs,confirmed_pairs,confirmed_pairs_per_analysed_feature,clear_features
+fmcib:layer2,trained,582,1442,159,91,53,0.333,7.0
+fmcib:layer2,random,582,698,105,48,27,0.257,
+vista:stage2,trained,582,207,140,122,76,0.543,10.0
+vista:stage2,random,582,54,52,24,9,0.173,

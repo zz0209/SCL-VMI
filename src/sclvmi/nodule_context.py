@@ -1,5 +1,11 @@
 import numpy as np
+import SimpleITK as sitk
 from scipy import ndimage
+
+
+def resample(image, spacing, interpolator, default):
+    size = [int(round(count * step / spacing)) for count, step in zip(image.GetSize(), image.GetSpacing())]
+    return sitk.Resample(image, size, sitk.Transform(), interpolator, image.GetOrigin(), (spacing,) * 3, image.GetDirection(), default, image.GetPixelID())
 
 
 def ball(radius):
