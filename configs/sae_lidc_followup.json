@@ -1,0 +1,56 @@
+{
+  "run_id": "20261020_sae_lidc_followup",
+  "source_run": "20261019_sae_lidc",
+  "written_before_results": "2026-10-20; no layer1-context or stage3 LIDC activation, no probe and no feature page had been computed when this file was written",
+  "questions": {
+    "resolution": "do the FMCIB layer1 complete-context dictionary (4 mm grid) and the VISTA3D stage3 dictionary (12 mm grid) give stronger or weaker radiologist-rating associations than FMCIB layer2 (7 mm) and VISTA3D stage2 (6 mm)",
+    "probe": "is a rating carried by a few features of the dictionary together, by the layer but not by the dictionary, or by neither; compared with the raw encoder channels and the random-weight controls",
+    "pages": "do the clear features of run 20261019_sae_lidc show a consistent, nameable pattern in their highest-activation nodules against size-matched low-activation nodules",
+    "task": "a blinded, scored reader task for the features kept after the pages"
+  },
+  "extra_sites": ["fmcib:layer1_context", "vista:stage3"],
+  "all_sites": ["fmcib:layer2", "vista:stage2", "fmcib:layer1_context", "vista:stage3"],
+  "reference_seed": 2025,
+  "extra_site_rules": {
+    "computation": "the same deployed inputs and encoders as run 20261019_sae_lidc: FMCIB layer1 on the 84 mm context cube at native positions 5-16 (only positions whose 35-voxel receptive field lies inside the crop, as in the campaign), VISTA3D stage3 on the 72 mm window; trained and random-weight (seed 20261014) encoders; verified on six LUNA25 records against the cached campaign arrays",
+    "peak_region": "for each stable feature, the region (within 4 mm or 4-10 mm of the nodule surface) with the larger mean activation on the 1,264 LUNA25 training profile members, computed from the cached campaign arrays",
+    "association": "the discovery, confirmation, random-weight, cross-seed and agreement rules of configs/sae_lidc.json; the classifier-effect criterion is not applied at these sites, so they report confirmed and replicated associations only"
+  },
+  "probe": {
+    "inputs": {
+      "dictionary": "both region means (within 4 mm, 4-10 mm) of every stable feature of the reference-seed dictionary",
+      "raw": "both region means of every channel of the encoder output at the site",
+      "random_dictionary": "both region means of every stable feature of the random-weight reference dictionary",
+      "random_raw": "both region means of every channel of the random-weight encoder at the site"
+    },
+    "model": "within each half, inputs and rating are rank-transformed and residualised on the rank of log consensus volume; a lasso is fitted on the discovery half with 5-fold cross-validation (50 penalties) and the largest penalty within one standard error of the minimum; the prediction on the confirmation half is correlated (Pearson) with the confirmation rating residuals",
+    "bootstrap": 2000,
+    "seed": 20261020,
+    "reading": "dictionary close to raw and both above the best single feature: the rating is spread over several features; raw clearly above dictionary: the dictionary loses it; both near the random-weight inputs: the layer adds little beyond image statistics"
+  },
+  "pages": {
+    "features": "the clear features of run 20261019_sae_lidc (FMCIB layer2 3015, 507, 1135, 3507, 1139, 1219, 241; VISTA3D stage2 202, 743, 114, 551, 21, 182, 636, 307, 392, 147)",
+    "pools": {"lidc": "discovery half of run 20261019_sae_lidc", "luna25": "LUNA25 training profile members of the interpretation campaign, excluding the corrupted FLARE crop 119347_2_20000102"},
+    "high": 12,
+    "low_rule": "for each high nodule, the not yet used nodule with the nearest log volume among those whose target is at or below the 20th percentile of that pool",
+    "display": "axial slice through the crop centre, 50 mm field, lung window (-1000, 400 HU), consensus or provided nodule contour, the feature's activation map sampled onto the slice (trilinear on the deployed grid), one colour range per feature",
+    "consistency": "for each confirmed rating of the feature: mean rating of the 30 highest against 30 size-matched low LIDC discovery nodules, with a Mann-Whitney p-value; for LUNA25, the malignant share of the 30 highest against 30 size-matched low nodules",
+    "low_rule_amendment": "2026-10-20, after the first pages and before any reader judgement or task item: the 20th-percentile pool held almost no large nodules, so the high and low groups differed in size (LIDC median volume 1,133 against 101 mm3 for VISTA3D 202, 1,386 against 331 for 182). The low partner of each high nodule is now the nodule with the lowest target among the 10 unused nodules nearest in log volume; the first pages are kept in pages_v1",
+    "selection": "after viewing every page, a feature is kept for the reader task when its high nodules share a visible pattern that low nodules lack, the pattern is not only size or wall contact, and the 30-nodule consistency agrees in direction with every confirmed rating; 5 to 8 features are kept, preferring VISTA3D stage2; every judgement is written down"
+  },
+  "task": {
+    "pool": "confirmation half of run 20261019_sae_lidc (the pages use only the discovery half)",
+    "set_size": 8,
+    "sets": "per kept feature, set H = the 8 highest-activation nodules of the LIDC confirmation pool; set L = 8 size-matched low nodules by the page rule; A/B order drawn per feature with seed 20261020",
+    "controls": 2,
+    "control_rule": "two control items whose two sets are drawn at random, size-matched, from the same pool, to estimate how often a reader reports a difference without one",
+    "display": "per nodule an axial and a coronal slice through the crop centre, 50 mm field, lung window, no activation map, no ratings",
+    "questions": ["free description of the main visual difference between set A and set B", "which set is more spiculated", "which set is more lobulated", "which set has less sharply defined margins", "which set is more solid", "which set is more calcified", "which set looks more suspicious for malignancy", "which set is more conspicuous", "which set more often touches the pleura, chest wall or mediastinum", "which set has larger nodules"],
+    "answers": "A, B or no clear difference",
+    "reader_review": "docs/research/sae_lidc_reader_review_20261020.csv",
+    "contact_prediction":"added before any task item was drawn: for kept features whose prespecified LIDC correlation with lung_boundary_contact_fraction (run 20261019_sae_lidc, prespecified.csv) is Holm-significant, the contact question is also predicted, in the direction of that correlation",
+    "scoring": "per kept feature, every confirmed rating of the feature gives a predicted set for the matching question; the feature is confirmed by a reader when all predicted questions are answered with the predicted set; the size question is expected to show no clear difference; control items show the rate of differences reported without one",
+    "privacy": "task images, the set key and answer sheets stay in local storage; only aggregate scores may be published"
+  },
+  "test_used": false
+}

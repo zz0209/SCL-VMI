@@ -373,6 +373,75 @@ def ceiling(members_table, readers, ratings, size, config):
     return pd.DataFrame(rows)
 
 
+def site_associations(name, arrays, members_table, ratings, peaks, effects, config, generator):
+    # peaks: per encoder, a Series from feature to region index; effects: classifier effect table of the site, or None where none was computed.
+    settings = config["association"]
+    # Region emptiness depends only on the grid distance map, so one feature decides it for the whole site.
+    valid = np.isfinite(arrays["trained"][:, 0, :2]).all(1)
+    frame = members_table[valid].reset_index(drop=True)
+    halves = {half: (frame.split == half).to_numpy() for half in ["discovery", "confirmation"]}
+    size = np.log(frame.consensus_volume_mm3.to_numpy())[:, None]
+    values_ratings = frame[ratings].to_numpy(dtype=float)
+    targets, features, regions = {}, {}, {}
+    for encoder, mask_key in [("trained", "stable"), ("random", "random_stable")]:
+        features[encoder] = np.flatnonzero(arrays[mask_key])
+        regions[encoder] = peaks[encoder].loc[features[encoder]].to_numpy()
+        targets[encoder] = arrays[encoder][valid][:, features[encoder], regions[encoder]]
+    matched = arrays["matched"][:, valid][:, :, np.arange(len(features["trained"])), regions["trained"]]
+    correlations = {}
+    for encoder in ["trained", "random"]:
+        active = np.stack([(targets[encoder][halves[half]] > 0).sum(0) for half in halves], 1).min(1) >= settings["minimum_active"]
+        correlations[encoder] = {"active": active, **{half: partial(targets[encoder][halves[half]], values_ratings[halves[half]], size[halves[half]]) for half in halves}}
+    rows = []
+    for index, rating in enumerate(ratings):
+        threshold = float(np.nanpercentile(np.abs(correlations["random"]["discovery"][0][correlations["random"]["active"], index]), 95))
+        for encoder in ["trained", "random"]:
+            result = correlations[encoder]
+            for position, feature in enumerate(features[encoder]):
+                discovery_rho = result["discovery"][0][position, index]
+                rows.append({"site": name, "encoder": encoder, "rating": rating, "feature": int(feature), "active": bool(result["active"][position]),
+                             "active_discovery": int((targets[encoder][halves["discovery"], position] > 0).sum()), "active_confirmation": int((targets[encoder][halves["confirmation"], position] > 0).sum()),
+                             "discovery_rho": discovery_rho, "discovery_p": result["discovery"][1][position, index], "random_threshold": threshold,
+                             "selected": bool(result["active"][position] and abs(np.nan_to_num(discovery_rho)) > threshold),
+                             "confirmation_rho": result["confirmation"][0][position, index], "confirmation_p": result["confirmation"][1][position, index]})
+    table = pd.DataFrame(rows).assign(confirmation_q=np.nan, confirmed=False, replicated_seeds=np.nan, confirmation_low=np.nan, confirmation_high=np.nan)
+    for encoder in ["trained", "random"]:
+        selected = (table.encoder == encoder) & table.selected
+        if selected.any():
+            # A confirmation value without variance counts as p = 1.
+            q = stats.false_discovery_control(table.loc[selected, "confirmation_p"].fillna(1.0).to_numpy(), method="bh")
+            same = (np.sign(table.loc[selected, "confirmation_rho"].fillna(0.0)) == np.sign(table.loc[selected, "discovery_rho"])).to_numpy()
+            table.loc[selected, "confirmation_q"] = q
+            table.loc[selected, "confirmed"] = same & (q < 0.05)
+    position_of = {int(feature): position for position, feature in enumerate(features["trained"])}
+    confirmation = halves["confirmation"]
+    for row_index in table.index[(table.encoder == "trained") & table.confirmed]:
+        row = table.loc[row_index]
+        position, index = position_of[int(row.feature)], ratings.index(row.rating)
+        rating_values, covariate = values_ratings[confirmation][:, [index]], size[confirmation]
+        replicated = 0
+        for seed_values in matched:
+            rho, p = partial(seed_values[confirmation][:, [position]], rating_values, covariate)
+            replicated += int(np.sign(rho[0, 0]) == np.sign(row.confirmation_rho) and p[0, 0] < 0.05)
+        target = targets["trained"][confirmation][:, [position]]
+        draws = []
+        for _ in range(settings["bootstrap"]):
+            sample = generator.integers(len(target), size=len(target))
+            draws.append(partial(target[sample], rating_values[sample], covariate[sample])[0][0, 0])
+        table.loc[row_index, ["replicated_seeds", "confirmation_low", "confirmation_high"]] = [replicated, *np.nanpercentile(draws, [2.5, 97.5])]
+    effect_columns = ["effect_rank", "contribution_mean_abs", "category", "development_r2"]
+    table = table.merge(effects, on="feature", how="left") if effects is not None else table.assign(**{column: np.nan for column in effect_columns})
+    table.loc[table.encoder == "random", effect_columns] = np.nan
+    table["clear"] = (table.encoder == "trained") & table.confirmed & (table.replicated_seeds >= 6) & table.active & (table.effect_rank <= config["classifier_effect"]["effect_rank"])
+    summary = {"nodules": int(valid.sum()), "excluded_empty_region": int((~valid).sum()), "halves": {half: int(mask.sum()) for half, mask in halves.items()},
+               "stable": {encoder: int(len(features[encoder])) for encoder in features}, "active": {encoder: int(correlations[encoder]["active"].sum()) for encoder in correlations},
+               "selected_pairs": table[table.selected].groupby("encoder").size().to_dict(), "confirmed_pairs": table[table.confirmed].groupby("encoder").size().to_dict(),
+               "confirmed_pairs_per_active_feature": {encoder: float(((table.encoder == encoder) & table.confirmed).sum() / correlations[encoder]["active"].sum()) for encoder in correlations},
+               "replicated_pairs": int(((table.encoder == "trained") & table.confirmed & (table.replicated_seeds >= 6)).sum()),
+               "clear_features": sorted(int(value) for value in table[table.clear].feature.unique())}
+    return {"table": table, "summary": summary, "frame": frame, "valid": valid, "targets": targets, "features": features, "size": size, "ratings": values_ratings, "position_of": position_of}
+
+
 def analyze(smoke):
     config = configuration()
     settings = config["association"]
@@ -395,77 +464,19 @@ def analyze(smoke):
         with np.load(run / f"activations{'_smoke' if smoke else ''}_{model}_{site}.npz") as saved:
             assert (saved["identifiers"] == members_table.identifier.to_numpy()).all()
             arrays = {key: saved[key] for key in saved.files}
-        # Region emptiness depends only on the grid distance map, so one feature decides it for the whole site.
-        valid = np.isfinite(arrays["trained"][:, 0, :2]).all(1)
-        frame = members_table[valid].reset_index(drop=True)
-        halves = {half: (frame.split == half).to_numpy() for half in ["discovery", "confirmation"]}
-        size = np.log(frame.consensus_volume_mm3.to_numpy())[:, None]
-        values_ratings = frame[ratings].to_numpy(dtype=float)
-        targets, features, peaks = {}, {}, {}
-        for encoder, mask_key in [("trained", "stable"), ("random", "random_stable")]:
-            features[encoder] = np.flatnonzero(arrays[mask_key])
-            rows = explanations[(explanations.site == name) & (explanations.encoder == encoder)].set_index("feature")
-            peaks[encoder] = rows.loc[features[encoder], "peak_region"].map(statistics.index).to_numpy()
-            targets[encoder] = arrays[encoder][valid][:, features[encoder], peaks[encoder]]
-        matched = arrays["matched"][:, valid][:, :, np.arange(len(features["trained"])), peaks["trained"]]
-        correlations = {}
-        for encoder in ["trained", "random"]:
-            active = np.stack([(targets[encoder][halves[half]] > 0).sum(0) for half in halves], 1).min(1) >= settings["minimum_active"]
-            correlations[encoder] = {"active": active, **{half: partial(targets[encoder][halves[half]], values_ratings[halves[half]], size[halves[half]]) for half in halves}}
-        rows = []
-        for index, rating in enumerate(ratings):
-            threshold = float(np.nanpercentile(np.abs(correlations["random"]["discovery"][0][correlations["random"]["active"], index]), 95))
-            for encoder in ["trained", "random"]:
-                result = correlations[encoder]
-                for position, feature in enumerate(features[encoder]):
-                    discovery_rho = result["discovery"][0][position, index]
-                    rows.append({"site": name, "encoder": encoder, "rating": rating, "feature": int(feature), "active": bool(result["active"][position]),
-                                 "active_discovery": int((targets[encoder][halves["discovery"], position] > 0).sum()), "active_confirmation": int((targets[encoder][halves["confirmation"], position] > 0).sum()),
-                                 "discovery_rho": discovery_rho, "discovery_p": result["discovery"][1][position, index], "random_threshold": threshold,
-                                 "selected": bool(result["active"][position] and abs(np.nan_to_num(discovery_rho)) > threshold),
-                                 "confirmation_rho": result["confirmation"][0][position, index], "confirmation_p": result["confirmation"][1][position, index]})
-        table = pd.DataFrame(rows).assign(confirmation_q=np.nan, confirmed=False, replicated_seeds=np.nan, confirmation_low=np.nan, confirmation_high=np.nan)
-        for encoder in ["trained", "random"]:
-            selected = (table.encoder == encoder) & table.selected
-            if selected.any():
-                # A confirmation value without variance counts as p = 1.
-                q = stats.false_discovery_control(table.loc[selected, "confirmation_p"].fillna(1.0).to_numpy(), method="bh")
-                same = (np.sign(table.loc[selected, "confirmation_rho"].fillna(0.0)) == np.sign(table.loc[selected, "discovery_rho"])).to_numpy()
-                table.loc[selected, "confirmation_q"] = q
-                table.loc[selected, "confirmed"] = same & (q < 0.05)
-        position_of = {int(feature): position for position, feature in enumerate(features["trained"])}
-        confirmation = halves["confirmation"]
-        for row_index in table.index[(table.encoder == "trained") & table.confirmed]:
-            row = table.loc[row_index]
-            position, index = position_of[int(row.feature)], ratings.index(row.rating)
-            rating_values, covariate = values_ratings[confirmation][:, [index]], size[confirmation]
-            replicated = 0
-            for seed_values in matched:
-                rho, p = partial(seed_values[confirmation][:, [position]], rating_values, covariate)
-                replicated += int(np.sign(rho[0, 0]) == np.sign(row.confirmation_rho) and p[0, 0] < 0.05)
-            target = targets["trained"][confirmation][:, [position]]
-            draws = []
-            for _ in range(settings["bootstrap"]):
-                sample = generator.integers(len(target), size=len(target))
-                draws.append(partial(target[sample], rating_values[sample], covariate[sample])[0][0, 0])
-            table.loc[row_index, ["replicated_seeds", "confirmation_low", "confirmation_high"]] = [replicated, *np.nanpercentile(draws, [2.5, 97.5])]
-        table = table.merge(effects[effects.site == name].drop(columns="site"), on="feature", how="left")
-        table.loc[table.encoder == "random", ["effect_rank", "contribution_mean_abs", "category", "development_r2"]] = np.nan
-        table["clear"] = (table.encoder == "trained") & table.confirmed & (table.replicated_seeds >= 6) & table.active & (table.effect_rank <= config["classifier_effect"]["effect_rank"])
-        tables.append(table)
-        summaries[name] = {"nodules": int(valid.sum()), "excluded_empty_region": int((~valid).sum()), "halves": {half: int(mask.sum()) for half, mask in halves.items()},
-                           "stable": {encoder: int(len(features[encoder])) for encoder in features}, "active": {encoder: int(correlations[encoder]["active"].sum()) for encoder in correlations},
-                           "selected_pairs": table[table.selected].groupby("encoder").size().to_dict(), "confirmed_pairs": table[table.confirmed].groupby("encoder").size().to_dict(),
-                           "confirmed_pairs_per_active_feature": {encoder: float(((table.encoder == encoder) & table.confirmed).sum() / correlations[encoder]["active"].sum()) for encoder in correlations},
-                           "clear_features": sorted(int(value) for value in table[table.clear].feature.unique())}
+        peaks = {encoder: explanations[(explanations.site == name) & (explanations.encoder == encoder)].set_index("feature").peak_region.map(statistics.index) for encoder in ["trained", "random"]}
+        result = site_associations(name, arrays, members_table, ratings, peaks, effects[effects.site == name].drop(columns="site"), config, generator)
+        tables.append(result["table"])
+        summaries[name] = result["summary"]
+        frame, targets, size, values_ratings = result["frame"], result["targets"], result["size"], result["ratings"]
         measures = {rating: values_ratings[:, ratings.index(rating)] for rating in ratings} | {measure: frame[f"contact_{measure}"].to_numpy(dtype=float) for measure in config["contact"]["measures"]}
         for feature in config["prespecified"]["features"][name]:
-            position = position_of[feature]
+            position = result["position_of"][feature]
             hypothesis = config["prespecified"]["hypotheses"].get(f"{name}:{feature}", {})
             for measure, value in measures.items():
                 rho, p = partial(targets["trained"][:, [position]], value[:, None], size)
                 stated = hypothesis.get("measure") == measure
-                prespecified.append({"site": name, "feature": feature, "measure": measure, "rho": rho[0, 0], "p": p[0, 0], "nodules": int(valid.sum()), "active": int((targets["trained"][:, position] > 0).sum()),
+                prespecified.append({"site": name, "feature": feature, "measure": measure, "rho": rho[0, 0], "p": p[0, 0], "nodules": len(frame), "active": int((targets["trained"][:, position] > 0).sum()),
                                      "hypothesis_sign": hypothesis["sign"] if stated else np.nan, "luna25_rho": hypothesis["luna25_size_adjusted_rho"] if stated else np.nan})
     associations = pd.concat(tables, ignore_index=True)
     associations.to_csv(destination / "associations.csv", index=False)

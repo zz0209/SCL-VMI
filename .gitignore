@@ -25,6 +25,7 @@
 !/configs/encoder_improvement.json
 !/configs/encoder_improvement_extension.json
 !/configs/sae_lidc.json
+!/configs/sae_lidc_followup.json
 !/configs/environments/
 /configs/environments/*
 !/configs/environments/pipeline.json
@@ -72,6 +73,7 @@
 !/scripts/pipeline/export_sae_autointerp.py
 !/scripts/pipeline/export_sae_radiomics.py
 !/scripts/pipeline/export_sae_lidc.py
+!/scripts/pipeline/export_sae_lidc_followup.py
 !/scripts/pipeline/compare_encoders.py
 !/scripts/pipeline/compare_automsc.py
 !/scripts/pipeline/summarize_sae_interpretation.py
@@ -151,6 +153,7 @@
 !/src/sclvmi/encoder_layers.py
 !/src/sclvmi/encoder_improvement.py
 !/src/sclvmi/sae_lidc.py
+!/src/sclvmi/sae_lidc_followup.py
 !/scripts/pipeline/check_sae_campaign_defined_diagnostics.py
 
 !/tests/
@@ -321,6 +324,19 @@
 !/results/20261019_sae_lidc/ratings.svg
 !/results/20261019_sae_lidc/prespecified.png
 !/results/20261019_sae_lidc/prespecified.svg
+!/results/20261020_sae_lidc_followup/
+/results/20261020_sae_lidc_followup/*
+!/results/20261020_sae_lidc_followup/README.md
+!/results/20261020_sae_lidc_followup/consistency.csv
+!/results/20261020_sae_lidc_followup/reader_decisions.csv
+!/results/20261020_sae_lidc_followup/resolution.csv
+!/results/20261020_sae_lidc_followup/associations_extra_sites.csv
+!/results/20261020_sae_lidc_followup/probe.csv
+!/results/20261020_sae_lidc_followup/provenance.json
+!/results/20261020_sae_lidc_followup/resolution.png
+!/results/20261020_sae_lidc_followup/resolution.svg
+!/results/20261020_sae_lidc_followup/probe.png
+!/results/20261020_sae_lidc_followup/probe.svg
 
 !/local_tools/
 /local_tools/*
