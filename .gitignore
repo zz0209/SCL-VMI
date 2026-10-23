@@ -28,6 +28,7 @@
 !/configs/sae_lidc_followup.json
 !/configs/flexict_luna25.json
 !/configs/flexict_sae.json
+!/configs/flexict_text.json
 !/configs/environments/
 /configs/environments/*
 !/configs/environments/pipeline.json
@@ -79,6 +80,7 @@
 !/scripts/pipeline/compare_encoders.py
 !/scripts/pipeline/compare_flexict_luna25.py
 !/scripts/pipeline/export_flexict_sae.py
+!/scripts/pipeline/export_flexict_text.py
 !/scripts/pipeline/compare_automsc.py
 !/scripts/pipeline/summarize_sae_interpretation.py
 !/scripts/sae_validation/
@@ -160,6 +162,7 @@
 !/src/sclvmi/sae_lidc_followup.py
 !/src/sclvmi/flexict_luna25.py
 !/src/sclvmi/flexict_sae.py
+!/src/sclvmi/flexict_text.py
 !/scripts/pipeline/check_sae_campaign_defined_diagnostics.py
 
 !/tests/
@@ -366,6 +369,29 @@
 !/results/20261021_flexict_sae/classifier_gate.svg
 !/results/20261021_flexict_sae/sae_quality.png
 !/results/20261021_flexict_sae/sae_quality.svg
+!/results/20261023_flexict_text/
+/results/20261023_flexict_text/*
+!/results/20261023_flexict_text/README.md
+!/results/20261023_flexict_text/summary.json
+!/results/20261023_flexict_text/provenance.json
+!/results/20261023_flexict_text/text_tests.csv
+!/results/20261023_flexict_text/text_tests_specific.csv
+!/results/20261023_flexict_text/usable_concepts.csv
+!/results/20261023_flexict_text/usable_concepts_specific.csv
+!/results/20261023_flexict_text/w20_naming.csv
+!/results/20261023_flexict_text/bridge_f32_b10.csv
+!/results/20261023_flexict_text/bridge_f40_b08.csv
+!/results/20261023_flexict_text/contributions_w20_b16.csv
+!/results/20261023_flexict_text/contributions_f32_b10.csv
+!/results/20261023_flexict_text/contributions_f40_b08.csv
+!/results/20261023_flexict_text/scan_tests.png
+!/results/20261023_flexict_text/scan_tests.svg
+!/results/20261023_flexict_text/token_tests.png
+!/results/20261023_flexict_text/token_tests.svg
+!/results/20261023_flexict_text/scan_tests_specific.png
+!/results/20261023_flexict_text/scan_tests_specific.svg
+!/results/20261023_flexict_text/token_tests_specific.png
+!/results/20261023_flexict_text/token_tests_specific.svg
 
 !/local_tools/
 /local_tools/*

@@ -96,6 +96,14 @@ A [follow-up](results/20261020_sae_lidc_followup/README.md) looks at the clear f
 - **Why the two field dictionaries are fine-tuned:** their max-pooling heads read directions that ordinary SAE reconstruction serves poorly. Both field dictionaries are therefore the token-loss dictionaries fine-tuned with two terms on the error the head reads, which keeps their seed-reproducible features.
 - **AP at the field sites:** it is judged on the mean over the 8 seeds, since the development AP rests on 113 malignant nodules.
 
+### FlexiCT text readout and feature naming
+
+[Run 20261023_flexict_text](results/20261023_flexict_text/README.md) checks whether the FlexiCT-3D-VLM text encoder can name these dictionaries' features. Concept scores were tested against measured properties and radiologist ratings in LUNA25 (1,686 patients) and LIDC-IDRI (582 patients), with eight out-of-field text controls.
+- **Scan level:** the whole-CT image embedding reads large nodule size, ground-glass and part-solid texture, lobulation, emphysema and medical material beyond the controls. Malignancy and spiculation each pass in one dataset; calcification and pleural contact fail.
+- **Token level:** the projections of single patch tokens mainly carry a component shared by every text direction. Only "pulmonary fibrotic sequela" passes.
+- **Naming:** no stable w20_b16 feature receives a text name under the pre-specified rule. Feature write directions stay close to the controls, and single features move the text scores by at most 0.08 SD.
+- **Classifiers:** the largest single dependency of each malignancy classifier is a feature that reappears in only 2–3 of 7 other seeds and follows nodule volume. Removing every feature below the stability bar lowers the 40 mm-field classifier's development AUROC from 0.917 to 0.781, while removing every stable feature lowers it to 0.897.
+
 ### Feature observation materials
 
 The separate `20261008` FMCIB layer1/k64 dictionary has [feature-level research checks](results/20261008_sae_feature_validation/README.md): 128 patient-distinct CT inputs, three SAE seeds, translation and position controls, and patient-balanced correspondence. Thirteen features pass the numerical screens; nine provide repeated broad image-content descriptions as research starting points. The [feature catalog](results/20261008_sae_feature_validation/reviewed_features.csv) retains each description and its qualifications. These are conditional development-set observations from one AI image reviewer; clinical identity and feature-specific causal effects remain untested. The private `20261008_feature_validation/fmcib/research_materials.json` contains fixed weights and CT evidence paths. Its [dictionary study](results/20261008_spatial_sae/README.md) records the associated earlier training results.

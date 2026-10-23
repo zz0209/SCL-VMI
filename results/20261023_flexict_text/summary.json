@@ -1,0 +1,246 @@
+{
+  "run": "20261023_flexict_text",
+  "patients": {
+    "luna25": {
+      "train": 1264,
+      "development": 422
+    },
+    "lidc": {
+      "discovery": 291,
+      "confirmation": 291
+    }
+  },
+  "exclusions": {
+    "luna25": {
+      "nodule_centre_outside_window": 1,
+      "lung_failed": 0,
+      "metal_at_least_minimum": 276
+    },
+    "lidc": {
+      "nodule_centre_outside_window": 1,
+      "lung_failed": 5,
+      "metal_at_least_minimum": 296
+    }
+  },
+  "step1_usable": {
+    "scan": [
+      "medical_material",
+      "emphysema",
+      "large_nodule",
+      "part_solid_nodule",
+      "ground_glass_nodule",
+      "lobulated_nodule"
+    ],
+    "token": [
+      "pulmonary_fibrotic_sequela"
+    ]
+  },
+  "step1_tests": {
+    "total": 99,
+    "passed": 14
+  },
+  "step1_specific_usable": {
+    "scan": [
+      "medical_material",
+      "part_solid_nodule"
+    ],
+    "token": [
+      "medical_material"
+    ]
+  },
+  "step1_specific_tests": {
+    "total": 99,
+    "passed": 6
+  },
+  "step2_naming": {
+    "stable_features": 1102,
+    "token_concepts": [
+      "pulmonary_fibrotic_sequela"
+    ],
+    "scan_concepts": [
+      "medical_material",
+      "emphysema",
+      "large_nodule",
+      "part_solid_nodule",
+      "ground_glass_nodule",
+      "lobulated_nodule"
+    ],
+    "named_features": 0,
+    "names": {},
+    "reference_passing_before_cross_seed": {
+      "pulmonary_fibrotic_sequela": 1,
+      "medical_material": 0,
+      "emphysema": 2,
+      "large_nodule": 0,
+      "part_solid_nodule": 0,
+      "ground_glass_nodule": 0,
+      "lobulated_nodule": 0
+    }
+  },
+  "step5_bridge": {
+    "f32_b10": {
+      "stable_features": 752,
+      "bridged": 0,
+      "direct_any": 42,
+      "named": 0,
+      "names": {},
+      "best_w20_train_median": 0.2818011084696964
+    },
+    "f40_b08": {
+      "stable_features": 615,
+      "bridged": 0,
+      "direct_any": 41,
+      "named": 0,
+      "names": {},
+      "best_w20_train_median": 0.3711763596586875
+    }
+  },
+  "step4_contributions": {
+    "w20_b16": {
+      "group": "trained_flexict_vlm_w20_b16_e4_k64",
+      "head_run": "flexict_vlm_max_c1_s2025",
+      "records": 1285,
+      "probability_max_abs_difference": 0.0018010522010222518,
+      "auroc": 0.8992796520583527,
+      "groups": {
+        "named": {
+          "features": 0,
+          "summed_mean_absolute_effect": 0.0,
+          "joint_mean_absolute_logit_change": 0.0,
+          "joint_auroc": 0.8992796520583527
+        },
+        "unnamed": {
+          "features": 1102,
+          "summed_mean_absolute_effect": 4.753131252060489,
+          "joint_mean_absolute_logit_change": 1.3863122271511574,
+          "joint_auroc": 0.8652481198465675
+        },
+        "unstable": {
+          "features": 2354,
+          "summed_mean_absolute_effect": 4.968446854035213,
+          "joint_mean_absolute_logit_change": 1.1965430209927754,
+          "joint_auroc": 0.8630583829170316
+        }
+      },
+      "concept_model": {
+        "concepts": 0.06682642601823263,
+        "log_volume": 0.14766195999419574,
+        "concepts_and_log_volume": 0.18287949751351262
+      }
+    },
+    "f32_b10": {
+      "group": "trained_flexict_3d_f32_b10_e4_k32_ft_w1",
+      "head_run": "flexict_3d_max_c1_s2025",
+      "records": 1285,
+      "probability_max_abs_difference": 0.000807003006280782,
+      "auroc": 0.9207541756018003,
+      "groups": {
+        "named": {
+          "features": 0,
+          "summed_mean_absolute_effect": 0.0,
+          "joint_mean_absolute_logit_change": 0.0,
+          "joint_auroc": 0.9207541756018003
+        },
+        "unnamed": {
+          "features": 752,
+          "summed_mean_absolute_effect": 10.584452168918887,
+          "joint_mean_absolute_logit_change": 4.514366916178614,
+          "joint_auroc": 0.9134298831133528
+        },
+        "unstable": {
+          "features": 2704,
+          "summed_mean_absolute_effect": 14.201588124468747,
+          "joint_mean_absolute_logit_change": 2.252733089658885,
+          "joint_auroc": 0.8517472590534296
+        }
+      }
+    },
+    "f40_b08": {
+      "group": "trained_flexict_vlm_f40_b08_e4_k64_ft_w1_uniform_192k",
+      "head_run": "flexict_vlm_max_c1_s2025",
+      "records": 1285,
+      "probability_max_abs_difference": 0.0006546268576805292,
+      "auroc": 0.9166691836056662,
+      "groups": {
+        "named": {
+          "features": 0,
+          "summed_mean_absolute_effect": 0.0,
+          "joint_mean_absolute_logit_change": 0.0,
+          "joint_auroc": 0.9166691836056662
+        },
+        "unnamed": {
+          "features": 615,
+          "summed_mean_absolute_effect": 8.463252118334232,
+          "joint_mean_absolute_logit_change": 1.0645562266967177,
+          "joint_auroc": 0.8965689087559274
+        },
+        "unstable": {
+          "features": 2841,
+          "summed_mean_absolute_effect": 21.449774448567787,
+          "joint_mean_absolute_logit_change": 2.069221181686286,
+          "joint_auroc": 0.7806487661965025
+        }
+      }
+    }
+  },
+  "rules": {
+    "pass_rule": "a test passes on a split when its statistic has the stated sign, its 95% interval excludes zero and its absolute value exceeds the control bar; it passes when it passes on both splits of its dataset",
+    "usability_rule": "a concept is usable at a level (scan or token) when it has at least one test at that level and every one of its tests at that level passes; a concept without a test at a level is untested there",
+    "specific_variant": {
+      "written": "2026-10-23 after the primary step 1 results: at the token level all eight controls showed large effects in the same direction (nodule contrast 0.2 to 1.3, medialness 0.28 to 0.51), so the token scores carry a component shared by every present-minus-absent direction",
+      "question": "is there concept-specific information once that shared component is removed",
+      "rule": "every scan score and token score is replaced by itself minus the mean of the eight control scores (direction d_c - mean control direction); the controls are treated the same way; the tests, intervals, bars and pass rule are unchanged",
+      "use": "reported beside the primary analysis; the usable-concept table that steps 2 to 5 use stays the primary one"
+    },
+    "naming": {
+      "written_before_results": "2026-10-23, while the step 0 materials were being computed; no step 1 or step 2 statistic existed",
+      "features": "stable features of the reference seed of trained_flexict_vlm_w20_b16_e4_k64: development_live and reappearance in at least 6 of the 7 other seeds (stability/<group>/features.npz)",
+      "windows": "the official window of each member patient (LUNA25 train for discovery, LUNA25 development for confirmation)",
+      "write_vector": "W_patch W_dec[f]: the direction feature f adds to the image embedding per unit activation (before normalisation); direction score D(f, c) = cosine with the concept direction",
+      "token_route": {
+        "concepts": "concepts usable at the token level in step 1",
+        "colocation": "activation-weighted mean token score of concept c over the tokens where f is active, after removing f's own contribution (sum_t a_f(t) s_c(t) - g(f, c) sum_t a_f(t)^2, divided by sum_t a_f(t), with g(f, c) = scale <W_patch W_dec[f], d_c>), minus the mean token score over all tokens of the split's member windows, divided by the token-score standard deviation over those tokens",
+        "rule": "D(f, c) is at least the 99th percentile of D over the dictionary's features active on train windows and exceeds D(f, k) for every control k; the colocation score is positive and exceeds the absolute colocation score of every control on train and on development; f is active in at least 30 windows of each split"
+      },
+      "scan_route": {
+        "concepts": "concepts usable at the scan level in step 1 and not at the token level",
+        "association": "Spearman correlation over patients between f's summed activation in the window and the scan score of c recomputed with f removed (the exact embedding after ablation, normalisation included)",
+        "rule": "the same direction condition as the token route; the association is positive and exceeds the absolute association of every control on train and on development; f is active in at least 30 windows of each split"
+      },
+      "cross_seed": "a reference feature keeps a name when, in at least 6 of the 7 other seeds, its matched feature (stability matching, decoder cosine >= 0.7) satisfies the same route's rule for the same concept",
+      "causal_effect": "reported for every named feature and concept: mean change of the scan score over train member windows where f is active when f is removed from every token (exact embedding recomputation), in units of the scan-score standard deviation over train patients",
+      "unnamed": "stable features without a name stay in the catalogue with their best direction score and colocation values"
+    },
+    "bridge": {
+      "written_before_results": "2026-10-23, while the step 0 materials were being computed; no bridge statistic had been computed",
+      "sites": [
+        "f32_b10",
+        "f40_b08"
+      ],
+      "features": "stable reference-seed features of each field-site production group",
+      "records": "LUNA25 profile members (one nodule per patient): train for discovery, development for confirmation",
+      "field_activation": "maximum activation over the 216 field tokens (the classifiers read the maximum)",
+      "w20_activation": "summed activation of each stable reference-seed w20_b16 feature over the record's 27 read tokens",
+      "bridge_route": "the named w20 feature with the largest train Spearman correlation to the field feature; the bridge holds when that correlation is at least 0.5 on train and on development",
+      "direct_route": "Spearman correlation between the field activation and the mean token score of a token-usable concept over the member's nodule tokens (step 1 nodule_mean); it holds for a concept when it is positive and exceeds the absolute correlation of every control concept on train and on development",
+      "rule": "a field feature is named c when the bridge route gives a w20 feature named c and the direct route holds for c; otherwise it stays unnamed, with its best w20 match (named or not) and its correlations reported"
+    },
+    "contributions": {
+      "written_before_results": "2026-10-23, while the step 0 materials were being computed; no classifier effect had been computed",
+      "sites": {
+        "w20_b16": "flexict_vlm:w20_b16",
+        "f32_b10": "flexict_3d:f32_b10",
+        "f40_b08": "flexict_vlm:f40_b08"
+      },
+      "heads": "the seed-2025 heads used by the SAE campaign evaluation (head_run of evaluation/<production group>.json); best.pt copied from Mayo with equal SHA-256",
+      "tokens": "w20_b16: the 27 read tokens of each record from its readout window, encoded in this run; f32_b10 and f40_b08: the 216 field tokens encoded in this run (stage fields)",
+      "check": "head probabilities from these tokens reproduce the stored development predictions of the head run within 5e-3 (maximum absolute difference); the tokens are re-encoded on the local RTX 5070 Ti while the stored predictions come from the RTX 6000 Ada, and the first run with a 1e-3 limit stopped at w20_b16 with differences spread over all records (mean logit difference 0.0016, largest 0.016, equal for official and moved windows)",
+      "records": "all LUNA25 development records (1,285 nodules); the test partition is unused",
+      "effect": "for each record and each reference-seed feature active in its read tokens: head logit of the original tokens minus the logit after removing the feature's decoded contribution a_f(t) scale W_dec[f] from every token; the reconstruction error stays in the tokens",
+      "ranking": "mean absolute effect over development records; the 50 largest are listed with stability, name and the Spearman correlation between their effect and log nodule volume over the records where they are active",
+      "groups": "for each site, features are grouped into stable named, stable unnamed and unstable; the summed mean absolute effects are reported, and each group is removed jointly (all its features at once) to report the mean absolute logit change and the development AUROC",
+      "concept_model": "w20_b16 only: ridge regression (penalty chosen by 5-fold cross-validation on train records) from the mean token score over the 27 read tokens of each token-usable concept to the head logit; development R^2 of concepts alone, of log nodule volume alone and of both"
+    }
+  },
+  "test_used": false
+}

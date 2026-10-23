@@ -1,0 +1,45 @@
+concept,group,scan_tests,scan_passed,scan,token_tests,token_passed,token
+medical_material,ct_rate,1,1,usable,1,0,not usable
+arterial_wall_calcification,ct_rate,0,0,untested,0,0,untested
+cardiomegaly,ct_rate,0,0,untested,0,0,untested
+pericardial_effusion,ct_rate,0,0,untested,0,0,untested
+coronary_artery_wall_calcification,ct_rate,0,0,untested,0,0,untested
+hiatal_hernia,ct_rate,0,0,untested,0,0,untested
+lymphadenopathy,ct_rate,0,0,untested,0,0,untested
+emphysema,ct_rate,2,2,usable,2,0,not usable
+atelectasis,ct_rate,0,0,untested,0,0,untested
+lung_nodule,ct_rate,2,0,not usable,4,0,not usable
+lung_opacity,ct_rate,2,0,not usable,2,0,not usable
+pulmonary_fibrotic_sequela,ct_rate,2,0,not usable,2,2,usable
+pleural_effusion,ct_rate,0,0,untested,0,0,untested
+mosaic_attenuation_pattern,ct_rate,0,0,untested,0,0,untested
+peribronchial_thickening,ct_rate,0,0,untested,0,0,untested
+consolidation,ct_rate,2,0,not usable,2,0,not usable
+bronchiectasis,ct_rate,0,0,untested,0,0,untested
+interlobular_septal_thickening,ct_rate,2,0,not usable,2,0,not usable
+large_nodule,nodule,2,2,usable,4,0,not usable
+multiple_nodules,nodule,1,0,not usable,2,0,not usable
+solid_nodule,nodule,2,0,not usable,4,0,not usable
+part_solid_nodule,nodule,1,1,usable,3,0,not usable
+ground_glass_nodule,nodule,2,2,usable,4,0,not usable
+calcified_nodule,nodule,2,0,not usable,4,0,not usable
+spiculated_nodule,nodule,2,1,not usable,4,0,not usable
+lobulated_nodule,nodule,1,1,usable,3,0,not usable
+pleural_nodule,nodule,2,0,not usable,4,1,not usable
+well_circumscribed_nodule,nodule,1,0,not usable,3,0,not usable
+malignant_nodule,nodule,2,1,not usable,4,0,not usable
+upper_lobe,anatomy,0,0,untested,2,0,not usable
+lower_lobe,anatomy,0,0,untested,2,0,not usable
+lung_apex,anatomy,0,0,untested,2,0,not usable
+lung_base,anatomy,0,0,untested,2,0,not usable
+mediastinum,anatomy,0,0,untested,2,0,not usable
+chest_wall,anatomy,0,0,untested,2,0,not usable
+pleura,anatomy,0,0,untested,2,0,not usable
+ankle_fracture,control,0,0,untested,0,0,untested
+cataract,control,0,0,untested,0,0,untested
+dental_caries,control,0,0,untested,0,0,untested
+carpal_tunnel_syndrome,control,0,0,untested,0,0,untested
+plantar_fasciitis,control,0,0,untested,0,0,untested
+otitis_media,control,0,0,untested,0,0,untested
+tennis_elbow,control,0,0,untested,0,0,untested
+ingrown_toenail,control,0,0,untested,0,0,untested
