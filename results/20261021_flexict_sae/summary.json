@@ -1,0 +1,553 @@
+{
+  "campaign": "20261021_flexict_sae",
+  "verdicts": {
+    "flexict_3d:f32_b10": {
+      "choice": {
+        "k": 32,
+        "evaluated_k": [
+          8,
+          16,
+          32,
+          64,
+          128
+        ],
+        "downstream": true,
+        "passing_downstream": [],
+        "evaluated_downstream": [
+          [
+            16,
+            10
+          ],
+          [
+            16,
+            100
+          ]
+        ],
+        "head_read_finetune": {
+          "evaluated": [
+            [
+              16,
+              1
+            ],
+            [
+              16,
+              3
+            ],
+            [
+              16,
+              10
+            ],
+            [
+              32,
+              1
+            ],
+            [
+              32,
+              3
+            ],
+            [
+              32,
+              10
+            ],
+            [
+              64,
+              1
+            ],
+            [
+              64,
+              3
+            ],
+            [
+              64,
+              10
+            ]
+          ],
+          "screen_passing": [
+            [
+              32,
+              1
+            ],
+            [
+              32,
+              3
+            ],
+            [
+              32,
+              10
+            ],
+            [
+              64,
+              1
+            ],
+            [
+              64,
+              3
+            ],
+            [
+              64,
+              10
+            ]
+          ],
+          "failed": [
+            [
+              32,
+              10
+            ]
+          ],
+          "seeded": [
+            [
+              32,
+              1
+            ],
+            [
+              32,
+              3
+            ],
+            [
+              32,
+              10
+            ],
+            [
+              64,
+              1
+            ],
+            [
+              64,
+              3
+            ],
+            [
+              64,
+              10
+            ]
+          ],
+          "passing": [
+            [
+              32,
+              1
+            ],
+            [
+              32,
+              3
+            ],
+            [
+              64,
+              1
+            ],
+            [
+              64,
+              3
+            ],
+            [
+              64,
+              10
+            ]
+          ],
+          "first_passing": [
+            32,
+            1
+          ],
+          "rule": "added 2026-10-22 after the head-read dictionaries trained from scratch passed the gate at f32_b10 k32 with all 8 seeds but kept 46-56 stable features (670-721 with the token loss), and before any fine-tuning run beyond the smokes: for each field site, choose the smallest k, then the smallest weight, at which all 8 fine-tuned seeds pass the gate; fine-tuned dictionaries replace the from-scratch head-read dictionaries for production, which stay recorded as a comparison; the gate is unchanged",
+          "gate": "acceptance_revision"
+        },
+        "objective": {
+          "name": "ft_w1",
+          "training": {
+            "pooled_loss": {
+              "weight": 1
+            },
+            "head_space": {
+              "weight": 1
+            },
+            "steps": 8000
+          },
+          "init": "the token-loss dictionary of the same seed, matrix, k and expansion (grid or extension run); for a variant, the token-loss run of that variant"
+        },
+        "rule": "added 2026-10-22 after the head-read dictionaries trained from scratch passed the gate at f32_b10 k32 with all 8 seeds but kept 46-56 stable features (670-721 with the token loss), and before any fine-tuning run beyond the smokes: for each field site, choose the smallest k, then the smallest weight, at which all 8 fine-tuned seeds pass the gate; fine-tuned dictionaries replace the from-scratch head-read dictionaries for production, which stay recorded as a comparison; the gate is unchanged",
+        "steps": 48000,
+        "pool": false,
+        "four_seed_stable": {
+          "48000": 725,
+          "192000": 903
+        },
+        "stable_nodule_features": {
+          "trained_flexict_3d_f32_b10_e4_k32_ft_w1": 78,
+          "trained_flexict_3d_f32_b10_e4_k32_ft_w1_nodule75": 156,
+          "random_flexict_3d_f32_b10_e4_k32": 0,
+          "random_flexict_3d_f32_b10_e4_k32_nodule75": 2
+        },
+        "nodule_region_stable_explained_variance": {
+          "trained_flexict_3d_f32_b10_e4_k32_ft_w1": 0.3379863668559868,
+          "trained_flexict_3d_f32_b10_e4_k32_ft_w1_nodule75": 0.27987978810642744,
+          "random_flexict_3d_f32_b10_e4_k32": 0.6396191114130247,
+          "random_flexict_3d_f32_b10_e4_k32_nodule75": 0.39285241634122725
+        },
+        "pool_passes_classifier": false,
+        "rules": {
+          "length": "at the chosen k, 192,000 steps replace 48,000 when, over seeds 2025-2028 with stable meaning reappearance in all 3 other seeds, the reference seed's stable features rise by at least 20% and the 192,000-step reference dictionary passes the fixed-classifier gate",
+          "pool": "user decision 2026-10-15 (option A), applied per site: the nodule-pool variant replaces the uniform dictionaries when all 8 seeds pass the fixed-classifier gate, stable nodule-specific features (nodule enrichment >= 3 on development patients) clearly exceed both the uniform dictionaries and the random-weight control, and stable-feature explained variance at the nodule region exceeds that of the uniform dictionaries",
+          "clearly_exceed": "at least 1.5 times the comparison count and at least 5 more features (reference seeds)"
+        },
+        "production_check": {
+          "group": "trained_flexict_3d_f32_b10_e4_k32_ft_w1_uniform_192k",
+          "classifier_gate": "failed",
+          "rule": "added 2026-10-23 after the 192,000-step productions were evaluated, the user having delegated this choice: a 192,000-step production replaces the 48,000-step dictionaries only when all its 8 seeds pass the gate (the site's gate, with text fidelity at w20_b16); otherwise the 48,000-step dictionaries of the chosen configuration stay production. Outcome: w20_b16 192,000 steps fail (seed 2032 AP decrease 0.0213) and f32_b10 fail (seed 2031 AUROC decrease 0.0128, mean AP decrease 0.028), so both keep 48,000 steps; f40_b08 192,000 steps pass"
+        },
+        "rejected_steps": 192000
+      },
+      "production": {
+        "trained": "trained_flexict_3d_f32_b10_e4_k32_ft_w1",
+        "random": "random_flexict_3d_f32_b10_e4_k32"
+      },
+      "classifier_gate": "passed",
+      "gate": "acceptance_revision",
+      "classifier_mae_range": [
+        0.014675471000373363,
+        0.01603728160262108
+      ],
+      "auroc_decrease_range": [
+        -0.00014346552296962134,
+        0.008758947718143117
+      ],
+      "ap_decrease_range": [
+        0.0054390517938960325,
+        0.04238764891909874
+      ],
+      "ap_decrease_mean": 0.018896973327965652,
+      "reference_fvu_below_pca": true,
+      "reference_sample_fvu": 0.1724787294817362,
+      "pca_same_rank_fvu": 0.29359584999411775,
+      "stable_features": {
+        "trained": 752,
+        "random": 157
+      },
+      "stable_exceeds_random": true,
+      "all_seeds_pass_text": true,
+      "text_image_cosine_range": [
+        NaN,
+        NaN
+      ],
+      "text_median_spearman_range": [
+        NaN,
+        NaN
+      ],
+      "accepted": true
+    },
+    "flexict_vlm:f40_b08": {
+      "choice": {
+        "k": 64,
+        "evaluated_k": [
+          8,
+          16,
+          32,
+          64,
+          128
+        ],
+        "downstream": true,
+        "passing_downstream": [],
+        "evaluated_downstream": [],
+        "head_read_finetune": {
+          "evaluated": [
+            [
+              16,
+              1
+            ],
+            [
+              16,
+              3
+            ],
+            [
+              16,
+              10
+            ],
+            [
+              32,
+              1
+            ],
+            [
+              32,
+              3
+            ],
+            [
+              32,
+              10
+            ],
+            [
+              64,
+              1
+            ],
+            [
+              64,
+              3
+            ],
+            [
+              64,
+              10
+            ]
+          ],
+          "screen_passing": [
+            [
+              32,
+              1
+            ],
+            [
+              32,
+              3
+            ],
+            [
+              32,
+              10
+            ],
+            [
+              64,
+              1
+            ],
+            [
+              64,
+              3
+            ],
+            [
+              64,
+              10
+            ]
+          ],
+          "failed": [
+            [
+              32,
+              1
+            ],
+            [
+              32,
+              3
+            ],
+            [
+              32,
+              10
+            ]
+          ],
+          "seeded": [
+            [
+              32,
+              1
+            ],
+            [
+              32,
+              3
+            ],
+            [
+              32,
+              10
+            ],
+            [
+              64,
+              1
+            ],
+            [
+              64,
+              10
+            ]
+          ],
+          "passing": [
+            [
+              64,
+              1
+            ],
+            [
+              64,
+              10
+            ]
+          ],
+          "first_passing": [
+            64,
+            1
+          ],
+          "rule": "added 2026-10-22 after the head-read dictionaries trained from scratch passed the gate at f32_b10 k32 with all 8 seeds but kept 46-56 stable features (670-721 with the token loss), and before any fine-tuning run beyond the smokes: for each field site, choose the smallest k, then the smallest weight, at which all 8 fine-tuned seeds pass the gate; fine-tuned dictionaries replace the from-scratch head-read dictionaries for production, which stay recorded as a comparison; the gate is unchanged",
+          "gate": "acceptance_revision"
+        },
+        "objective": {
+          "name": "ft_w1",
+          "training": {
+            "pooled_loss": {
+              "weight": 1
+            },
+            "head_space": {
+              "weight": 1
+            },
+            "steps": 8000
+          },
+          "init": "the token-loss dictionary of the same seed, matrix, k and expansion (grid or extension run); for a variant, the token-loss run of that variant"
+        },
+        "rule": "added 2026-10-22 after the head-read dictionaries trained from scratch passed the gate at f32_b10 k32 with all 8 seeds but kept 46-56 stable features (670-721 with the token loss), and before any fine-tuning run beyond the smokes: for each field site, choose the smallest k, then the smallest weight, at which all 8 fine-tuned seeds pass the gate; fine-tuned dictionaries replace the from-scratch head-read dictionaries for production, which stay recorded as a comparison; the gate is unchanged",
+        "steps": 192000,
+        "pool": false,
+        "four_seed_stable": {
+          "48000": 448,
+          "192000": 614
+        },
+        "stable_nodule_features": {
+          "trained_flexict_vlm_f40_b08_e4_k64_ft_w1": 37,
+          "trained_flexict_vlm_f40_b08_e4_k64_ft_w1_nodule75": 38,
+          "random_flexict_vlm_f40_b08_e4_k64": 0,
+          "random_flexict_vlm_f40_b08_e4_k64_nodule75": 0
+        },
+        "nodule_region_stable_explained_variance": {
+          "trained_flexict_vlm_f40_b08_e4_k64_ft_w1": -0.0533693142269589,
+          "trained_flexict_vlm_f40_b08_e4_k64_ft_w1_nodule75": -0.0767692288146904,
+          "random_flexict_vlm_f40_b08_e4_k64": 0.4645610666153851,
+          "random_flexict_vlm_f40_b08_e4_k64_nodule75": 0.35480371876673533
+        },
+        "pool_passes_classifier": false,
+        "rules": {
+          "length": "at the chosen k, 192,000 steps replace 48,000 when, over seeds 2025-2028 with stable meaning reappearance in all 3 other seeds, the reference seed's stable features rise by at least 20% and the 192,000-step reference dictionary passes the fixed-classifier gate",
+          "pool": "user decision 2026-10-15 (option A), applied per site: the nodule-pool variant replaces the uniform dictionaries when all 8 seeds pass the fixed-classifier gate, stable nodule-specific features (nodule enrichment >= 3 on development patients) clearly exceed both the uniform dictionaries and the random-weight control, and stable-feature explained variance at the nodule region exceeds that of the uniform dictionaries",
+          "clearly_exceed": "at least 1.5 times the comparison count and at least 5 more features (reference seeds)"
+        },
+        "production_check": {
+          "group": "trained_flexict_vlm_f40_b08_e4_k64_ft_w1_uniform_192k",
+          "classifier_gate": "passed",
+          "rule": "added 2026-10-23 after the 192,000-step productions were evaluated, the user having delegated this choice: a 192,000-step production replaces the 48,000-step dictionaries only when all its 8 seeds pass the gate (the site's gate, with text fidelity at w20_b16); otherwise the 48,000-step dictionaries of the chosen configuration stay production. Outcome: w20_b16 192,000 steps fail (seed 2032 AP decrease 0.0213) and f32_b10 fail (seed 2031 AUROC decrease 0.0128, mean AP decrease 0.028), so both keep 48,000 steps; f40_b08 192,000 steps pass"
+        }
+      },
+      "production": {
+        "trained": "trained_flexict_vlm_f40_b08_e4_k64_ft_w1_uniform_192k",
+        "random": "random_flexict_vlm_f40_b08_e4_k64_uniform_192k"
+      },
+      "classifier_gate": "passed",
+      "gate": "acceptance_revision",
+      "classifier_mae_range": [
+        0.011585058644413948,
+        0.014280066825449467
+      ],
+      "auroc_decrease_range": [
+        -0.0017593403606269709,
+        0.0026427859494396744
+      ],
+      "ap_decrease_range": [
+        -0.006307035028489949,
+        0.03892914869532804
+      ],
+      "ap_decrease_mean": 0.014693906666515794,
+      "reference_fvu_below_pca": true,
+      "reference_sample_fvu": 0.0796956111299748,
+      "pca_same_rank_fvu": 0.11749566130477117,
+      "stable_features": {
+        "trained": 615,
+        "random": 169
+      },
+      "stable_exceeds_random": true,
+      "all_seeds_pass_text": true,
+      "text_image_cosine_range": [
+        NaN,
+        NaN
+      ],
+      "text_median_spearman_range": [
+        NaN,
+        NaN
+      ],
+      "accepted": true
+    },
+    "flexict_vlm:w20_b16": {
+      "choice": {
+        "k": 64,
+        "passing_k": [
+          64
+        ],
+        "evaluated_k": [
+          8,
+          16,
+          32,
+          64,
+          128
+        ],
+        "rule": "per site, the smallest grid k at which all 8 seeds of the uniform dictionaries pass the fixed-classifier gate (and the text-fidelity rule for w20_b16)",
+        "steps": 48000,
+        "pool": false,
+        "four_seed_stable": {
+          "48000": 1057,
+          "192000": 1530
+        },
+        "stable_nodule_features": {
+          "trained_flexict_vlm_w20_b16_e4_k64": 63,
+          "trained_flexict_vlm_w20_b16_e4_k64_nodule75": 5,
+          "random_flexict_vlm_w20_b16_e4_k64": 4,
+          "random_flexict_vlm_w20_b16_e4_k64_nodule75": 0
+        },
+        "nodule_region_stable_explained_variance": {
+          "trained_flexict_vlm_w20_b16_e4_k64": 0.32874320216042796,
+          "trained_flexict_vlm_w20_b16_e4_k64_nodule75": -0.3574668842729829,
+          "random_flexict_vlm_w20_b16_e4_k64": 0.4098701222305209,
+          "random_flexict_vlm_w20_b16_e4_k64_nodule75": -0.02378443200538638
+        },
+        "pool_passes_classifier": false,
+        "rules": {
+          "length": "at the chosen k, 192,000 steps replace 48,000 when, over seeds 2025-2028 with stable meaning reappearance in all 3 other seeds, the reference seed's stable features rise by at least 20% and the 192,000-step reference dictionary passes the fixed-classifier gate",
+          "pool": "user decision 2026-10-15 (option A), applied per site: the nodule-pool variant replaces the uniform dictionaries when all 8 seeds pass the fixed-classifier gate, stable nodule-specific features (nodule enrichment >= 3 on development patients) clearly exceed both the uniform dictionaries and the random-weight control, and stable-feature explained variance at the nodule region exceeds that of the uniform dictionaries",
+          "clearly_exceed": "at least 1.5 times the comparison count and at least 5 more features (reference seeds)"
+        },
+        "production_check": {
+          "group": "trained_flexict_vlm_w20_b16_e4_k64_uniform_192k",
+          "classifier_gate": "failed",
+          "rule": "added 2026-10-23 after the 192,000-step productions were evaluated, the user having delegated this choice: a 192,000-step production replaces the 48,000-step dictionaries only when all its 8 seeds pass the gate (the site's gate, with text fidelity at w20_b16); otherwise the 48,000-step dictionaries of the chosen configuration stay production. Outcome: w20_b16 192,000 steps fail (seed 2032 AP decrease 0.0213) and f32_b10 fail (seed 2031 AUROC decrease 0.0128, mean AP decrease 0.028), so both keep 48,000 steps; f40_b08 192,000 steps pass"
+        },
+        "rejected_steps": 192000
+      },
+      "production": {
+        "trained": "trained_flexict_vlm_w20_b16_e4_k64",
+        "random": "random_flexict_vlm_w20_b16_e4_k64"
+      },
+      "classifier_gate": "passed",
+      "gate": "acceptance",
+      "classifier_mae_range": [
+        0.009818370454013348,
+        0.01163953822106123
+      ],
+      "auroc_decrease_range": [
+        0.0004379473859071892,
+        0.00546679150684104
+      ],
+      "ap_decrease_range": [
+        0.0008175999654869148,
+        0.0190455893386402
+      ],
+      "ap_decrease_mean": 0.01059055594647798,
+      "reference_fvu_below_pca": true,
+      "reference_sample_fvu": 0.06545123296663052,
+      "pca_same_rank_fvu": 0.3954239791880904,
+      "stable_features": {
+        "trained": 1102,
+        "random": 13
+      },
+      "stable_exceeds_random": true,
+      "all_seeds_pass_text": true,
+      "text_image_cosine_range": [
+        0.9994312524795532,
+        0.9994508624076843
+      ],
+      "text_median_spearman_range": [
+        0.998958177012921,
+        0.9991177903933585
+      ],
+      "accepted": true
+    }
+  },
+  "quality_rule": "a site's production dictionaries are accepted for interpretation when all 8 trained seeds pass the fixed-classifier gate (and text fidelity for w20_b16), the reference dictionary reconstructs better than the same-rank PCA, and the reference seed's stable features exceed the random-weight control; otherwise the shortfall is reported with the dictionaries",
+  "selection": {
+    "k": "per site, the smallest grid k at which all 8 seeds of the uniform dictionaries pass the fixed-classifier gate (and the text-fidelity rule for w20_b16)",
+    "k_revision": "2026-10-21, after the grid and w20_b16 evaluations and before any extension or variant result: the k rule first read 'whose reference-seed uniform dictionary passes'; every grid k already has 8 trained seeds, and the quality rule accepts production dictionaries only when all 8 seeds pass, so k is chosen as the smallest value meeting that requirement (w20_b16 k32: reference seed passes, 3 of 8 seeds fail on AP decrease 0.026-0.027)",
+    "length": "at the chosen k, 192,000 steps replace 48,000 when, over seeds 2025-2028 with stable meaning reappearance in all 3 other seeds, the reference seed's stable features rise by at least 20% and the 192,000-step reference dictionary passes the fixed-classifier gate",
+    "length_revision": "added 2026-10-23 after the 192,000-step productions were evaluated, the user having delegated this choice: a 192,000-step production replaces the 48,000-step dictionaries only when all its 8 seeds pass the gate (the site's gate, with text fidelity at w20_b16); otherwise the 48,000-step dictionaries of the chosen configuration stay production. Outcome: w20_b16 192,000 steps fail (seed 2032 AP decrease 0.0213) and f32_b10 fail (seed 2031 AUROC decrease 0.0128, mean AP decrease 0.028), so both keep 48,000 steps; f40_b08 192,000 steps pass",
+    "pool": "user decision 2026-10-15 (option A), applied per site: the nodule-pool variant replaces the uniform dictionaries when all 8 seeds pass the fixed-classifier gate, stable nodule-specific features (nodule enrichment >= 3 on development patients) clearly exceed both the uniform dictionaries and the random-weight control, and stable-feature explained variance at the nodule region exceeds that of the uniform dictionaries",
+    "clearly_exceed": "at least 1.5 times the comparison count and at least 5 more features (reference seeds)",
+    "test_used": false
+  },
+  "acceptance_revision": {
+    "sites": [
+      "flexict_3d:f32_b10",
+      "flexict_vlm:f40_b08"
+    ],
+    "rule": "max_probability_mae and max_auroc_decrease on every seed; max_ap_decrease on the mean AP decrease over the 8 seeds; a reference-seed screen checks MAE and AUROC only, and a configuration is ruled out as soon as an evaluated seed fails MAE or AUROC, or when all 8 seeds are evaluated and the mean AP decrease exceeds the limit",
+    "decided": "by the user on 2026-10-22 (10:2x EDT), after the fine-tuning results, choosing among: keep the per-seed AP limit, judge AP on the mean over the 8 seeds, or keep the gate and continue method work",
+    "reason": "fine-tuned dictionaries passed MAE (0.009-0.019) on every seed and kept 440-820 stable features, while 1-4 of 8 seeds per configuration exceeded the per-seed AP limit (0.020-0.050); the development AP has a patient-bootstrap SD of about 0.06 (113 malignant), and retraining the deployed head with other seeds changes AP by up to 0.027; only from-scratch head-read dictionaries (41-56 stable features) passed the per-seed AP limit",
+    "scope": "w20_b16 keeps the original per-seed gate, which its chosen k64 dictionaries pass on every seed"
+  },
+  "test_used": false
+}

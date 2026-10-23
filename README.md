@@ -87,6 +87,15 @@ A [follow-up](results/20261020_sae_lidc_followup/README.md) looks at the clear f
 - **Grid resolution:** the FMCIB layer1 complete-context dictionary (4 mm grid) reaches the agreement of one radiologist with the others for margin (0.46 against 0.45; 0.24 at the 7 mm layer2 grid). The 12 mm VISTA3D stage3 grid shows little.
 - **Dictionary probes:** a few dictionary features together exceed the best single feature, and the raw channels exceed the dictionary for margin, texture and calcification. Spiculation and lobulation stay weak at every site.
 
+### FlexiCT dictionaries for interpretation
+
+[Eight-seed dictionaries](results/20261021_flexict_sae/README.md) on three FlexiCT representations of the official LUNA25 CTs. Each set passes the fixed-classifier check of its deployed head, and each has far more stable features than a random-weight control.
+- **FlexiCT-3D-VLM whole CT, final block 16** (the text-aligned layer): k64 with the token loss. 1,063–1,108 stable features against 10–18 for the random-weight control. With every patch token reconstructed, the CT-RATE image embedding keeps cosine 0.9994–0.9995.
+- **FlexiCT-3D 32 mm field, block 10**: k32. 752–793 stable features against 137–157.
+- **FlexiCT-3D-VLM 40 mm field, block 8**: k64, 192,000 training steps. 596–657 stable features against 169–192. Its stable features explain less of the representation (0.27 of the variance, against 0.43–0.54 at the other two sites).
+- **Why the two field dictionaries are fine-tuned:** their max-pooling heads read directions that ordinary SAE reconstruction serves poorly. Both field dictionaries are therefore the token-loss dictionaries fine-tuned with two terms on the error the head reads, which keeps their seed-reproducible features.
+- **AP at the field sites:** it is judged on the mean over the 8 seeds, since the development AP rests on 113 malignant nodules.
+
 ### Feature observation materials
 
 The separate `20261008` FMCIB layer1/k64 dictionary has [feature-level research checks](results/20261008_sae_feature_validation/README.md): 128 patient-distinct CT inputs, three SAE seeds, translation and position controls, and patient-balanced correspondence. Thirteen features pass the numerical screens; nine provide repeated broad image-content descriptions as research starting points. The [feature catalog](results/20261008_sae_feature_validation/reviewed_features.csv) retains each description and its qualifications. These are conditional development-set observations from one AI image reviewer; clinical identity and feature-specific causal effects remain untested. The private `20261008_feature_validation/fmcib/research_materials.json` contains fixed weights and CT evidence paths. Its [dictionary study](results/20261008_spatial_sae/README.md) records the associated earlier training results.
@@ -110,6 +119,7 @@ storage configuration.
 | Local-field comparison | [prepare_materials.py](scripts/pipeline/prepare_materials.py) |
 | nnFoundation and FlexiCT pipelines | [inputs and features](src/sclvmi/encoder_features.py), [heads](src/sclvmi/encoder_pipeline.py), [selection and comparison](scripts/pipeline/compare_encoders.py); configuration [encoder_pipeline.json](configs/encoder_pipeline.json) |
 | FlexiCT on official LUNA25 CTs | [inputs, features, heads and report](src/sclvmi/flexict_luna25.py), [comparison](scripts/pipeline/compare_flexict_luna25.py); configuration [flexict_luna25.json](configs/flexict_luna25.json) |
+| FlexiCT SAE dictionaries | [token extraction, training, objectives, checks, selection and report](src/sclvmi/flexict_sae.py), [public export](scripts/pipeline/export_flexict_sae.py); configuration [flexict_sae.json](configs/flexict_sae.json) |
 | Image and feature inference | [material_predict.py](src/sclvmi/material_predict.py) |
 | Spatial SAE training and inference | [sae.py](src/sclvmi/sae.py), [sae_predict.py](src/sclvmi/sae_predict.py) |
 | Multi-layer SAE comparison | [Input preparation](src/sclvmi/sae_campaign_data.py), [resumable training](src/sclvmi/sae_campaign_train.py), [fixed-classifier evaluation](src/sclvmi/sae_campaign_evaluate.py), [candidate selection](src/sclvmi/sae_campaign_compare.py), [PCA and seed diagnostics](src/sclvmi/sae_campaign_diagnostics.py) |

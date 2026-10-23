@@ -98,9 +98,13 @@ class SpatialDictionary:
         self.device = device
 
     @torch.inference_mode()
-    def encode(self, tokens):
+    def preactivations(self, tokens):
         x = (tokens.to(self.device) - self.mean) / self.scale
-        values = F.relu((x - self.weights["b_dec"]) @ self.weights["W_enc"])
+        return F.relu((x - self.weights["b_dec"]) @ self.weights["W_enc"])
+
+    @torch.inference_mode()
+    def encode(self, tokens):
+        values = self.preactivations(tokens)
         if self.request["training"].get("sae_type") == "topk":
             selected = torch.topk(values, self.request["k"], dim=-1)
             return torch.zeros_like(values).scatter(-1, selected.indices, selected.values)

@@ -1,0 +1,10 @@
+{
+  "campaign": "20261021_flexict_sae",
+  "features_suite": "20261019_flexict_luna25",
+  "report_created_at": "2026-10-23T06:12:08.759541+00:00",
+  "report_code_sha256": "8f9962074af3a4c49fb39530e16e63b2ec5cb2509bda1b000aaebda55fc58cfe",
+  "report_config_sha256": "5cbcb31b08cf421ae3c551575a752004abff3a71fb170df9571c4dc090c69c68",
+  "export_config_sha256": "5cbcb31b08cf421ae3c551575a752004abff3a71fb170df9571c4dc090c69c68",
+  "exported_at": "2026-10-23T06:12:31.720713+00:00",
+  "test_used": false
+}

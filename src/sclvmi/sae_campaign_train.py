@@ -260,7 +260,8 @@ def fit_job(root, job, worker, stop_after=None):
     export_dictionary(sae, request, threshold, mean, scale, destination / "dictionary.pt", best["step"])
     loaded = SpatialDictionary(destination / "dictionary.pt")
     actual = development[:127] * scale + mean
-    torch.testing.assert_close(loaded.encode(actual), torch.cat([loaded.encode(part) for part in actual.split(17)]), rtol=1e-5, atol=config["inference"]["batch_independence_atol"])
+    # batch independence before the elementwise threshold, where rounding may flip a value lying at the threshold
+    torch.testing.assert_close(loaded.preactivations(actual), torch.cat([loaded.preactivations(part) for part in actual.split(17)]), rtol=1e-5, atol=config["inference"]["batch_independence_atol"])
     checks = feature_checks(metrics, request)
     result = {"state": "completed", "run_id": job["run_id"], "request": request, "steps": total, "best_step": best["step"], "development": metrics, "feature_checks": checks, "feature_checks_pass": all(checks.values()), "dictionary_sha256": sha256(destination / "dictionary.pt"), "elapsed_seconds": previous_elapsed + time.monotonic() - started, "peak_gpu_bytes": torch.cuda.max_memory_allocated(), "completed_at": timestamp(), "test_used": False}
     write_json(destination / "result.json", result)
